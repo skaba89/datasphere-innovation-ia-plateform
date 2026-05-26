@@ -1,10 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import AppConnected from './AppConnected';
+import AppRoot from './AppRoot';
 import './styles.css';
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    <AppConnected />
+    <AppRoot />
   </React.StrictMode>,
 );
