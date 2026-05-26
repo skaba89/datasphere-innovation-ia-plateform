@@ -23,3 +23,58 @@
   background: #facc15;
   color: #0f172a;
 }
+
+.automation-panel {
+  display: grid;
+  gap: 18px;
+  margin: 24px 0;
+}
+
+.automation-actions {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.automation-actions label {
+  display: grid;
+  gap: 8px;
+  color: #cbd5e1;
+  font-weight: 700;
+}
+
+.automation-actions input {
+  min-height: 44px;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(2, 6, 23, 0.72);
+  color: #f8fafc;
+  padding: 0 14px;
+}
+
+.automation-actions button {
+  min-height: 44px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 16px;
+  background: #facc15;
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.automation-actions button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.compact-subtitle {
+  margin-top: 8px;
+  font-size: 0.98rem;
+}
+
+@media (max-width: 760px) {
+  .automation-actions {
+    grid-template-columns: 1fr;
+  }
+}

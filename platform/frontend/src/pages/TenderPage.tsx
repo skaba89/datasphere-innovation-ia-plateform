@@ -1,4 +1,5 @@
 import { tokenStorage } from '../api/client';
+import { TenderAutomationPanel } from '../components/TenderAutomationPanel';
 import { TenderWorkspace } from '../components/TenderWorkspace';
 
 export default function TenderPage() {
@@ -22,6 +23,7 @@ export default function TenderPage() {
         <h1>Appels d offres</h1>
         <p className="subtitle">Qualification, exigences, Go / No-Go et matrice de conformite.</p>
       </section>
+      <TenderAutomationPanel token={accessKey} />
       <TenderWorkspace token={accessKey} />
     </main>
   );
