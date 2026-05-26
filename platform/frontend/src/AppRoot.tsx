@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 import AppConnected from './AppConnected';
 import TenderPage from './pages/TenderPage';
+import './root.css';
 
 type RootView = 'console' | 'tenders';
 
