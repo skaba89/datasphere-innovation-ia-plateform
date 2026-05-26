@@ -43,9 +43,51 @@ docker compose up --build
 - Swagger : http://localhost:8000/docs
 - Healthcheck : http://localhost:8000/api/v1/health
 
+## Authentification MVP
+
+Le MVP inclut une authentification simple par email, mot de passe hashe et JWT.
+
+### Creation du premier administrateur
+
+La route suivante permet de creer le premier administrateur uniquement si aucun utilisateur n existe encore :
+
+```text
+POST /api/v1/auth/bootstrap-admin
+```
+
+Exemple de payload :
+
+```json
+{
+  "email": "admin@example.com",
+  "password": "change-me-now",
+  "first_name": "Admin",
+  "last_name": "DataSphere",
+  "role": "admin",
+  "is_active": true
+}
+```
+
+Apres creation du premier utilisateur, cette route est automatiquement bloquee.
+
+### Connexion
+
+```text
+POST /api/v1/auth/login
+```
+
+### Profil courant
+
+```text
+GET /api/v1/auth/me
+```
+
+Cette route attend un token JWT dans l en-tete Authorization.
+
 ## Regles
 
 - Ne jamais commiter le fichier `.env`.
 - Ne jamais commiter de secrets.
+- Modifier `SECRET_KEY` en local et en production.
 - Ajouter les modules progressivement.
 - Conserver une validation humaine sur les sorties IA.
