@@ -3,13 +3,15 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.router import router as api_v1_router
 from app.core.config import get_settings
+from app.db.session import Base, engine
+import app.models  # noqa: F401
 
 settings = get_settings()
 
 app = FastAPI(
     title=settings.app_name,
     debug=settings.app_debug,
-    version="0.1.0",
+    version="0.2.0",
 )
 
 app.add_middleware(
@@ -21,6 +23,11 @@ app.add_middleware(
 )
 
 app.include_router(api_v1_router, prefix=settings.api_v1_prefix)
+
+
+@app.on_event("startup")
+def on_startup() -> None:
+    Base.metadata.create_all(bind=engine)
 
 
 @app.get("/", tags=["root"])
