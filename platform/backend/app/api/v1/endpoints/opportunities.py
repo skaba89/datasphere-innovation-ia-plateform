@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.api.dependencies import get_current_user
 from app.crud.opportunity import (
     create_opportunity,
     delete_opportunity,
@@ -12,7 +13,11 @@ from app.crud.organization import get_organization
 from app.db.session import get_db
 from app.schemas.opportunity import OpportunityCreate, OpportunityRead, OpportunityUpdate
 
-router = APIRouter(prefix="/opportunities", tags=["opportunities"])
+router = APIRouter(
+    prefix="/opportunities",
+    tags=["opportunities"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
 @router.get("", response_model=list[OpportunityRead])

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.api.dependencies import get_current_user
 from app.crud.organization import (
     create_organization,
     delete_organization,
@@ -11,7 +12,11 @@ from app.crud.organization import (
 from app.db.session import get_db
 from app.schemas.organization import OrganizationCreate, OrganizationRead, OrganizationUpdate
 
-router = APIRouter(prefix="/organizations", tags=["organizations"])
+router = APIRouter(
+    prefix="/organizations",
+    tags=["organizations"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
 @router.get("", response_model=list[OrganizationRead])
