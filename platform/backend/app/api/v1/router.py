@@ -1,9 +1,10 @@
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import opportunities, organizations
+from app.api.v1.endpoints import auth, opportunities, organizations
 
 router = APIRouter()
 
+router.include_router(auth.router)
 router.include_router(organizations.router)
 router.include_router(opportunities.router)
 
@@ -15,4 +16,4 @@ def health_check() -> dict[str, str]:
 
 @router.get("/version", tags=["health"])
 def version() -> dict[str, str]:
-    return {"version": "0.2.0", "stage": "backend-domain-models"}
+    return {"version": "0.3.0", "stage": "auth-baseline"}
