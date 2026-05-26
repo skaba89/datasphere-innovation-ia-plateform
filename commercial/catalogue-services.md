@@ -2,111 +2,189 @@
 
 ## Positionnement
 
-DataSphere Innovation est un cabinet de conseil Data, IT et IA augmente par agents specialises. Nous accompagnons les entreprises, institutions publiques et gouvernements dans la conception, la modernisation, la documentation et le pilotage de leurs projets numeriques.
+DataSphere Innovation est un cabinet de conseil Data, IT et IA augmente par agents specialises. Nous accompagnons les entreprises, institutions et gouvernements dans leurs projets de transformation digitale, de gouvernance, d architecture, de data engineering, d intelligence artificielle et de reponse aux appels d offres.
 
-Notre approche combine expertise humaine, agents IA supervises, methodologie de conseil, gouvernance documentaire et capacite de delivery en francais et en anglais.
+Notre approche combine expertise humaine senior, agents IA supervises, gouvernance documentaire et capacite de delivery de bout en bout en francais et en anglais.
 
-## Offre 1 - Appels d Offres Augmentes par IA
+## Proposition de valeur
 
-### Objectif
+Nous aidons nos clients a passer d une idee, d un besoin ou d un cahier des charges a un resultat concret : architecture, dossier de reponse, plateforme, dashboard, agent IA, documentation, gouvernance et plan de mise en oeuvre.
 
-Aider les entreprises, cabinets, ESN, ONG et institutions a analyser, structurer et produire des reponses professionnelles aux appels d offres publics et prives.
-
-### Services inclus
-
-- veille et qualification des opportunites ;
-- analyse du cahier des charges ;
-- matrice de conformite ;
-- strategie de reponse ;
-- memoire technique ;
-- memoire methodologique ;
-- planning projet ;
-- analyse des risques ;
-- checklist de soumission ;
-- preparation de presentation orale.
-
-### Cibles
-
-- ESN ;
-- cabinets de conseil ;
-- PME innovantes ;
-- institutions publiques ;
-- ONG ;
-- entreprises candidates a des marches publics.
-
-## Offre 2 - Conseil Data, BI et IA
+## 1. Conseil IT et transformation digitale
 
 ### Objectif
 
-Aider les organisations a construire des plateformes data fiables, gouvernees et utiles a la decision.
+Aider les organisations a moderniser leurs systemes d information, structurer leur feuille de route digitale et securiser leurs projets de transformation.
 
-### Services inclus
+### Services
 
-- audit data et BI ;
-- architecture data warehouse, data lake ou lakehouse ;
-- pipelines ETL et ELT ;
-- orchestration Airflow ;
-- transformations dbt ;
-- dashboards Superset, Power BI ou Tableau ;
-- indicateurs de performance ;
-- qualite de donnees ;
-- gouvernance data ;
-- documentation technique et fonctionnelle.
+- Audit du systeme d information.
+- Schema directeur SI.
+- Cadrage et priorisation des projets digitaux.
+- Assistance a maitrise d ouvrage.
+- Architecture d entreprise.
+- Modernisation applicative.
+- Digitalisation des processus metier.
+- Conduite du changement.
+- Gouvernance IT.
 
-## Offre 3 - Agents IA Metier
+### Livrables
 
-### Objectif
+- Rapport d audit.
+- Cartographie applicative.
+- Feuille de route de transformation.
+- Dossier d architecture cible.
+- Plan de gouvernance.
+- Plan de conduite du changement.
 
-Concevoir des agents IA specialises, gouvernes et supervises pour accelerer les activites metier.
-
-### Exemples d agents
-
-- agent appels d offres ;
-- agent analyse documentaire ;
-- agent assistant DSI ;
-- agent reporting ;
-- agent support client ;
-- agent RH ;
-- agent finance ;
-- agent conformite ;
-- agent direction generale.
-
-## Offre 4 - Transformation Digitale et GovTech
+## 2. Data engineering, BI et plateformes data
 
 ### Objectif
 
-Accompagner les ministeres, agences publiques, collectivites et institutions dans la digitalisation de leurs services.
+Concevoir des architectures data robustes, gouvernees et exploitables pour le pilotage, l analyse et la prise de decision.
 
-### Services inclus
+### Services
 
-- audit SI ;
-- schema directeur numerique ;
-- digitalisation de processus ;
-- plateformes e-administration ;
-- portails citoyens ;
-- systemes de reporting institutionnel ;
-- gestion documentaire ;
-- conduite du changement ;
-- formation des equipes.
+- Architecture data lake, data warehouse ou lakehouse.
+- Pipelines ETL et ELT.
+- Orchestration Airflow.
+- Transformation dbt.
+- Streaming Kafka.
+- Modelisation bronze, silver, gold.
+- Qualite et gouvernance des donnees.
+- Tableaux de bord Superset, Power BI ou Tableau.
+- Migration BI et rationalisation des rapports.
 
-## Offre 5 - Delivery Remote et Hybride
+### Livrables
+
+- Architecture cible data.
+- Modeles de donnees.
+- Pipelines documentes.
+- Dictionnaire de donnees.
+- Catalogue de KPIs.
+- Dashboards executifs.
+- Plan qualite data.
+
+## 3. Intelligence artificielle et agents IA metier
 
 ### Objectif
 
-Mettre a disposition une equipe projet augmentee par IA pour prendre des sujets de bout en bout.
+Creer des assistants IA et agents specialises pour automatiser ou accelerer les activites documentaires, analytiques et operationnelles.
+
+### Services
+
+- Agents IA pour appels d offres.
+- Agents IA pour analyse documentaire.
+- Agents IA pour support client.
+- Agents IA pour gouvernance et reporting.
+- RAG sur documents internes.
+- Copilotes metier.
+- Automatisation de workflows.
+- Integration de modeles IA via API.
+
+### Livrables
+
+- Specification fonctionnelle agent IA.
+- Architecture RAG.
+- Bibliotheque de prompts.
+- Workflows d automatisation.
+- Documentation utilisateur.
+- Politique de gouvernance IA.
+
+## 4. Appels d offres et bid management
+
+### Objectif
+
+Aider les entreprises a analyser, structurer et produire des reponses professionnelles aux appels d offres publics et prives.
+
+### Services
+
+- Veille et qualification des opportunites.
+- Analyse du cahier des charges.
+- Matrice de conformite.
+- Strategie Go / No-Go.
+- Memoire technique.
+- Memoire methodologique.
+- Planning projet.
+- Analyse des risques.
+- Relecture qualite.
+- Preparation de soutenance.
+
+### Livrables
+
+- Resume executif de l appel d offres.
+- Matrice d exigences.
+- Dossier de reponse.
+- Memoire technique.
+- Memoire methodologique.
+- Planning et gouvernance projet.
+- Checklist de soumission.
+
+## 5. Cybersecurite, conformite et gouvernance
+
+### Objectif
+
+Securiser les projets, les donnees, les acces, les infrastructures et les workflows IA.
+
+### Services
+
+- Audit securite.
+- IAM et gestion des acces.
+- Durcissement infrastructure.
+- Keycloak et authentification.
+- Journalisation et audit logs.
+- Conformite RGPD.
+- Gouvernance IA.
+- Revue de risques.
+
+### Livrables
+
+- Rapport de risques.
+- Politique de securite.
+- Matrice des acces.
+- Plan de remediation.
+- Checklist conformite.
+- Plan de gouvernance.
+
+## 6. Delivery remote et hybride
+
+### Objectif
+
+Fournir des equipes projet augmentees, capables d intervenir en francais ou en anglais, en full remote ou en mode hybride.
 
 ### Profils mobilisables
 
-- directeur de mission ;
-- architecte solution ;
-- data architect ;
-- data engineer ;
-- expert IA et RAG ;
-- DevOps ;
-- expert securite ;
-- consultant gouvernance ;
-- QA ;
-- redacteur documentation.
+- Directeur de mission.
+- Architecte solution.
+- Data architect.
+- Data engineer.
+- Expert IA et RAG.
+- DevOps.
+- Consultant gouvernance.
+- QA et documentation.
+
+### Livrables
+
+- Cadrage projet.
+- Backlog.
+- Architecture.
+- Realisation technique.
+- Tests.
+- Documentation.
+- Transfert de competences.
+
+## Secteurs cibles
+
+- Institutions publiques.
+- Gouvernements.
+- Banques et assurances.
+- Telecoms.
+- Energie et mines.
+- Education.
+- Sante.
+- ONG et organisations internationales.
+- Grandes PME.
+- ESN et cabinets de conseil.
 
 ## Differenciation
 
@@ -117,3 +195,7 @@ Mettre a disposition une equipe projet augmentee par IA pour prendre des sujets 
 5. Approche orientee resultats, pas seulement technologie.
 6. Delivery en francais et anglais.
 7. Methodologie adaptee aux entreprises et gouvernements.
+
+## Promesse
+
+DataSphere Innovation aide ses clients a passer de l idee au resultat mesurable avec methode, expertise, gouvernance et agents IA supervises.
