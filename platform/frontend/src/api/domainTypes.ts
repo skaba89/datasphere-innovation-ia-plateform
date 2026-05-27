@@ -109,3 +109,20 @@ export type ComplianceSummary = {
   to_review: number;
   compliance_rate: number;
 };
+
+export type AgentProfile = {
+  id: number;
+  name: string;
+  slug: string;
+  domain: string;
+  seniority: string;
+  languages: string;
+  mission_types?: string | null;
+  description?: string | null;
+  instruction_template: string;
+  tools?: string | null;
+  governance_rules?: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
