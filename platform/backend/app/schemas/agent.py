@@ -81,3 +81,53 @@ class AgentAssignmentRead(AgentAssignmentBase):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class AgentActionBase(BaseModel):
+    assignment_id: int
+    action_type: str = "analysis"
+    title: str = Field(..., min_length=3, max_length=255)
+    description: str | None = None
+    priority: str = "Moyenne"
+    status: str = "suggested"
+    requires_human_approval: bool = True
+    result_summary: str | None = None
+    next_step: str | None = None
+
+
+class AgentActionCreate(AgentActionBase):
+    pass
+
+
+class AgentActionUpdate(BaseModel):
+    action_type: str | None = None
+    title: str | None = Field(default=None, min_length=3, max_length=255)
+    description: str | None = None
+    priority: str | None = None
+    status: str | None = None
+    requires_human_approval: bool | None = None
+    approved_by: str | None = None
+    result_summary: str | None = None
+    next_step: str | None = None
+
+
+class AgentActionRead(AgentActionBase):
+    id: int
+    approved_by: str | None = None
+    approved_at: datetime | None = None
+    executed_at: datetime | None = None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AgentPlanRequest(BaseModel):
+    assignment_id: int
+    mode: str = "safe_auto"
+
+
+class AgentRunRequest(BaseModel):
+    action_id: int
+    actor_name: str = "system"
+    force: bool = False
