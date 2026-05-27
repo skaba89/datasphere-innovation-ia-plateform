@@ -11,7 +11,9 @@ Ces tests securisent les premiers endpoints critiques du MVP :
 - organisations ;
 - opportunites ;
 - appels d offres ;
-- exigences d appels d offres.
+- exigences d appels d offres ;
+- catalogue d agents ;
+- affectations d agents.
 
 ## Lancement local
 
@@ -68,6 +70,17 @@ pytest -q
 - modification d une exigence ;
 - suppression d une exigence ;
 - rejet si l identifiant de l appel d offres ne correspond pas entre l URL et le payload.
+
+### Agents
+
+- acces refuse sans authentification ;
+- creation d un profil agent ;
+- blocage des slugs dupliques ;
+- lecture liste et detail ;
+- modification d un profil agent ;
+- creation d une affectation agent sur opportunite ;
+- lecture et modification des affectations ;
+- rejet si agent inexistant.
 
 ## Base de test
 
