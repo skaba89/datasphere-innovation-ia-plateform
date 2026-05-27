@@ -9,7 +9,9 @@ Ces tests securisent les premiers endpoints critiques du MVP :
 - connexion JWT ;
 - profil utilisateur courant ;
 - organisations ;
-- opportunites.
+- opportunites ;
+- appels d offres ;
+- exigences d appels d offres.
 
 ## Lancement local
 
@@ -48,6 +50,24 @@ pytest -q
 - modification ;
 - suppression ;
 - rejet si organisation inexistante.
+
+### Appels d offres
+
+- acces refuse sans authentification ;
+- creation liee a une opportunite ;
+- lecture liste ;
+- lecture detail ;
+- modification ;
+- suppression ;
+- rejet si opportunite inexistante.
+
+### Exigences d appels d offres
+
+- creation d exigence liee a un appel d offres ;
+- lecture des exigences d un appel d offres ;
+- modification d une exigence ;
+- suppression d une exigence ;
+- rejet si l identifiant de l appel d offres ne correspond pas entre l URL et le payload.
 
 ## Base de test
 
