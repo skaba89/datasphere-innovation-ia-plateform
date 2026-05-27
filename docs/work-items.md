@@ -1,20 +1,18 @@
-# Work Items
+# Agent Actions - workflow gouverne
 
-## Objectif
+## Decision d architecture
 
-Les Work Items permettent aux profils specialises de produire des taches operationnelles rattachees a une opportunite ou a un appel d offres.
+La plateforme utilise `agent_actions` comme moteur officiel pour les actions gerees par les profils specialises.
 
-Ils representent la premiere couche d automatisation controlee de la plateforme.
+La logique `work_items` a ete volontairement retiree pour eviter deux moteurs concurrents.
 
 ## Principe
 
-Le workflow recommande est :
+Le workflow recommande reste :
 
 ```text
-Profil specialise -> work item -> revue humaine -> completion
+Agent specialise -> action suggeree -> validation humaine -> execution controlee
 ```
-
-La plateforme ne doit pas laisser un profil automatiser une livraison client sans controle humain.
 
 ## Cas d usage
 
@@ -25,25 +23,18 @@ La plateforme ne doit pas laisser un profil automatiser une livraison client san
 - produire une checklist documentaire ;
 - recommander une prochaine etape commerciale.
 
-## Statuts MVP
-
-- draft ;
-- reviewed ;
-- completed.
-
-## Endpoints
+## Endpoints officiels
 
 ```text
-GET    /api/v1/work-items
-POST   /api/v1/work-items
-GET    /api/v1/work-items/{item_id}
-PATCH  /api/v1/work-items/{item_id}
-POST   /api/v1/work-items/{item_id}/review
-POST   /api/v1/work-items/{item_id}/complete
+GET    /api/v1/agent-actions
+POST   /api/v1/agent-actions
+POST   /api/v1/agent-actions/plan
+POST   /api/v1/agent-actions/{action_id}/approve
+POST   /api/v1/agent-actions/run
 ```
 
 ## Gouvernance
 
-Par defaut, un Work Item necessite une revue humaine avant completion.
+Une action sensible necessite une validation humaine avant execution.
 
-Cela evite qu une action sensible soit consideree comme finalisee sans validation.
+Cette approche est plus credible pour des clients publics, grands comptes et appels d offres.
