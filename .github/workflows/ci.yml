@@ -43,6 +43,15 @@ jobs:
           CORS_ORIGINS: http://localhost:5173
         run: python -c "from app.main import app; print(app.title)"
 
+      - name: Run backend API tests
+        env:
+          APP_ENV: test
+          APP_DEBUG: "false"
+          SECRET_KEY: test-secret-key-for-ci-only
+          DATABASE_URL: sqlite:///./ci_test.db
+          CORS_ORIGINS: http://localhost:5173
+        run: pytest -q
+
   frontend:
     name: Frontend checks
     runs-on: ubuntu-latest
