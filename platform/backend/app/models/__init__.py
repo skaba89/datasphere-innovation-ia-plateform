@@ -4,7 +4,7 @@ from app.models.opportunity import Opportunity
 from app.models.user import User
 from app.models.tender import Tender, TenderRequirement
 from app.models.tender_governance import ComplianceMatrixItem, GoNoGoCriterion
-from app.models.agent import AgentAssignment, AgentProfile
+from app.models.agent import AgentAction, AgentAssignment, AgentProfile
 
 __all__ = [
     "Organization",
@@ -17,4 +17,5 @@ __all__ = [
     "ComplianceMatrixItem",
     "AgentProfile",
     "AgentAssignment",
+    "AgentAction",
 ]
