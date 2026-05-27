@@ -1,7 +1,16 @@
+from datetime import datetime
+
 from sqlalchemy.orm import Session
 
-from app.models.agent import AgentAssignment, AgentProfile
-from app.schemas.agent import AgentAssignmentCreate, AgentAssignmentUpdate, AgentProfileCreate, AgentProfileUpdate
+from app.models.agent import AgentAction, AgentAssignment, AgentProfile
+from app.schemas.agent import (
+    AgentActionCreate,
+    AgentActionUpdate,
+    AgentAssignmentCreate,
+    AgentAssignmentUpdate,
+    AgentProfileCreate,
+    AgentProfileUpdate,
+)
 
 
 def list_agents(db: Session, skip: int = 0, limit: int = 100) -> list[AgentProfile]:
@@ -61,3 +70,52 @@ def update_assignment(db: Session, assignment: AgentAssignment, payload: AgentAs
     db.commit()
     db.refresh(assignment)
     return assignment
+
+
+def list_actions(db: Session, assignment_id: int | None = None, skip: int = 0, limit: int = 100) -> list[AgentAction]:
+    query = db.query(AgentAction)
+    if assignment_id is not None:
+        query = query.filter(AgentAction.assignment_id == assignment_id)
+    return query.order_by(AgentAction.created_at.asc()).offset(skip).limit(limit).all()
+
+
+def get_action(db: Session, action_id: int) -> AgentAction | None:
+    return db.query(AgentAction).filter(AgentAction.id == action_id).first()
+
+
+def create_action(db: Session, payload: AgentActionCreate) -> AgentAction:
+    action = AgentAction(**payload.model_dump())
+    db.add(action)
+    db.commit()
+    db.refresh(action)
+    return action
+
+
+def update_action(db: Session, action: AgentAction, payload: AgentActionUpdate) -> AgentAction:
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(action, field, value)
+    db.add(action)
+    db.commit()
+    db.refresh(action)
+    return action
+
+
+def approve_action(db: Session, action: AgentAction, approved_by: str) -> AgentAction:
+    action.status = "approved"
+    action.approved_by = approved_by
+    action.approved_at = datetime.utcnow()
+    db.add(action)
+    db.commit()
+    db.refresh(action)
+    return action
+
+
+def mark_action_executed(db: Session, action: AgentAction, result_summary: str, next_step: str | None = None) -> AgentAction:
+    action.status = "done"
+    action.executed_at = datetime.utcnow()
+    action.result_summary = result_summary
+    action.next_step = next_step
+    db.add(action)
+    db.commit()
+    db.refresh(action)
+    return action
