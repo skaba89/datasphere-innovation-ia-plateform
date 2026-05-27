@@ -45,3 +45,26 @@ class AgentAssignment(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     agent = relationship("AgentProfile", back_populates="assignments")
+    actions = relationship("AgentAction", back_populates="assignment", cascade="all, delete-orphan")
+
+
+class AgentAction(Base):
+    __tablename__ = "agent_actions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    assignment_id = Column(Integer, ForeignKey("agent_assignments.id", ondelete="CASCADE"), nullable=False, index=True)
+    action_type = Column(String(120), nullable=False, index=True)
+    title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    priority = Column(String(80), nullable=False, default="Moyenne", index=True)
+    status = Column(String(80), nullable=False, default="suggested", index=True)
+    requires_human_approval = Column(Boolean, nullable=False, default=True, index=True)
+    approved_by = Column(String(255), nullable=True)
+    approved_at = Column(DateTime, nullable=True)
+    executed_at = Column(DateTime, nullable=True)
+    result_summary = Column(Text, nullable=True)
+    next_step = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    assignment = relationship("AgentAssignment", back_populates="actions")
