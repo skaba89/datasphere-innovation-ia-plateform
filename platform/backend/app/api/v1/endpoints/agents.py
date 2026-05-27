@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user
+from app.core.default_agents import get_default_agent_profiles
 from app.crud.agent import (
     approve_action,
     create_agent,
@@ -46,6 +47,28 @@ def create_new_agent(payload: AgentProfileCreate, db: Session = Depends(get_db))
     if get_agent_by_slug(db, payload.slug) is not None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Agent slug already exists")
     return create_agent(db, payload)
+
+
+@router.get("/defaults", response_model=list[AgentProfileRead])
+def preview_default_agents(db: Session = Depends(get_db)):
+    installed = []
+    for template in get_default_agent_profiles():
+        existing = get_agent_by_slug(db, template.slug)
+        if existing is not None:
+            installed.append(existing)
+    return installed
+
+
+@router.post("/defaults/install", response_model=list[AgentProfileRead], status_code=status.HTTP_201_CREATED)
+def install_default_agents(db: Session = Depends(get_db)):
+    installed = []
+    for template in get_default_agent_profiles():
+        existing = get_agent_by_slug(db, template.slug)
+        if existing is not None:
+            installed.append(existing)
+            continue
+        installed.append(create_agent(db, template))
+    return installed
 
 
 @router.get("/{agent_id}", response_model=AgentProfileRead)

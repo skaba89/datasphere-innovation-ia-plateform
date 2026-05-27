@@ -13,6 +13,7 @@ Ces tests securisent les premiers endpoints critiques du MVP :
 - appels d offres ;
 - exigences d appels d offres ;
 - catalogue d agents ;
+- installation des profils agents par defaut ;
 - affectations d agents ;
 - actions gouvernees des agents.
 
@@ -82,6 +83,13 @@ pytest -q
 - creation d une affectation agent sur opportunite ;
 - lecture et modification des affectations ;
 - rejet si agent inexistant.
+
+### Profils agents par defaut
+
+- acces refuse sans authentification ;
+- preview des profils par defaut installes ;
+- installation des 5 profils par defaut ;
+- installation idempotente sans doublons.
 
 ### Agent Actions
 
