@@ -5,6 +5,7 @@ from app.api.dependencies import get_current_user
 from app.core.default_agents import get_default_agent_profiles
 from app.crud.agent import (
     approve_action,
+    create_action,
     create_agent,
     create_assignment,
     get_action,
@@ -100,7 +101,11 @@ def create_new_assignment(payload: AgentAssignmentCreate, db: Session = Depends(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Opportunity does not exist")
     if payload.tender_id is not None and get_tender(db, payload.tender_id) is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Tender does not exist")
-    return create_assignment(db, payload)
+
+    assignment = create_assignment(db, payload)
+    for action_payload in build_default_actions_for_assignment(assignment):
+        create_action(db, action_payload)
+    return assignment
 
 
 @router.patch("/assignments/{assignment_id}", response_model=AgentAssignmentRead)
@@ -129,8 +134,6 @@ def plan_assignment_actions(payload: AgentPlanRequest, db: Session = Depends(get
     for action_payload in build_default_actions_for_assignment(assignment):
         if action_payload.action_type in existing_types:
             continue
-        from app.crud.agent import create_action
-
         created_actions.append(create_action(db, action_payload))
 
     return created_actions
