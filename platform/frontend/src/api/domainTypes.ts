@@ -126,3 +126,37 @@ export type AgentProfile = {
   created_at: string;
   updated_at: string;
 };
+
+export type AgentAssignment = {
+  id: number;
+  agent_id: number;
+  opportunity_id?: number | null;
+  tender_id?: number | null;
+  assignment_type: string;
+  objective: string;
+  expected_deliverable?: string | null;
+  priority: string;
+  status: string;
+  human_reviewer?: string | null;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AgentAction = {
+  id: number;
+  assignment_id: number;
+  action_type: string;
+  title: string;
+  description?: string | null;
+  priority: string;
+  status: string;
+  requires_human_approval: boolean;
+  approved_by?: string | null;
+  approved_at?: string | null;
+  executed_at?: string | null;
+  result_summary?: string | null;
+  next_step?: string | null;
+  created_at: string;
+  updated_at: string;
+};
