@@ -1,5 +1,6 @@
 import { tokenStorage } from '../api/client';
 import { AgentManagementPanel } from '../components/AgentManagementPanel';
+import { AgentOperationsPanel } from '../components/AgentOperationsPanel';
 
 export default function ConsultantProfilesPage() {
   const token = tokenStorage.get();
@@ -22,10 +23,11 @@ export default function ConsultantProfilesPage() {
         <p className="eyebrow">Consultants augmentes</p>
         <h1>Profils consultants</h1>
         <p className="subtitle">
-          Installe et pilote les profils standards qui assistent les missions, opportunites et appels d offres.
+          Installe les profils standards, affecte-les aux opportunites ou appels d offres, puis genere les actions gouvernees.
         </p>
       </section>
       <AgentManagementPanel token={token} />
+      <AgentOperationsPanel token={token} />
     </main>
   );
 }
