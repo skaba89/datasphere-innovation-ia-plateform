@@ -11,7 +11,7 @@ class AgentProfileBase(BaseModel):
     languages: str = "fr,en"
     mission_types: str | None = None
     description: str | None = None
-    instruction_template: str = Field(..., min_length=20)
+    instruction_template: str | None = Field(default=None, min_length=20)
     tools: str | None = None
     governance_rules: str | None = None
     is_active: bool = True
