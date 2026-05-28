@@ -71,24 +71,33 @@ def test_agent_actions_require_authentication(client):
     assert response.status_code == 401
 
 
-def test_plan_agent_actions_is_idempotent(client, auth_headers):
+def test_assignment_creation_generates_actions_automatically(client, auth_headers):
     assignment_id = create_assignment_scope(client, auth_headers)
 
-    first_plan = client.post(
-        "/api/v1/agent-actions/plan",
-        json={"assignment_id": assignment_id, "mode": "safe_auto"},
+    list_response = client.get(
+        f"/api/v1/agent-actions?assignment_id={assignment_id}",
         headers=auth_headers,
     )
-    assert first_plan.status_code == 201
-    assert len(first_plan.json()) == 3
+    assert list_response.status_code == 200
+    actions = list_response.json()
+    assert len(actions) == 3
+    assert {action["action_type"] for action in actions} == {
+        "context_analysis",
+        "deliverable_plan",
+        "human_review",
+    }
 
-    second_plan = client.post(
+
+def test_manual_plan_remains_idempotent_after_auto_generation(client, auth_headers):
+    assignment_id = create_assignment_scope(client, auth_headers)
+
+    plan_response = client.post(
         "/api/v1/agent-actions/plan",
         json={"assignment_id": assignment_id, "mode": "safe_auto"},
         headers=auth_headers,
     )
-    assert second_plan.status_code == 201
-    assert second_plan.json() == []
+    assert plan_response.status_code == 201
+    assert plan_response.json() == []
 
     list_response = client.get(
         f"/api/v1/agent-actions?assignment_id={assignment_id}",
@@ -98,30 +107,24 @@ def test_plan_agent_actions_is_idempotent(client, auth_headers):
     assert len(list_response.json()) == 3
 
 
-def test_plan_for_tender_assignment_adds_tender_review(client, auth_headers):
+def test_assignment_creation_for_tender_adds_tender_review_automatically(client, auth_headers):
     assignment_id = create_assignment_scope(client, auth_headers, with_tender=True)
 
-    plan_response = client.post(
-        "/api/v1/agent-actions/plan",
-        json={"assignment_id": assignment_id, "mode": "safe_auto"},
+    list_response = client.get(
+        f"/api/v1/agent-actions?assignment_id={assignment_id}",
         headers=auth_headers,
     )
-    assert plan_response.status_code == 201
-    action_types = {item["action_type"] for item in plan_response.json()}
+    assert list_response.status_code == 200
+    actions = list_response.json()
+    action_types = {item["action_type"] for item in actions}
     assert "tender_requirements_review" in action_types
-    assert len(plan_response.json()) == 4
+    assert len(actions) == 4
 
 
 def test_run_action_requires_human_approval_when_sensitive(client, auth_headers):
     assignment_id = create_assignment_scope(client, auth_headers)
-    plan_response = client.post(
-        "/api/v1/agent-actions/plan",
-        json={"assignment_id": assignment_id, "mode": "safe_auto"},
-        headers=auth_headers,
-    )
-    assert plan_response.status_code == 201
-
-    sensitive_action = next(item for item in plan_response.json() if item["requires_human_approval"])
+    actions_response = client.get(f"/api/v1/agent-actions?assignment_id={assignment_id}", headers=auth_headers)
+    sensitive_action = next(item for item in actions_response.json() if item["requires_human_approval"])
 
     blocked_run = client.post(
         "/api/v1/agent-actions/run",
@@ -150,14 +153,8 @@ def test_run_action_requires_human_approval_when_sensitive(client, auth_headers)
 
 def test_run_auto_ready_action_without_approval(client, auth_headers):
     assignment_id = create_assignment_scope(client, auth_headers)
-    plan_response = client.post(
-        "/api/v1/agent-actions/plan",
-        json={"assignment_id": assignment_id, "mode": "safe_auto"},
-        headers=auth_headers,
-    )
-    assert plan_response.status_code == 201
-
-    auto_action = next(item for item in plan_response.json() if not item["requires_human_approval"])
+    actions_response = client.get(f"/api/v1/agent-actions?assignment_id={assignment_id}", headers=auth_headers)
+    auto_action = next(item for item in actions_response.json() if not item["requires_human_approval"])
 
     run_response = client.post(
         "/api/v1/agent-actions/run",
