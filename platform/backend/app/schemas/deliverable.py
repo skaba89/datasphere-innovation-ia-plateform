@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class DeliverableBase(BaseModel):
@@ -22,6 +22,12 @@ class DeliverableBase(BaseModel):
     generated_by: str | None = None
     reviewed_by: str | None = None
     approved_by: str | None = None
+
+    @model_validator(mode="after")
+    def validate_scope(self):
+        if self.opportunity_id is None and self.tender_id is None and self.assignment_id is None and self.action_id is None:
+            raise ValueError("At least one scope must be provided")
+        return self
 
 
 class DeliverableCreate(DeliverableBase):
@@ -50,3 +56,28 @@ class DeliverableRead(DeliverableBase):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class DeliverableGenerateDraftRequest(BaseModel):
+    opportunity_id: int | None = None
+    tender_id: int | None = None
+    assignment_id: int | None = None
+    action_id: int | None = None
+    deliverable_type: str = "note_cadrage"
+    language: str = "fr"
+    audience: str | None = "Direction"
+    generated_by: str | None = "agent"
+
+    @model_validator(mode="after")
+    def validate_scope(self):
+        if self.opportunity_id is None and self.tender_id is None and self.assignment_id is None and self.action_id is None:
+            raise ValueError("At least one scope must be provided")
+        return self
+
+
+class DeliverableReviewRequest(BaseModel):
+    reviewer_name: str = Field(..., min_length=2)
+
+
+class DeliverableApproveRequest(BaseModel):
+    approver_name: str = Field(..., min_length=2)
