@@ -202,3 +202,32 @@ export type DeliverableSection = {
   created_at: string;
   updated_at: string;
 };
+
+// ── Scheduler ──────────────────────────────────────────────────────────────
+
+export type JobInfo = {
+  id: string;
+  name: string;
+  next_run_time?: string | null;
+  trigger: string;
+};
+
+export type SchedulerStatus = {
+  running: boolean;
+  jobs: JobInfo[];
+  pending_approvals_count: number;
+  timezone: string;
+};
+
+export type SchedulerLog = {
+  id: number;
+  job_id: string;
+  job_name: string;
+  status: "success" | "error" | "warning";
+  items_processed: number;
+  error_message?: string | null;
+  started_at: string;
+  finished_at?: string | null;
+  duration_ms?: number | null;
+  created_at: string;
+};
