@@ -4,6 +4,8 @@ import { LogOut } from 'lucide-react';
 import { apiRequest, tokenStorage } from './api/client';
 import type { CurrentUser, LoginResult } from './api/authTypes';
 import { CrmWorkspace } from './components/CrmWorkspace';
+import NotificationBell from './components/NotificationBell';
+import DashboardPage from './pages/DashboardPage';
 
 type View = 'dashboard' | 'organizations' | 'opportunities';
 
@@ -71,21 +73,33 @@ export default function AppConnected() {
       <header className="topbar">
         <div>
           <p className="eyebrow">DataSphere Innovation IA Platform</p>
-          <h1>Console MVP</h1>
+          <h1>Console</h1>
         </div>
-        <div className="user-box">
+        <div className="user-box" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <NotificationBell />
           <span>{user?.email}</span>
-          <button className="icon-button" onClick={logout} type="button"><LogOut size={18} /> Deconnexion</button>
+          <button className="icon-button" onClick={logout} type="button">
+            <LogOut size={18} /> Deconnexion
+          </button>
         </div>
       </header>
 
       <nav className="tabs">
-        <button className={view === 'dashboard' ? 'active' : ''} onClick={() => setView('dashboard')} type="button">Dashboard</button>
-        <button className={view === 'organizations' ? 'active' : ''} onClick={() => setView('organizations')} type="button">Organisations</button>
-        <button className={view === 'opportunities' ? 'active' : ''} onClick={() => setView('opportunities')} type="button">Opportunites</button>
+        <button className={view === 'dashboard' ? 'active' : ''} onClick={() => setView('dashboard')} type="button">
+          Dashboard
+        </button>
+        <button className={view === 'organizations' ? 'active' : ''} onClick={() => setView('organizations')} type="button">
+          Organisations
+        </button>
+        <button className={view === 'opportunities' ? 'active' : ''} onClick={() => setView('opportunities')} type="button">
+          Opportunites
+        </button>
       </nav>
 
-      <CrmWorkspace token={accessKey} view={view} />
+      {view === 'dashboard' && <DashboardPage />}
+      {(view === 'organizations' || view === 'opportunities') && (
+        <CrmWorkspace token={accessKey} view={view} />
+      )}
     </main>
   );
 }

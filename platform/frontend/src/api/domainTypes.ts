@@ -231,3 +231,90 @@ export type SchedulerLog = {
   duration_ms?: number | null;
   created_at: string;
 };
+
+// ── Analytics ──────────────────────────────────────────────────────────────
+
+export type OpportunityStats = {
+  total: number;
+  by_status: Record<string, number>;
+  by_priority: Record<string, number>;
+  high_priority: number;
+  won: number;
+  lost: number;
+  pipeline_value: number;
+  total_potential: number;
+  avg_probability: number;
+};
+
+export type TenderStats = {
+  total: number;
+  by_status: Record<string, number>;
+  by_decision: Record<string, number>;
+  go_count: number;
+  no_go_count: number;
+  avg_go_score: number;
+  deadlines_this_week: number;
+};
+
+export type AgentStats = {
+  total_profiles: number;
+  total_assignments: number;
+  total_actions: number;
+  actions_done: number;
+  actions_pending: number;
+  actions_failed: number;
+  actions_pending_approval: number;
+  completion_rate: number;
+};
+
+export type DeliverableStats = {
+  total: number;
+  by_status: Record<string, number>;
+  draft: number;
+  in_review: number;
+  approved: number;
+  approval_rate: number;
+};
+
+export type SchedulerStats = {
+  running: boolean;
+  jobs_count: number;
+  last_execution: string | null;
+  executions_today: number;
+  errors_today: number;
+};
+
+export type NotificationItem = {
+  type: string;
+  priority: 'high' | 'medium' | 'low';
+  title: string;
+  detail: string;
+  resource_type: string;
+  resource_id: number;
+  created_at: string;
+};
+
+export type PipelineAnalytics = {
+  opportunities: OpportunityStats;
+  tenders: TenderStats;
+  agents: AgentStats;
+  deliverables: DeliverableStats;
+  scheduler: SchedulerStats;
+  notifications: NotificationItem[];
+  computed_at: string;
+};
+
+// ── Audit log ────────────────────────────────────────────────────────────
+
+export type AuditLog = {
+  id: number;
+  user_email?: string | null;
+  actor_name?: string | null;
+  action: string;
+  resource_type: string;
+  resource_id?: number | null;
+  resource_label?: string | null;
+  detail?: string | null;
+  status: string;
+  created_at: string;
+};
