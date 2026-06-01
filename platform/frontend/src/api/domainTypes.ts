@@ -372,3 +372,43 @@ export type EmailPreview = {
   text_body: string;
   attachments_note: string;
 };
+
+// ── CRM Contacts ────────────────────────────────────────────────────────────
+
+export type Contact = {
+  id: number;
+  organization_id: number;
+  first_name?: string | null;
+  last_name?: string | null;
+  job_title?: string | null;
+  professional_email?: string | null;
+  linkedin_url?: string | null;
+  source?: string | null;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+// ── Pipeline kanban ──────────────────────────────────────────────────────────
+
+export type PipelineItem = {
+  id: number;
+  title: string;
+  org_name: string;
+  priority: string;
+  probability: number;
+  potential_value: number;
+  pipeline_value: number;
+  owner_name?: string | null;
+  next_action?: string | null;
+  sector?: string | null;
+  country?: string | null;
+  created_at: string;
+};
+
+export type PipelineColumn = {
+  status: string;
+  items: PipelineItem[];
+  total_value: number;
+  pipeline_value: number;
+};

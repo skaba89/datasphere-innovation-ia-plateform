@@ -1,13 +1,14 @@
 import { useState } from 'react';
 
 import AppConnected from './AppConnected';
+import CommercialPage from './pages/CommercialPage';
 import DeliverablePage from './pages/DeliverablePage';
 import ConsultantProfilesPage from './pages/ConsultantProfilesPage';
 import OperationsPage from './pages/OperationsPage';
 import TenderPage from './pages/TenderPage';
 import './root.css';
 
-type RootView = 'console' | 'tenders' | 'profiles' | 'deliverables' | 'operations';
+type RootView = 'console' | 'tenders' | 'profiles' | 'deliverables' | 'operations' | 'commercial';
 
 export default function AppRoot() {
   const [rootView, setRootView] = useState<RootView>('console');
@@ -27,6 +28,9 @@ export default function AppRoot() {
         <button className={rootView === 'deliverables' ? 'active' : ''} onClick={() => setRootView('deliverables')} type="button">
           Livrables
         </button>
+        <button className={rootView === 'commercial' ? 'active' : ''} onClick={() => setRootView('commercial')} type="button">
+          💼 Commercial
+        </button>
         <button className={rootView === 'operations' ? 'active' : ''} onClick={() => setRootView('operations')} type="button">
           ⚙ Opérations
         </button>
@@ -35,6 +39,7 @@ export default function AppRoot() {
       {rootView === 'tenders' && <TenderPage />}
       {rootView === 'profiles' && <ConsultantProfilesPage />}
       {rootView === 'deliverables' && <DeliverablePage />}
+      {rootView === 'commercial' && <CommercialPage />}
       {rootView === 'operations' && <OperationsPage />}
     </>
   );
