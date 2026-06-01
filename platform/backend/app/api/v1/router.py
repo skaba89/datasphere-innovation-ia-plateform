@@ -6,6 +6,7 @@ from app.api.v1.endpoints import (
     analytics,
     audit_logs,
     auth,
+    contacts,
     deliverables,
     export,
     opportunities,
@@ -21,6 +22,7 @@ router = APIRouter()
 
 router.include_router(auth.router)
 router.include_router(organizations.router)
+router.include_router(contacts.router)
 router.include_router(opportunities.router)
 router.include_router(tenders.router)
 router.include_router(tender_governance.router)
@@ -42,4 +44,4 @@ def health_check() -> dict[str, str]:
 
 @router.get("/version", tags=["health"])
 def version() -> dict[str, str]:
-    return {"version": "1.2.0", "stage": "commercial-features"}
+    return {"version": "1.3.0", "stage": "crm-pipeline-advanced"}
