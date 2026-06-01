@@ -19,3 +19,5 @@ Thumbs.db
 logs/
 exports/
 output/
+test.db
+*.tsbuildinfo

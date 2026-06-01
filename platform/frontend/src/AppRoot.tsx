@@ -1,11 +1,12 @@
 import { useState } from 'react';
 
 import AppConnected from './AppConnected';
+import DeliverablePage from './pages/DeliverablePage';
 import ConsultantProfilesPage from './pages/ConsultantProfilesPage';
 import TenderPage from './pages/TenderPage';
 import './root.css';
 
-type RootView = 'console' | 'tenders' | 'profiles';
+type RootView = 'console' | 'tenders' | 'profiles' | 'deliverables';
 
 export default function AppRoot() {
   const [rootView, setRootView] = useState<RootView>('console');
@@ -22,10 +23,14 @@ export default function AppRoot() {
         <button className={rootView === 'profiles' ? 'active' : ''} onClick={() => setRootView('profiles')} type="button">
           Profils consultants
         </button>
+        <button className={rootView === 'deliverables' ? 'active' : ''} onClick={() => setRootView('deliverables')} type="button">
+          Livrables
+        </button>
       </div>
+      {rootView === 'console' && <AppConnected />}
       {rootView === 'tenders' && <TenderPage />}
       {rootView === 'profiles' && <ConsultantProfilesPage />}
-      {rootView === 'console' && <AppConnected />}
+      {rootView === 'deliverables' && <DeliverablePage />}
     </>
   );
 }

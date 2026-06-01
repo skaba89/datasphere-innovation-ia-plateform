@@ -1,6 +1,16 @@
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import agent_actions, agents, auth, opportunities, organizations, tender_governance, tender_templates, tenders
+from app.api.v1.endpoints import (
+    agent_actions,
+    agents,
+    auth,
+    deliverables,
+    opportunities,
+    organizations,
+    tender_governance,
+    tender_templates,
+    tenders,
+)
 
 router = APIRouter()
 
@@ -12,6 +22,7 @@ router.include_router(tender_governance.router)
 router.include_router(tender_templates.router)
 router.include_router(agents.router)
 router.include_router(agent_actions.router)
+router.include_router(deliverables.router)
 
 
 @router.get("/health", tags=["health"])
