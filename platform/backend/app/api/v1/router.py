@@ -11,6 +11,7 @@ from app.api.v1.endpoints import (
     opportunities,
     organizations,
     scheduler,
+    sector_templates,
     tender_governance,
     tender_templates,
     tenders,
@@ -31,6 +32,7 @@ router.include_router(scheduler.router)
 router.include_router(analytics.router)
 router.include_router(audit_logs.router)
 router.include_router(export.router)
+router.include_router(sector_templates.router)
 
 
 @router.get("/health", tags=["health"])
@@ -40,4 +42,4 @@ def health_check() -> dict[str, str]:
 
 @router.get("/version", tags=["health"])
 def version() -> dict[str, str]:
-    return {"version": "1.1.0", "stage": "analytics-export-audit"}
+    return {"version": "1.2.0", "stage": "commercial-features"}
