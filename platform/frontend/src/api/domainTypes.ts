@@ -160,3 +160,45 @@ export type AgentAction = {
   created_at: string;
   updated_at: string;
 };
+
+export type Deliverable = {
+  id: number;
+  opportunity_id?: number | null;
+  tender_id?: number | null;
+  assignment_id?: number | null;
+  action_id?: number | null;
+  title: string;
+  deliverable_type: string;
+  status: string;
+  version: number;
+  language: string;
+  audience?: string | null;
+  summary?: string | null;
+  content_markdown: string;
+  tags?: string | null;
+  generated_by?: string | null;
+  reviewed_by?: string | null;
+  approved_by?: string | null;
+  reviewed_at?: string | null;
+  approved_at?: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type DeliverableSection = {
+  id: number;
+  deliverable_id: number;
+  title: string;
+  section_key: string;
+  position: number;
+  status: string;
+  content_markdown: string;
+  version: number;
+  owner_agent_id?: number | null;
+  reviewed_by?: string | null;
+  approved_by?: string | null;
+  reviewed_at?: string | null;
+  approved_at?: string | null;
+  created_at: string;
+  updated_at: string;
+};
