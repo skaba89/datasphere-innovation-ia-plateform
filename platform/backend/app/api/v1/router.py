@@ -7,6 +7,7 @@ from app.api.v1.endpoints import (
     deliverables,
     opportunities,
     organizations,
+    scheduler,
     tender_governance,
     tender_templates,
     tenders,
@@ -23,6 +24,7 @@ router.include_router(tender_templates.router)
 router.include_router(agents.router)
 router.include_router(agent_actions.router)
 router.include_router(deliverables.router)
+router.include_router(scheduler.router)
 
 
 @router.get("/health", tags=["health"])
@@ -32,4 +34,4 @@ def health_check() -> dict[str, str]:
 
 @router.get("/version", tags=["health"])
 def version() -> dict[str, str]:
-    return {"version": "0.9.0", "stage": "agent-action-planning"}
+    return {"version": "1.0.0", "stage": "autonomous-agents"}
