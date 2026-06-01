@@ -353,3 +353,33 @@ def email_preview(deliverable_id: int, db: Session = Depends(get_db)):
         return generate_email_preview(db, deliverable_id)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+# ── SMTP Send ─────────────────────────────────────────────────────────────────
+
+from pydantic import BaseModel as PydanticBase  # noqa: E402
+
+
+class SendEmailPayload(PydanticBase):
+    to_email: str
+    to_name: str = "Client"
+
+
+@router.post("/{deliverable_id}/send-email")
+def send_deliverable_email(
+    deliverable_id: int,
+    payload: SendEmailPayload,
+    db: Session = Depends(get_db),
+):
+    """
+    Send an approved deliverable by email (real SMTP if configured, preview-only otherwise).
+    Returns {'sent': bool, 'provider': str, 'message': str}.
+    """
+    from app.services.smtp_service import send_deliverable
+    try:
+        result = send_deliverable(db, deliverable_id, payload.to_email, payload.to_name)
+        return result.dict()
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"SMTP error: {exc}") from exc

@@ -8,6 +8,7 @@ from app.api.v1.endpoints import (
     auth,
     contacts,
     deliverables,
+    excel_export,
     export,
     opportunities,
     organizations,
@@ -34,6 +35,7 @@ router.include_router(scheduler.router)
 router.include_router(analytics.router)
 router.include_router(audit_logs.router)
 router.include_router(export.router)
+router.include_router(excel_export.router)
 router.include_router(sector_templates.router)
 
 
@@ -44,4 +46,4 @@ def health_check() -> dict[str, str]:
 
 @router.get("/version", tags=["health"])
 def version() -> dict[str, str]:
-    return {"version": "1.3.0", "stage": "crm-pipeline-advanced"}
+    return {"version": "1.4.0", "stage": "export-smtp-gantt"}
