@@ -9,6 +9,7 @@ from app.models.deliverable import Deliverable
 from app.models.deliverable_section import AgentContribution, DeliverableSection
 from app.models.scheduler_log import SchedulerLog
 from app.models.audit_log import AuditLog
+from app.models.sector_template import SectorTemplate
 
 __all__ = [
     "Organization",
@@ -27,4 +28,5 @@ __all__ = [
     "AgentContribution",
     "SchedulerLog",
     "AuditLog",
+    "SectorTemplate",
 ]
