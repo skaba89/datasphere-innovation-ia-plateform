@@ -8,14 +8,16 @@ import {
   Eye,
   FileDown,
   FilePlus2,
+  Mail,
   RefreshCw,
   Sparkles,
   Trash2,
   WandSparkles,
 } from 'lucide-react';
 
-import { apiRequest } from '../api/client';
+import { apiRequest, tokenStorage } from '../api/client';
 import type { Deliverable, Opportunity, Tender } from '../api/domainTypes';
+import EmailPreviewModal from './EmailPreviewModal';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -68,6 +70,8 @@ export function DeliverablePanel({ token }: Props) {
   const [showGenerateForm, setShowGenerateForm] = useState(false);
   const [genType, setGenType] = useState('note_cadrage');
   const [genScopeKind, setGenScopeKind] = useState<'opportunity' | 'tender'>('opportunity');
+  // Email preview modal
+  const [emailPreviewId, setEmailPreviewId] = useState<number | null>(null);
   const [genScopeId, setGenScopeId] = useState('');
   const [genAudience, setGenAudience] = useState('Direction');
 
@@ -434,6 +438,22 @@ export function DeliverablePanel({ token }: Props) {
                       >
                         <Download size={13} /> PDF
                       </a>
+                      {d.status === 'approved' && (
+                        <button
+                          type="button"
+                          onClick={() => setEmailPreviewId(d.id)}
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 5,
+                            background: 'rgba(250,204,21,0.1)', color: '#facc15',
+                            border: '1px solid rgba(250,204,21,0.25)', borderRadius: 999,
+                            padding: '6px 14px', fontWeight: 600, fontSize: '0.8rem',
+                            cursor: 'pointer',
+                          }}
+                          title="Générer l'email client"
+                        >
+                          <Mail size={13} /> Email
+                        </button>
+                      )}
                     </div>
                     <button
                       type="button"
@@ -450,6 +470,15 @@ export function DeliverablePanel({ token }: Props) {
           );
         })}
       </div>
+
+      {/* Email preview modal */}
+      {emailPreviewId !== null && (
+        <EmailPreviewModal
+          deliverableId={emailPreviewId}
+          deliverableTitle={deliverables.find(d => d.id === emailPreviewId)?.title ?? 'Livrable'}
+          onClose={() => setEmailPreviewId(null)}
+        />
+      )}
     </section>
   );
 }

@@ -318,3 +318,57 @@ export type AuditLog = {
   status: string;
   created_at: string;
 };
+
+// ── Commercial features ─────────────────────────────────────────────────────
+
+export type GoNoGoRiskItem = {
+  level: 'high' | 'medium' | 'low';
+  category: string;
+  description: string;
+  mitigation: string;
+};
+
+export type GoNoGoOpportunityItem = {
+  category: string;
+  description: string;
+  impact: 'fort' | 'moyen' | 'faible';
+};
+
+export type GoNoGoRecommendation = {
+  tender_id: number;
+  decision: 'Go' | 'No-Go' | 'Go conditionnel';
+  confidence: number;
+  score_global: number;
+  score_percentage: number;
+  summary: string;
+  reasoning: string;
+  risks: GoNoGoRiskItem[];
+  opportunities: GoNoGoOpportunityItem[];
+  conditions: string[];
+  recommended_actions: string[];
+  provider: string;
+  computed_at: string;
+};
+
+export type SectorTemplate = {
+  id: number;
+  sector_key: string;
+  sector_label: string;
+  deliverable_type: string;
+  title_template: string;
+  description: string;
+  tags: string;
+  is_builtin: boolean;
+  created_at: string;
+};
+
+export type EmailPreview = {
+  deliverable_id: number;
+  subject: string;
+  to_name: string;
+  to_email: string;
+  from_name: string;
+  html_body: string;
+  text_body: string;
+  attachments_note: string;
+};

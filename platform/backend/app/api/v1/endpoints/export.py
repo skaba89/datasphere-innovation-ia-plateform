@@ -334,3 +334,22 @@ def export_html(deliverable_id: int, db: Session = Depends(get_db)):
         content=html,
         headers={"Content-Disposition": f'inline; filename="{d.deliverable_type}_{d.id}.html"'},
     )
+
+
+# ── Email Preview ────────────────────────────────────────────────────────────
+
+from fastapi.responses import JSONResponse  # noqa: E402
+from app.schemas.commercial import EmailPreview  # noqa: E402
+
+
+@router.get("/{deliverable_id}/email-preview", response_model=EmailPreview)
+def email_preview(deliverable_id: int, db: Session = Depends(get_db)):
+    """
+    Generate a client-ready email preview for a deliverable.
+    Returns subject, HTML body and plain text body — no SMTP required.
+    """
+    from app.services.email_preview_service import generate_email_preview
+    try:
+        return generate_email_preview(db, deliverable_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc

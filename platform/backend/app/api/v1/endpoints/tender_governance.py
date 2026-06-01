@@ -114,3 +114,26 @@ def read_compliance_summary(tender_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tender not found")
     items = list_compliance_items(db, tender_id)
     return compute_compliance_summary(items, tender_id)
+
+
+# ── Go/No-Go AI Recommendation ────────────────────────────────────────────────
+
+from app.schemas.commercial import GoNoGoRecommendation  # noqa: E402
+
+
+@router.get("/tenders/{tender_id}/go-no-go/recommendation", response_model=GoNoGoRecommendation)
+def get_gonogo_recommendation(tender_id: int, db: Session = Depends(get_db)):
+    """
+    Generate an AI-powered Go/No-Go recommendation from criteria, tender and
+    opportunity context. Falls back to rule-based analysis if no LLM is configured.
+    """
+    if get_tender(db, tender_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tender not found")
+    try:
+        from app.services.gonogo_advisor import get_go_no_go_recommendation
+        return get_go_no_go_recommendation(db, tender_id)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Recommendation error: {exc}",
+        ) from exc
