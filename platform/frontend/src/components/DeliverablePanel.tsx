@@ -4,7 +4,9 @@ import {
   ChevronDown,
   ChevronUp,
   ClipboardCheck,
+  Download,
   Eye,
+  FileDown,
   FilePlus2,
   RefreshCw,
   Sparkles,
@@ -400,6 +402,39 @@ export function DeliverablePanel({ token }: Props) {
                         <span>Livrable approuvé — prêt pour transmission client.</span>
                       </div>
                     )}
+                    {/* Export buttons — always visible */}
+                    <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
+                      <a
+                        href={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'}/deliverables/${d.id}/export/markdown`}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 5,
+                          background: 'rgba(148,163,184,0.1)', color: '#94a3b8',
+                          border: '1px solid rgba(148,163,184,0.2)', borderRadius: 999,
+                          padding: '6px 14px', fontWeight: 600, fontSize: '0.8rem',
+                          textDecoration: 'none',
+                        }}
+                        title="Télécharger en Markdown"
+                      >
+                        <FileDown size={13} /> .md
+                      </a>
+                      <a
+                        href={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'}/deliverables/${d.id}/export/html`}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 5,
+                          background: 'rgba(59,130,246,0.12)', color: '#93c5fd',
+                          border: '1px solid rgba(59,130,246,0.25)', borderRadius: 999,
+                          padding: '6px 14px', fontWeight: 600, fontSize: '0.8rem',
+                          textDecoration: 'none',
+                        }}
+                        title="Ouvrir en HTML (imprimable PDF)"
+                      >
+                        <Download size={13} /> PDF
+                      </a>
+                    </div>
                     <button
                       type="button"
                       onClick={() => handleDelete(d.id)}

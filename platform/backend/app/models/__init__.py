@@ -8,6 +8,7 @@ from app.models.agent import AgentAction, AgentAssignment, AgentProfile
 from app.models.deliverable import Deliverable
 from app.models.deliverable_section import AgentContribution, DeliverableSection
 from app.models.scheduler_log import SchedulerLog
+from app.models.audit_log import AuditLog
 
 __all__ = [
     "Organization",
@@ -25,4 +26,5 @@ __all__ = [
     "DeliverableSection",
     "AgentContribution",
     "SchedulerLog",
+    "AuditLog",
 ]

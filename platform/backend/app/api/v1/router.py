@@ -3,8 +3,11 @@ from fastapi import APIRouter
 from app.api.v1.endpoints import (
     agent_actions,
     agents,
+    analytics,
+    audit_logs,
     auth,
     deliverables,
+    export,
     opportunities,
     organizations,
     scheduler,
@@ -25,6 +28,9 @@ router.include_router(agents.router)
 router.include_router(agent_actions.router)
 router.include_router(deliverables.router)
 router.include_router(scheduler.router)
+router.include_router(analytics.router)
+router.include_router(audit_logs.router)
+router.include_router(export.router)
 
 
 @router.get("/health", tags=["health"])
@@ -34,4 +40,4 @@ def health_check() -> dict[str, str]:
 
 @router.get("/version", tags=["health"])
 def version() -> dict[str, str]:
-    return {"version": "1.0.0", "stage": "autonomous-agents"}
+    return {"version": "1.1.0", "stage": "analytics-export-audit"}

@@ -10,6 +10,7 @@ from app.crud.agent import (
     list_actions,
     mark_action_executed,
 )
+from app.crud.audit_log import write_log
 from app.db.session import get_db
 from app.models.agent import AgentAction
 from app.schemas.agent import AgentActionCreate, AgentActionRead, AgentPlanRequest, AgentRunRequest
@@ -51,8 +52,7 @@ def create_new_agent_action(payload: AgentActionCreate, db: Session = Depends(ge
 def plan_agent_actions(payload: AgentPlanRequest, db: Session = Depends(get_db)):
     """
     Idempotent planning: create only missing action types, then return ALL
-    actions for the assignment (new + pre-existing).  Always 201 to keep
-    backward compatibility with the HTTP contract.
+    actions for the assignment (new + pre-existing).
     """
     assignment = get_assignment(db, payload.assignment_id)
     if assignment is None:
@@ -60,13 +60,22 @@ def plan_agent_actions(payload: AgentPlanRequest, db: Session = Depends(get_db))
 
     existing_actions = list_actions(db, assignment_id=assignment.id)
     existing_types = {action.action_type for action in existing_actions}
+    new_count = 0
 
     for item in build_default_actions_for_assignment(assignment):
         if item.action_type in existing_types:
             continue
         create_action(db, item)
+        new_count += 1
 
-    # Return the full list (new + pre-existing) so callers can always rely on it
+    if new_count:
+        write_log(
+            db, action="PLAN", resource_type="agent_assignment",
+            resource_id=assignment.id,
+            resource_label=f"Assignment #{assignment.id}",
+            detail=f"{new_count} action(s) planifiée(s)",
+        )
+
     return list_actions(db, assignment_id=assignment.id)
 
 
@@ -75,7 +84,15 @@ def approve_agent_action(action_id: int, actor_name: str = "human", db: Session 
     action = get_action(db, action_id)
     if action is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Action not found")
-    return approve_action(db, action, approved_by=actor_name)
+    result = approve_action(db, action, approved_by=actor_name)
+    write_log(
+        db, action="APPROVE", resource_type="agent_action",
+        resource_id=action_id,
+        resource_label=action.title,
+        actor_name=actor_name,
+        detail=f"Action type: {action.action_type}",
+    )
+    return result
 
 
 @router.post("/run", response_model=AgentActionRead)
@@ -90,13 +107,23 @@ def run_agent_action(payload: AgentRunRequest, db: Session = Depends(get_db)):
             detail="Human approval required before running this action",
         )
 
-    # Use real LLM executor (falls back to simulation if no API key configured)
     try:
         result_summary, next_step = execute_action(db, action)
     except Exception as exc:
+        write_log(
+            db, action="EXECUTE", resource_type="agent_action",
+            resource_id=action.id, resource_label=action.title, status="error",
+            detail=str(exc),
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Execution error: {exc}",
         ) from exc
 
-    return mark_action_executed(db, action, result_summary=result_summary, next_step=next_step)
+    executed = mark_action_executed(db, action, result_summary=result_summary, next_step=next_step)
+    write_log(
+        db, action="EXECUTE", resource_type="agent_action",
+        resource_id=action.id, resource_label=action.title,
+        detail=f"type={action.action_type} · {len(result_summary or '')} chars",
+    )
+    return executed
