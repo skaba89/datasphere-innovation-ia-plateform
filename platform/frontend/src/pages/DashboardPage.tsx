@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { apiRequest, tokenStorage } from '../api/client';
 import type { PipelineAnalytics } from '../api/domainTypes';
+import ActivityFeed from '../components/ActivityFeed';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -452,6 +453,11 @@ export default function DashboardPage() {
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
+
+      {/* Activity feed */}
+      {data && (
+        <ActivityFeed compact days={7} limit={8} />
+      )}
     </div>
   );
 }

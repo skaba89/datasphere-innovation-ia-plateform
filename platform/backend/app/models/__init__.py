@@ -7,26 +7,15 @@ from app.models.tender_governance import ComplianceMatrixItem, GoNoGoCriterion
 from app.models.agent import AgentAction, AgentAssignment, AgentProfile
 from app.models.deliverable import Deliverable
 from app.models.deliverable_section import AgentContribution, DeliverableSection
+from app.models.deliverable_version import DeliverableVersion
 from app.models.scheduler_log import SchedulerLog
 from app.models.audit_log import AuditLog
 from app.models.sector_template import SectorTemplate
 
 __all__ = [
-    "Organization",
-    "Contact",
-    "Opportunity",
-    "User",
-    "Tender",
-    "TenderRequirement",
-    "GoNoGoCriterion",
-    "ComplianceMatrixItem",
-    "AgentProfile",
-    "AgentAssignment",
-    "AgentAction",
-    "Deliverable",
-    "DeliverableSection",
-    "AgentContribution",
-    "SchedulerLog",
-    "AuditLog",
-    "SectorTemplate",
+    "Organization", "Contact", "Opportunity", "User",
+    "Tender", "TenderRequirement", "GoNoGoCriterion", "ComplianceMatrixItem",
+    "AgentProfile", "AgentAssignment", "AgentAction",
+    "Deliverable", "DeliverableSection", "AgentContribution",
+    "DeliverableVersion", "SchedulerLog", "AuditLog", "SectorTemplate",
 ]

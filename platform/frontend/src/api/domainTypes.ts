@@ -412,3 +412,63 @@ export type PipelineColumn = {
   total_value: number;
   pipeline_value: number;
 };
+
+// ── Team ─────────────────────────────────────────────────────────────────────
+
+export type User = {
+  id: number;
+  email: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  role: 'admin' | 'manager' | 'consultant' | 'viewer';
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+// ── Versioning ───────────────────────────────────────────────────────────────
+
+export type DeliverableVersionItem = {
+  id: number;
+  deliverable_id: number;
+  version: number;
+  title: string;
+  status: string;
+  summary?: string | null;
+  created_by?: string | null;
+  change_note?: string | null;
+  created_at: string;
+};
+
+// ── Search ───────────────────────────────────────────────────────────────────
+
+export type SearchResultItem = {
+  id: number;
+  type: string;
+  title: string;
+  subtitle: string;
+  url_hint: string;
+};
+
+export type SearchResults = {
+  query: string;
+  total: number;
+  results: Record<string, SearchResultItem[]>;
+};
+
+// ── Activity feed ────────────────────────────────────────────────────────────
+
+export type ActivityItem = {
+  id: string;
+  source: string;
+  action: string;
+  icon: string;
+  color: string;
+  title: string;
+  detail: string;
+  actor: string;
+  resource_type: string;
+  resource_id: number | null;
+  timestamp: string;
+  status: string;
+};
