@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.v1.endpoints import (
+    activity,
     agent_actions,
     agents,
     analytics,
@@ -13,7 +14,9 @@ from app.api.v1.endpoints import (
     opportunities,
     organizations,
     scheduler,
+    search,
     sector_templates,
+    team,
     tender_governance,
     tender_templates,
     tenders,
@@ -22,6 +25,7 @@ from app.api.v1.endpoints import (
 router = APIRouter()
 
 router.include_router(auth.router)
+router.include_router(team.router)
 router.include_router(organizations.router)
 router.include_router(contacts.router)
 router.include_router(opportunities.router)
@@ -37,6 +41,8 @@ router.include_router(audit_logs.router)
 router.include_router(export.router)
 router.include_router(excel_export.router)
 router.include_router(sector_templates.router)
+router.include_router(search.router)
+router.include_router(activity.router)
 
 
 @router.get("/health", tags=["health"])
@@ -46,4 +52,4 @@ def health_check() -> dict[str, str]:
 
 @router.get("/version", tags=["health"])
 def version() -> dict[str, str]:
-    return {"version": "1.4.0", "stage": "export-smtp-gantt"}
+    return {"version": "1.5.0", "stage": "team-versioning-search"}

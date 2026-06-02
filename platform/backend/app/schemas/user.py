@@ -15,6 +15,17 @@ class UserCreate(UserBase):
     password: str = Field(..., min_length=8)
 
 
+class UserUpdate(BaseModel):
+    first_name: str | None = None
+    last_name: str | None = None
+    role: str | None = None
+    is_active: bool | None = None
+
+
+class UserChangePassword(BaseModel):
+    new_password: str = Field(..., min_length=8)
+
+
 class UserRead(UserBase):
     id: int
     created_at: datetime
@@ -32,3 +43,7 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserRead
+
+
+# Role constants for documentation
+ROLES = ["admin", "manager", "consultant", "viewer"]
