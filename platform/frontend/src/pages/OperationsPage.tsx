@@ -6,19 +6,19 @@ import {
   Download,
   Inbox,
   ShieldCheck,
-  Table2,
   Zap,
 } from 'lucide-react';
 
 import { apiRequest, tokenStorage } from '../api/client';
 import type { SchedulerStatus } from '../api/domainTypes';
+import ActivityFeed from '../components/ActivityFeed';
 import GanttChart from '../components/GanttChart';
 import PendingApprovalsPanel from '../components/PendingApprovalsPanel';
 import SchedulerPanel from '../components/SchedulerPanel';
 
 // ────────────────────────────────────────────────────────────────────────────
 
-type Tab = 'approvals' | 'scheduler' | 'gantt' | 'exports';
+type Tab = 'approvals' | 'scheduler' | 'gantt' | 'exports' | 'activity';
 
 export default function OperationsPage() {
   const [tab, setTab] = useState<Tab>('approvals');
@@ -225,12 +225,17 @@ export default function OperationsPage() {
             <Download size={15} />
             Exports Excel
           </button>
+          <button style={tabBtn(tab === 'activity')} onClick={() => setTab('activity')}>
+            <Clock size={15} />
+            Activité
+          </button>
         </div>
 
         {tab === 'approvals' && <PendingApprovalsPanel />}
         {tab === 'scheduler' && <SchedulerPanel />}
         {tab === 'gantt' && <GanttChart />}
         {tab === 'exports' && <ExportsPanel />}
+        {tab === 'activity' && <ActivityFeed days={14} limit={40} />}
       </div>
     </div>
   );

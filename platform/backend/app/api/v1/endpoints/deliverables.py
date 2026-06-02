@@ -1,4 +1,7 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user
@@ -278,3 +281,104 @@ def patch_contribution(
     if contribution is None or contribution.deliverable_id != deliverable_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contribution not found")
     return update_contribution(db, contribution, payload)
+
+
+# ── Versioning ────────────────────────────────────────────────────────────────
+
+from app.services.versioning_service import (  # noqa: E402
+    compute_diff,
+    get_version,
+    list_versions,
+    restore_version,
+    snapshot,
+)
+
+
+class VersionRead(BaseModel):
+    id: int
+    deliverable_id: int
+    version: int
+    title: str
+    status: str
+    summary: str | None = None
+    created_by: str | None = None
+    change_note: str | None = None
+    created_at: datetime
+
+
+class RestoreRequest(BaseModel):
+    version_number: int
+    restored_by: str = "admin"
+
+
+@router.get("/{deliverable_id}/versions", response_model=list[VersionRead])
+def list_deliverable_versions(deliverable_id: int, db: Session = Depends(get_db)):
+    """List all saved versions for a deliverable."""
+    d = get_deliverable(db, deliverable_id)
+    if not d:
+        raise HTTPException(status_code=404, detail="Deliverable not found")
+    return list_versions(db, deliverable_id)
+
+
+@router.post("/{deliverable_id}/versions/snapshot", response_model=VersionRead, status_code=201)
+def create_snapshot(
+    deliverable_id: int,
+    change_note: str | None = None,
+    created_by: str = "manual",
+    db: Session = Depends(get_db),
+):
+    """Manually save a snapshot of the current deliverable state."""
+    d = get_deliverable(db, deliverable_id)
+    if not d:
+        raise HTTPException(status_code=404, detail="Deliverable not found")
+    return snapshot(db, d, created_by=created_by, change_note=change_note)
+
+
+@router.get("/{deliverable_id}/versions/{version_number}/diff")
+def diff_versions(
+    deliverable_id: int,
+    version_number: int,
+    compare_to: int | None = None,
+    db: Session = Depends(get_db),
+):
+    """
+    Diff version_number against compare_to (defaults to version_number + 1).
+    Returns added/removed/unchanged line counts + line-level diff.
+    """
+    d = get_deliverable(db, deliverable_id)
+    if not d:
+        raise HTTPException(status_code=404, detail="Deliverable not found")
+
+    old_v = get_version(db, deliverable_id, version_number)
+    if not old_v:
+        raise HTTPException(status_code=404, detail=f"Version {version_number} not found")
+
+    if compare_to is None:
+        compare_to = version_number + 1
+
+    new_v = get_version(db, deliverable_id, compare_to)
+    if not new_v:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Version {compare_to} not found. Create a snapshot first.",
+        )
+
+    return compute_diff(old_v, new_v)
+
+
+@router.post("/{deliverable_id}/versions/restore", response_model=DeliverableRead)
+def restore_deliverable_version(
+    deliverable_id: int,
+    payload: RestoreRequest,
+    db: Session = Depends(get_db),
+):
+    """Restore a deliverable to a previous version (creates a new version, resets to draft)."""
+    d = get_deliverable(db, deliverable_id)
+    if not d:
+        raise HTTPException(status_code=404, detail="Deliverable not found")
+
+    v = get_version(db, deliverable_id, payload.version_number)
+    if not v:
+        raise HTTPException(status_code=404, detail=f"Version {payload.version_number} not found")
+
+    return restore_version(db, d, v, restored_by=payload.restored_by)

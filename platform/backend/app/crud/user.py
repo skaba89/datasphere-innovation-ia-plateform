@@ -39,3 +39,37 @@ def authenticate_user(db: Session, email: str, password: str) -> User | None:
     if not verify_password(password, user.password_hash):
         return None
     return user
+
+
+def list_users(db: Session, role: str | None = None, skip: int = 0, limit: int = 100) -> list[User]:
+    q = db.query(User).order_by(User.created_at.desc())
+    if role:
+        q = q.filter(User.role == role)
+    return q.offset(skip).limit(limit).all()
+
+
+def update_user(db: Session, user: User, **fields) -> User:
+    for k, v in fields.items():
+        if v is not None:
+            setattr(user, k, v)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def deactivate_user(db: Session, user: User) -> User:
+    user.is_active = False
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def change_password(db: Session, user: User, new_password: str) -> User:
+    from app.core.security import get_password_hash
+    user.password_hash = get_password_hash(new_password)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
