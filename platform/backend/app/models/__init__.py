@@ -11,6 +11,7 @@ from app.models.deliverable_version import DeliverableVersion
 from app.models.scheduler_log import SchedulerLog
 from app.models.audit_log import AuditLog
 from app.models.sector_template import SectorTemplate
+from app.models.notification import Notification
 
 __all__ = [
     "Organization", "Contact", "Opportunity", "User",
@@ -18,4 +19,5 @@ __all__ = [
     "AgentProfile", "AgentAssignment", "AgentAction",
     "Deliverable", "DeliverableSection", "AgentContribution",
     "DeliverableVersion", "SchedulerLog", "AuditLog", "SectorTemplate",
+    "Notification",
 ]
