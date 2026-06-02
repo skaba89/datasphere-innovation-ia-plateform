@@ -1492,12 +1492,38 @@ function showUC(id,btn){
 }
 
 // ── Form submit ───────────────────────────────────────────────────────────────
-function sendForm(){
-  const em=document.getElementById('ff-email').value;
+async function sendForm(){
+  const em=document.getElementById('ff-email').value.trim();
   const ty=document.getElementById('ff-type').value;
+  const fn=document.getElementById('ff-fn').value.trim();
+  const ln=document.getElementById('ff-ln').value.trim();
   if(!em||!ty){alert('Veuillez renseigner votre email et le type de besoin.');return;}
-  document.getElementById('f-area').style.display='none';
-  document.getElementById('f-success').style.display='block';
+  const btn=document.querySelector('.form-btn');
+  btn.disabled=true;btn.textContent='Envoi en cours…';
+  try{
+    const resp=await fetch(
+      (window.DS_API||'https://datasphere-innovation.fr/api/v1')+'/contact',
+      {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          firstname:fn||'(non renseigné)',
+          lastname:ln||'(non renseigné)',
+          email:em,
+          organisation:document.getElementById('ff-org').value.trim(),
+          need_type:ty,
+          message:document.getElementById('ff-msg').value.trim(),
+        }),
+      }
+    );
+    if(!resp.ok)throw new Error('Erreur réseau');
+    document.getElementById('f-area').style.display='none';
+    document.getElementById('f-success').style.display='block';
+  }catch(e){
+    btn.disabled=false;
+    btn.innerHTML='Envoyer ma demande <svg width="16" height="16"><use href="#ic-arrow-right"/></svg>';
+    alert('Une erreur est survenue. Merci de nous écrire directement à contact@datasphere-innovation.fr');
+  }
 }
 </script>
 </body>
