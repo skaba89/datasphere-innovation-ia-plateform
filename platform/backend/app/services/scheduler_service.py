@@ -279,12 +279,13 @@ def _auto_generate_drafts_job() -> None:
 # ---------------------------------------------------------------------------
 
 def _daily_report_job() -> None:
-    """Log daily pipeline statistics."""
+    """Log daily pipeline statistics and push system notifications."""
     from app.db.session import SessionLocal
     from app.models.opportunity import Opportunity
     from app.models.tender import Tender
     from app.models.deliverable import Deliverable
     from app.models.agent import AgentAction
+    from app.crud.notification import push_approval_required, push_deadline_warning, count_unread
 
     db = SessionLocal()
     started = datetime.utcnow()
@@ -295,21 +296,55 @@ def _daily_report_job() -> None:
         tender_count = db.query(Tender).count()
         deliverable_count = db.query(Deliverable).count()
         approved_deliverables = db.query(Deliverable).filter(Deliverable.status == "approved").count()
+
+        # Pending approval actions — push one notification per unprocessed action
         pending_actions = (
             db.query(AgentAction)
             .filter(
                 AgentAction.requires_human_approval == True,  # noqa: E712
                 AgentAction.approved_by.is_(None),
-                AgentAction.status != "done",
+                AgentAction.status.in_(["auto_ready", "suggested"]),
             )
-            .count()
+            .all()
         )
+
+        notif_pushed = 0
+        for action in pending_actions:
+            try:
+                push_approval_required(db, action.id, action.title)
+                notif_pushed += 1
+            except Exception:
+                pass
+
+        # Deadline warnings — tenders with upcoming deadlines
+        from datetime import timedelta
+        from app.crud.notification import push_deadline_warning
+
+        upcoming_tenders = (
+            db.query(Tender)
+            .filter(
+                Tender.submission_deadline.isnot(None),
+                Tender.submission_deadline >= datetime.utcnow(),
+                Tender.submission_deadline <= datetime.utcnow() + timedelta(days=7),
+                Tender.status != "submitted",
+            )
+            .all()
+        )
+
+        for tender in upcoming_tenders:
+            days_left = (tender.submission_deadline - datetime.utcnow()).days
+            try:
+                push_deadline_warning(db, tender.id, tender.reference or tender.title, days_left)
+            except Exception:
+                pass
+
         failed_actions = db.query(AgentAction).filter(AgentAction.status == "failed").count()
 
         summary = (
             f"Pipeline : {opp_count} opportunités, {tender_count} AO, "
             f"{deliverable_count} livrables dont {approved_deliverables} approuvés. "
-            f"Actions en attente de validation humaine : {pending_actions}. "
+            f"Actions en attente : {len(pending_actions)} ({notif_pushed} notifs envoyées). "
+            f"Deadlines proches : {len(upcoming_tenders)}. "
             f"Actions échouées : {failed_actions}."
         )
         logger.info("Daily report — %s", summary)

@@ -88,6 +88,13 @@ def create_action(db: Session, payload: AgentActionCreate) -> AgentAction:
     db.add(action)
     db.commit()
     db.refresh(action)
+    # Push notification for actions requiring human approval
+    if action.requires_human_approval:
+        try:
+            from app.crud.notification import push_approval_required
+            push_approval_required(db, action.id, action.title)
+        except Exception:
+            pass  # Never block action creation due to notification failure
     return action
 
 

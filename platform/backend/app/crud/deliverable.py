@@ -55,4 +55,9 @@ def approve_deliverable(db: Session, deliverable: Deliverable, approver_name: st
     db.add(deliverable)
     db.commit()
     db.refresh(deliverable)
+    try:
+        from app.crud.notification import push_deliverable_approved
+        push_deliverable_approved(db, deliverable.id, deliverable.title)
+    except Exception:
+        pass
     return deliverable

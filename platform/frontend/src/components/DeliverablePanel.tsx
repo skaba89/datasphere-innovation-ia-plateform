@@ -17,6 +17,7 @@ import {
 
 import { apiRequest, tokenStorage } from '../api/client';
 import type { Deliverable, Opportunity, Tender } from '../api/domainTypes';
+import DeliverableVersionsPanel from './DeliverableVersionsPanel';
 import EmailPreviewModal from './EmailPreviewModal';
 
 // ---------------------------------------------------------------------------
@@ -463,6 +464,14 @@ export function DeliverablePanel({ token }: Props) {
                     >
                       <Trash2 size={15} /> Supprimer
                     </button>
+                  </div>
+                  {/* Version history panel */}
+                  <div style={{ marginTop: 16 }}>
+                    <DeliverableVersionsPanel
+                      deliverableId={d.id}
+                      currentVersion={d.version}
+                      onRestored={refresh}
+                    />
                   </div>
                 </div>
               )}
