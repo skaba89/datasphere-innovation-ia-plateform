@@ -15,6 +15,7 @@ from app.api.v1.endpoints import (
     notifications,
     opportunities,
     organizations,
+    providers,
     scheduler,
     search,
     sector_templates,
@@ -47,6 +48,7 @@ router.include_router(search.router)
 router.include_router(activity.router)
 router.include_router(notifications.router)
 router.include_router(health_monitor.router)
+router.include_router(providers.router)
 
 
 @router.get("/health", tags=["health"])

@@ -12,15 +12,54 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 60
     database_url: str = "postgresql+psycopg2://datasphere:change-me@localhost:5432/datasphere_platform"
 
-    # LLM providers — leave empty to use simulation fallback
-    anthropic_api_key: str = ""
-    openai_api_key: str = ""
-    mistral_api_key: str = ""
-    openrouter_api_key: str = ""
+    # ── LLM Providers ─────────────────────────────────────────────────────────
+    # Leave empty to skip a provider. At least one key is needed for real AI.
+    # Priority order: anthropic → openai → gemini → groq → glm → qwen
+    #                 → mistral → openrouter → together → cohere → perplexity
+    #                 → simulation (always works)
+
+    anthropic_api_key: str = ""      # https://console.anthropic.com
+    openai_api_key: str = ""         # https://platform.openai.com
+    gemini_api_key: str = ""         # https://aistudio.google.com/apikey
+    groq_api_key: str = ""           # https://console.groq.com  — quasi-gratuit
+    glm_api_key: str = ""            # https://open.bigmodel.ai  — glm-4-flash gratuit
+    qwen_api_key: str = ""           # https://dashscope.aliyuncs.com
+    mistral_api_key: str = ""        # https://console.mistral.ai
+    openrouter_api_key: str = ""     # https://openrouter.ai     — 200+ modèles
+    together_api_key: str = ""       # https://api.together.xyz
+    cohere_api_key: str = ""         # https://dashboard.cohere.com
+    perplexity_api_key: str = ""     # https://www.perplexity.ai/settings/api
+
+    # ── LLM Model overrides (optional — uses provider defaults if empty) ─────
+    llm_model_anthropic: str = ""    # e.g. claude-3-5-sonnet-20241022
+    llm_model_openai: str = ""       # e.g. gpt-4o
+    llm_model_gemini: str = ""       # e.g. gemini-1.5-pro
+    llm_model_groq: str = ""         # e.g. llama-3.1-8b-instant (faster/cheaper)
+    llm_model_glm: str = ""          # e.g. glm-4 (premium vs glm-4-flash)
+    llm_model_qwen: str = ""         # e.g. qwen-max
+    llm_model_mistral: str = ""      # e.g. mistral-large-latest
+    llm_model_openrouter: str = ""   # e.g. anthropic/claude-3.5-haiku
+    llm_model_together: str = ""     # e.g. Qwen/Qwen2.5-72B-Instruct-Turbo
+    llm_model_cohere: str = ""       # e.g. command-r
+    llm_model_perplexity: str = ""   # e.g. sonar-pro
+
+    # ── LLM Global settings ───────────────────────────────────────────────────
     llm_max_tokens: int = 1500
     llm_timeout_seconds: int = 60
+    # Override provider priority order (comma-separated provider names)
+    llm_provider_order: str = ""     # e.g. "groq,anthropic,gemini"
 
-    # Scheduler
+    # ── Task-specific provider overrides ─────────────────────────────────────
+    # Force a specific provider for each task type
+    # e.g. LLM_TASK_GO_NO_GO_RECOMMENDATION=anthropic
+    llm_task_go_no_go_recommendation: str = ""
+    llm_task_context_analysis: str = ""
+    llm_task_tender_requirements_review: str = ""
+    llm_task_deliverable_plan: str = ""
+    llm_task_compliance_matrix: str = ""
+    llm_task_commercial_proposal: str = ""
+
+    # ── Scheduler ─────────────────────────────────────────────────────────────
     scheduler_enabled: bool = True
     scheduler_timezone: str = "Europe/Paris"
     scheduler_auto_execute_interval_minutes: int = 5
@@ -29,7 +68,7 @@ class Settings(BaseSettings):
     scheduler_daily_report_hour: int = 7
     scheduler_max_actions_per_run: int = 10
 
-    # SMTP — leave empty to disable real email (preview-only mode)
+    # ── SMTP ──────────────────────────────────────────────────────────────────
     smtp_host: str = ""
     smtp_port: int = 587
     smtp_user: str = ""
@@ -41,15 +80,20 @@ class Settings(BaseSettings):
     def smtp_enabled(self) -> bool:
         return bool(self.smtp_host and self.smtp_user)
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    @property
+    def has_llm_provider(self) -> bool:
+        return any([
+            self.anthropic_api_key, self.openai_api_key, self.gemini_api_key,
+            self.groq_api_key, self.glm_api_key, self.qwen_api_key,
+            self.mistral_api_key, self.openrouter_api_key, self.together_api_key,
+            self.cohere_api_key, self.perplexity_api_key,
+        ])
 
     @property
     def cors_origin_list(self) -> list[str]:
-        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
-    @property
-    def has_llm_provider(self) -> bool:
-        return bool(self.anthropic_api_key or self.openai_api_key or self.openrouter_api_key or self.mistral_api_key)
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
 
 @lru_cache

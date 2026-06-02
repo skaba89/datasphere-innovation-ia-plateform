@@ -64,15 +64,30 @@ def detailed_health(db: Session = Depends(get_db)):
     except Exception as exc:
         checks["scheduler"] = {"status": "error", "error": str(exc)}
 
-    # ── LLM Provider ─────────────────────────────────────────────────────────
+    # ── LLM Providers ────────────────────────────────────────────────────────
+    from app.services.llm_service import list_providers as _list_providers
+    all_providers = _list_providers()
     llm_mode = provider_label()
+    configured_providers = [p for p in all_providers if p["configured"]]
+    free_active = [p for p in configured_providers if p["tier"] in ("free", "near-free")]
     checks["llm"] = {
         "status": "simulation" if llm_mode == "simulation" else "live",
-        "provider": llm_mode,
-        "has_anthropic": bool(settings.anthropic_api_key),
-        "has_openai": bool(settings.openai_api_key),
-        "has_openrouter": bool(settings.openrouter_api_key),
-        "has_mistral": bool(settings.mistral_api_key),
+        "active_provider": llm_mode,
+        "configured_count": len(configured_providers),
+        "total_providers": len(all_providers),
+        "free_providers_active": len(free_active),
+        "fallback_chain": [p["name"] for p in configured_providers],
+        "providers": [
+            {
+                "name": p["name"],
+                "label": p["label"],
+                "tier": p["tier"],
+                "tier_label": p["tier_label"],
+                "configured": p["configured"],
+                "active_model": p["active_model"],
+            }
+            for p in all_providers
+        ],
     }
 
     # ── SMTP ─────────────────────────────────────────────────────────────────
