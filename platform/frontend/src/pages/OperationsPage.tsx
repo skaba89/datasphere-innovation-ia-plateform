@@ -13,12 +13,13 @@ import { apiRequest, tokenStorage } from '../api/client';
 import type { SchedulerStatus } from '../api/domainTypes';
 import ActivityFeed from '../components/ActivityFeed';
 import GanttChart from '../components/GanttChart';
+import HealthMonitorPanel from '../components/HealthMonitorPanel';
 import PendingApprovalsPanel from '../components/PendingApprovalsPanel';
 import SchedulerPanel from '../components/SchedulerPanel';
 
 // ────────────────────────────────────────────────────────────────────────────
 
-type Tab = 'approvals' | 'scheduler' | 'gantt' | 'exports' | 'activity';
+type Tab = 'approvals' | 'scheduler' | 'gantt' | 'exports' | 'activity' | 'health';
 
 export default function OperationsPage() {
   const [tab, setTab] = useState<Tab>('approvals');
@@ -229,6 +230,10 @@ export default function OperationsPage() {
             <Clock size={15} />
             Activité
           </button>
+          <button style={tabBtn(tab === 'health')} onClick={() => setTab('health')}>
+            <Activity size={15} />
+            Santé
+          </button>
         </div>
 
         {tab === 'approvals' && <PendingApprovalsPanel />}
@@ -236,6 +241,7 @@ export default function OperationsPage() {
         {tab === 'gantt' && <GanttChart />}
         {tab === 'exports' && <ExportsPanel />}
         {tab === 'activity' && <ActivityFeed days={14} limit={40} />}
+        {tab === 'health' && <HealthMonitorPanel />}
       </div>
     </div>
   );

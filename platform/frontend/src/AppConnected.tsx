@@ -6,6 +6,7 @@ import type { CurrentUser, LoginResult } from './api/authTypes';
 import { CrmWorkspace } from './components/CrmWorkspace';
 import NotificationBell from './components/NotificationBell';
 import GlobalSearchBar from './components/GlobalSearchBar';
+import NotificationsPanel from './components/NotificationsPanel';
 import DashboardPage from './pages/DashboardPage';
 
 type View = 'dashboard' | 'organizations' | 'opportunities';
@@ -78,6 +79,7 @@ export default function AppConnected() {
         </div>
         <div className="user-box" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <GlobalSearchBar />
+          <NotificationsPanel />
           <NotificationBell />
           <span>{user?.email}</span>
           <button className="icon-button" onClick={logout} type="button">

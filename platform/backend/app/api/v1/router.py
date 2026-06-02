@@ -11,6 +11,8 @@ from app.api.v1.endpoints import (
     deliverables,
     excel_export,
     export,
+    health_monitor,
+    notifications,
     opportunities,
     organizations,
     scheduler,
@@ -43,6 +45,8 @@ router.include_router(excel_export.router)
 router.include_router(sector_templates.router)
 router.include_router(search.router)
 router.include_router(activity.router)
+router.include_router(notifications.router)
+router.include_router(health_monitor.router)
 
 
 @router.get("/health", tags=["health"])
@@ -52,4 +56,4 @@ def health_check() -> dict[str, str]:
 
 @router.get("/version", tags=["health"])
 def version() -> dict[str, str]:
-    return {"version": "1.5.0", "stage": "team-versioning-search"}
+    return {"version": "1.6.0", "stage": "notifications-reporting-health"}

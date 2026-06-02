@@ -472,3 +472,34 @@ export type ActivityItem = {
   timestamp: string;
   status: string;
 };
+
+// ── Notifications ────────────────────────────────────────────────────────────
+
+export type AppNotification = {
+  id: number;
+  type: string;
+  priority: 'high' | 'medium' | 'low';
+  title: string;
+  body?: string | null;
+  resource_type?: string | null;
+  resource_id?: number | null;
+  action_url?: string | null;
+  is_read: boolean;
+  read_at?: string | null;
+  created_at: string;
+  expires_at?: string | null;
+};
+
+// ── Health ───────────────────────────────────────────────────────────────────
+
+export type HealthCheck = {
+  status: string;
+  [key: string]: unknown;
+};
+
+export type PlatformHealth = {
+  overall: 'healthy' | 'attention' | 'degraded';
+  version: string;
+  checks: Record<string, HealthCheck>;
+  timestamp: string;
+};
