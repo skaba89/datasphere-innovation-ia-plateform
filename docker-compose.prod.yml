@@ -1,0 +1,126 @@
+version: "3.9"
+
+# ──────────────────────────────────────────────────────────────────────────────
+# DataSphere Innovation IA Platform — Production Docker Compose
+# Usage:
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# Requirements:
+#   - .env.prod file with all production secrets (see .env.example)
+#   - Valid domain + SSL cert in ./ops/nginx/ssl/ (or use Certbot volume)
+# ──────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── PostgreSQL ──────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: datasphere-postgres-prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-datasphere_platform}
+      POSTGRES_USER: ${POSTGRES_USER:-datasphere}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+      - ./ops/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-datasphere} -d ${POSTGRES_DB:-datasphere_platform}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - backend_net
+    # No external port exposure in prod — only accessible via backend network
+    expose:
+      - "5432"
+
+  # ── Backend (Gunicorn + Uvicorn workers) ────────────────────────────────────
+  backend:
+    build:
+      context: ./platform/backend
+      dockerfile: Dockerfile.prod
+    container_name: datasphere-backend-prod
+    restart: unless-stopped
+    env_file:
+      - .env.prod
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-datasphere}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-datasphere_platform}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    expose:
+      - "8000"
+    networks:
+      - backend_net
+      - frontend_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ── Frontend (Nginx serving static Vite build) ─────────────────────────────
+  frontend:
+    build:
+      context: ./platform/frontend
+      dockerfile: Dockerfile.prod
+    container_name: datasphere-frontend-prod
+    restart: unless-stopped
+    expose:
+      - "80"
+    networks:
+      - frontend_net
+    depends_on:
+      - backend
+
+  # ── Nginx reverse proxy ────────────────────────────────────────────────────
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: datasphere-nginx-prod
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./ops/nginx/nginx.prod.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./ops/nginx/ssl:/etc/nginx/ssl:ro
+      - certbot_webroot:/var/www/certbot:ro
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - frontend_net
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 60s
+      timeout: 5s
+      retries: 2
+
+  # ── Certbot (Let's Encrypt auto-renewal) ────────────────────────────────────
+  certbot:
+    image: certbot/certbot:latest
+    container_name: datasphere-certbot
+    restart: unless-stopped
+    volumes:
+      - ./ops/nginx/ssl:/etc/letsencrypt
+      - certbot_webroot:/var/www/certbot
+    entrypoint: /bin/sh -c "trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done"
+    profiles:
+      - ssl   # Enable with: docker compose --profile ssl up -d
+
+networks:
+  backend_net:
+    driver: bridge
+    internal: true   # Postgres not reachable from outside
+  frontend_net:
+    driver: bridge
+
+volumes:
+  postgres_data_prod:
+    driver: local
+  certbot_webroot:
+    driver: local
