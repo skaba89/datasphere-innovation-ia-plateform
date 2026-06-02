@@ -21,3 +21,4 @@ exports/
 output/
 test.db
 *.tsbuildinfo
+uploads/
