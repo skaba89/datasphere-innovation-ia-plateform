@@ -3,19 +3,22 @@ import {
   Activity,
   Bot,
   Clock,
+  Download,
   Inbox,
   ShieldCheck,
+  Table2,
   Zap,
 } from 'lucide-react';
 
 import { apiRequest, tokenStorage } from '../api/client';
 import type { SchedulerStatus } from '../api/domainTypes';
+import GanttChart from '../components/GanttChart';
 import PendingApprovalsPanel from '../components/PendingApprovalsPanel';
 import SchedulerPanel from '../components/SchedulerPanel';
 
 // ────────────────────────────────────────────────────────────────────────────
 
-type Tab = 'scheduler' | 'approvals';
+type Tab = 'approvals' | 'scheduler' | 'gantt' | 'exports';
 
 export default function OperationsPage() {
   const [tab, setTab] = useState<Tab>('approvals');
@@ -214,10 +217,124 @@ export default function OperationsPage() {
             <Clock size={15} />
             Scheduler &amp; jobs
           </button>
+          <button style={tabBtn(tab === 'gantt')} onClick={() => setTab('gantt')}>
+            <Activity size={15} />
+            Gantt missions
+          </button>
+          <button style={tabBtn(tab === 'exports')} onClick={() => setTab('exports')}>
+            <Download size={15} />
+            Exports Excel
+          </button>
         </div>
 
         {tab === 'approvals' && <PendingApprovalsPanel />}
         {tab === 'scheduler' && <SchedulerPanel />}
+        {tab === 'gantt' && <GanttChart />}
+        {tab === 'exports' && <ExportsPanel />}
+      </div>
+    </div>
+  );
+}
+
+// ── Exports panel ─────────────────────────────────────────────────────────────
+
+const API = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+
+function ExportsPanel() {
+  const exports = [
+    {
+      key: 'pipeline',
+      label: 'Pipeline commercial',
+      desc: 'Toutes les opportunités avec valeur, probabilité, pipeline pondéré et prochaine action.',
+      url: `${API}/export/excel/pipeline`,
+      color: '#facc15',
+    },
+    {
+      key: 'tenders',
+      label: 'Appels d\'offres',
+      desc: 'Tous les AO avec scores Go/No-Go, statuts, deadlines et nombre d\'exigences.',
+      url: `${API}/export/excel/tenders`,
+      color: '#3b82f6',
+    },
+    {
+      key: 'actions',
+      label: 'Actions agents',
+      desc: 'Rapport complet des actions : statut, approbations, exécutions, résultats.',
+      url: `${API}/export/excel/actions`,
+      color: '#8b5cf6',
+    },
+    {
+      key: 'deliverables',
+      label: 'Livrables',
+      desc: 'Tous les livrables : statut, version, reviewer, approbateur, résumé.',
+      url: `${API}/export/excel/deliverables`,
+      color: '#22c55e',
+    },
+    {
+      key: 'full-report',
+      label: 'Rapport complet (multi-onglets)',
+      desc: '4 onglets en un seul fichier : Pipeline + AO + Actions + Livrables.',
+      url: `${API}/export/excel/full-report`,
+      color: '#f97316',
+      featured: true,
+    },
+  ];
+
+  return (
+    <div>
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: 6 }}>Exports Excel</div>
+        <p style={{ color: '#64748b', fontSize: '0.84rem' }}>
+          Téléchargez vos données en .xlsx avec mise en forme professionnelle, en-têtes colorés et largeurs automatiques.
+        </p>
+      </div>
+      <div style={{ display: 'grid', gap: 14 }}>
+        {exports.map((exp) => (
+          <div key={exp.key} style={{
+            display: 'flex', alignItems: 'center', gap: 16,
+            padding: '18px 20px',
+            background: exp.featured ? `${exp.color}08` : 'rgba(15,30,54,0.85)',
+            border: `1px solid ${exp.featured ? exp.color + '30' : 'rgba(148,163,184,0.12)'}`,
+            borderRadius: 14,
+          }}>
+            <div style={{
+              width: 44, height: 44, borderRadius: 10, flexShrink: 0,
+              background: `${exp.color}15`, border: `1px solid ${exp.color}25`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '1.2rem',
+            }}>
+              📊
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 700, fontSize: '0.92rem', marginBottom: 4, color: exp.featured ? exp.color : '#f1f5f9' }}>
+                {exp.label}
+                {exp.featured && (
+                  <span style={{ marginLeft: 8, padding: '2px 8px', borderRadius: 99, background: `${exp.color}20`, color: exp.color, fontSize: '0.7rem', fontWeight: 800 }}>
+                    RECOMMANDÉ
+                  </span>
+                )}
+              </div>
+              <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{exp.desc}</div>
+            </div>
+            <a
+              href={exp.url}
+              download
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '9px 18px', borderRadius: 10, border: 'none',
+                background: exp.featured ? exp.color : 'rgba(255,255,255,0.07)',
+                color: exp.featured ? '#0f172a' : '#94a3b8',
+                fontWeight: 700, fontSize: '0.82rem', textDecoration: 'none',
+                flexShrink: 0,
+              }}
+            >
+              <Download size={13} /> .xlsx
+            </a>
+          </div>
+        ))}
+      </div>
+      <div style={{ marginTop: 20, padding: '14px 18px', background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.15)', borderRadius: 10, fontSize: '0.82rem', color: '#86efac' }}>
+        💡 Les exports utilisent votre session active. Ouvrez directement dans Excel, Numbers ou LibreOffice Calc.
       </div>
     </div>
   );
