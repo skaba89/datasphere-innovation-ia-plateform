@@ -19,6 +19,7 @@ import { apiRequest, tokenStorage } from '../api/client';
 import type { Deliverable, Opportunity, Tender } from '../api/domainTypes';
 import DeliverableVersionsPanel from './DeliverableVersionsPanel';
 import EmailPreviewModal from './EmailPreviewModal';
+import FileAttachments from './FileAttachments';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -472,6 +473,10 @@ export function DeliverablePanel({ token }: Props) {
                       currentVersion={d.version}
                       onRestored={refresh}
                     />
+                  </div>
+                  {/* File attachments */}
+                  <div style={{ marginTop: 12 }}>
+                    <FileAttachments resourceType="deliverable" resourceId={d.id} />
                   </div>
                 </div>
               )}

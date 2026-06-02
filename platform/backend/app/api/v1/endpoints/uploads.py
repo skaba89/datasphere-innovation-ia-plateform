@@ -20,11 +20,11 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from pydantic import BaseModel
-from sqlalchemy import Column, DateTime, Integer, String
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user
-from app.db.session import Base, get_db
+from app.db.session import get_db
+from app.models.uploaded_file import UploadedFile
 from app.models.user import User
 from fastapi.responses import FileResponse
 
@@ -54,22 +54,6 @@ ALLOWED_MIME = {
     "image/png", "image/jpeg", "image/gif",
     "application/zip",
 }
-
-
-# ── Model ──────────────────────────────────────────────────────────────────────
-
-class UploadedFile(Base):
-    __tablename__ = "uploaded_files"
-
-    id = Column(Integer, primary_key=True, index=True)
-    resource_type = Column(String, nullable=False, index=True)   # "tender" | "deliverable"
-    resource_id = Column(Integer, nullable=False, index=True)
-    original_name = Column(String, nullable=False)
-    stored_name = Column(String, nullable=False, unique=True)    # UUID-based filename
-    mime_type = Column(String)
-    size_bytes = Column(Integer)
-    uploaded_by = Column(String)
-    created_at = Column(DateTime, default=datetime.utcnow)
 
 
 # ── Schema ─────────────────────────────────────────────────────────────────────
