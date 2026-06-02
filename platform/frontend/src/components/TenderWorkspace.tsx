@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { apiRequest } from '../api/client';
+import FileAttachments from './FileAttachments';
 import type {
   ComplianceMatrixItem,
   ComplianceSummary,
@@ -257,6 +258,36 @@ export function TenderWorkspace({ token }: Props) {
             <article><strong>{goNoGoSummary?.percentage ?? 0}%</strong><span>Score Go / No-Go</span></article>
             <article><strong>{goNoGoSummary?.recommendation ?? 'N/A'}</strong><span>Decision recommandee</span></article>
             <article><strong>{complianceSummary?.compliance_rate ?? 0}%</strong><span>Taux de conformite</span></article>
+          </section>
+
+          <section className="panel" style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+            <div style={{ flex: 1 }}>
+              <strong style={{ fontFamily: 'var(--font-head, Syne, sans-serif)', fontSize: '.95rem' }}>{selectedTender.title}</strong>
+              <div style={{ fontSize: '.78rem', color: '#64748b', marginTop: 3 }}>
+                {selectedTender.reference || 'N/A'} · {selectedTender.buyer_name || 'Acheteur inconnu'}
+              </div>
+            </div>
+            <a
+              href={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'}/deliverables/tenders/${selectedTender.id}/mission-report`}
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 7,
+                padding: '9px 18px', borderRadius: 10, cursor: 'pointer',
+                background: 'rgba(250,204,21,.12)',
+                border: '1px solid rgba(250,204,21,.25)',
+                color: '#facc15', fontWeight: 700, fontSize: '.82rem', textDecoration: 'none',
+                transition: 'all .15s',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(250,204,21,.2)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'rgba(250,204,21,.12)')}
+            >
+              📄 Rapport de mission complet
+            </a>
+          </section>
+          {/* File attachments for this AO */}
+          <section style={{ padding: '0 0 16px' }}>
+            <FileAttachments resourceType="tender" resourceId={selectedTender.id} />
           </section>
 
           <section className="split-layout">

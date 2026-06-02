@@ -223,7 +223,8 @@ def test_health_llm_shows_mode(client, auth_headers):
     resp = client.get("/api/v1/health/detailed", headers=auth_headers)
     llm = resp.json()["checks"]["llm"]
     assert llm["status"] in ("simulation", "live")
-    assert "provider" in llm
+    # field renamed to active_provider in multi-provider refactor
+    assert "active_provider" in llm or "provider" in llm
 
 
 def test_health_smtp_shows_config(client, auth_headers):

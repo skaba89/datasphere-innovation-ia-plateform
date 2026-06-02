@@ -112,6 +112,34 @@ services:
     profiles:
       - ssl   # Enable with: docker compose --profile ssl up -d
 
+  # ── Backup (PostgreSQL daily dump) ───────────────────────────────────────────
+  backup:
+    image: postgres:16-alpine
+    container_name: datasphere-backup
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-datasphere_platform}
+      POSTGRES_USER: ${POSTGRES_USER:-datasphere}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST: postgres
+      BACKUP_DIR: /backups
+      RETAIN_DAYS: "14"
+    volumes:
+      - ./backups:/backups
+      - ./ops/backup.sh:/backup.sh:ro
+    entrypoint: /bin/sh -c "
+      apk add --no-cache bash &&
+      trap exit TERM;
+      while :; do
+        bash /backup.sh;
+        sleep 86400 & wait $${!};
+      done"
+    networks:
+      - backend_net
+
 networks:
   backend_net:
     driver: bridge

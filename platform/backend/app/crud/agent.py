@@ -88,6 +88,13 @@ def create_action(db: Session, payload: AgentActionCreate) -> AgentAction:
     db.add(action)
     db.commit()
     db.refresh(action)
+    # Push notification for actions requiring human approval
+    if action.requires_human_approval:
+        try:
+            from app.crud.notification import push_approval_required
+            push_approval_required(db, action.id, action.title)
+        except Exception:
+            pass  # Never block action creation due to notification failure
     return action
 
 
@@ -107,6 +114,11 @@ def approve_action(db: Session, action: AgentAction, approved_by: str) -> AgentA
     db.add(action)
     db.commit()
     db.refresh(action)
+    try:
+        from app.api.v1.endpoints.sse import push_action_approved
+        push_action_approved(action.id, action.title)
+    except Exception:
+        pass
     return action
 
 

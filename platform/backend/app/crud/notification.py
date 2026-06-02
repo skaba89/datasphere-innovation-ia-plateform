@@ -36,6 +36,12 @@ def push(
     db.add(n)
     db.commit()
     db.refresh(n)
+    # Real-time push via SSE
+    try:
+        from app.api.v1.endpoints.sse import push_notification_created
+        push_notification_created(n.id, title, priority, user_id)
+    except Exception:
+        pass  # SSE failure never blocks notification creation
     return n
 
 

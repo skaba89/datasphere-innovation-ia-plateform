@@ -7,6 +7,7 @@ from app.api.v1.endpoints import (
     analytics,
     audit_logs,
     auth,
+    contact,
     contacts,
     deliverables,
     excel_export,
@@ -15,18 +16,22 @@ from app.api.v1.endpoints import (
     notifications,
     opportunities,
     organizations,
+    providers,
     scheduler,
     search,
     sector_templates,
+    sse,
     team,
     tender_governance,
     tender_templates,
     tenders,
+    uploads,
 )
 
 router = APIRouter()
 
 router.include_router(auth.router)
+router.include_router(contact.router)
 router.include_router(team.router)
 router.include_router(organizations.router)
 router.include_router(contacts.router)
@@ -46,7 +51,10 @@ router.include_router(sector_templates.router)
 router.include_router(search.router)
 router.include_router(activity.router)
 router.include_router(notifications.router)
+router.include_router(sse.router)
 router.include_router(health_monitor.router)
+router.include_router(providers.router)
+router.include_router(uploads.router)
 
 
 @router.get("/health", tags=["health"])

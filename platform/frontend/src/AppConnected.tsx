@@ -8,8 +8,11 @@ import NotificationBell from './components/NotificationBell';
 import GlobalSearchBar from './components/GlobalSearchBar';
 import NotificationsPanel from './components/NotificationsPanel';
 import DashboardPage from './pages/DashboardPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 
 type View = 'dashboard' | 'organizations' | 'opportunities';
+type AuthView = 'login' | 'forgot' | 'reset';
 
 export default function AppConnected() {
   const [accessKey, setAccessKey] = useState<string | null>(() => tokenStorage.get());
@@ -18,6 +21,11 @@ export default function AppConnected() {
   const [password, setPassword] = useState('change-me-now');
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<View>('dashboard');
+  const [authView, setAuthView] = useState<AuthView>(() => {
+    // Auto-route to reset page if URL has ?token=
+    const params = new URLSearchParams(window.location.search);
+    return params.has('token') ? 'reset' : 'login';
+  });
 
   useEffect(() => {
     if (!accessKey) return;
@@ -38,7 +46,7 @@ export default function AppConnected() {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       });
-      tokenStorage.set(result.access_token);
+      tokenStorage.set(result.access_token, result.refresh_token);
       setAccessKey(result.access_token);
       setUser(result.user);
     } catch (err) {
@@ -53,6 +61,12 @@ export default function AppConnected() {
   }
 
   if (!accessKey) {
+    if (authView === 'forgot') {
+      return <ForgotPasswordPage onBack={() => setAuthView('login')} />;
+    }
+    if (authView === 'reset') {
+      return <ResetPasswordPage onSuccess={() => { window.history.replaceState({}, '', '/'); setAuthView('login'); }} />;
+    }
     return (
       <main className="app-shell auth-shell">
         <section className="hero auth-card">
@@ -64,6 +78,13 @@ export default function AppConnected() {
             <label>Mot de passe<input value={password} onChange={(event) => setPassword(event.target.value)} type="password" /></label>
             {error && <p className="error">{error}</p>}
             <button type="submit">Se connecter</button>
+            <button
+              type="button"
+              onClick={() => setAuthView('forgot')}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', fontSize: '.8rem', marginTop: 8, textDecoration: 'underline' }}
+            >
+              Mot de passe oublié ?
+            </button>
           </form>
         </section>
       </main>
