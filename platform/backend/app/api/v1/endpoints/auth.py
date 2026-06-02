@@ -161,7 +161,7 @@ def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db))
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Le mot de passe doit contenir au moins 8 caractères.",
         )
-    user.hashed_password = get_password_hash(payload.new_password)
+    user.password_hash = get_password_hash(payload.new_password)
     db.add(user)
     db.commit()
     return {"message": "Mot de passe mis à jour. Vous pouvez maintenant vous connecter."}
@@ -175,7 +175,7 @@ def change_password(
 ):
     """Change password for authenticated user (requires current password)."""
     from app.core.security import verify_password
-    if not verify_password(payload.current_password, current_user.hashed_password):
+    if not verify_password(payload.current_password, current_user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Mot de passe actuel incorrect.",
@@ -185,7 +185,7 @@ def change_password(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Le nouveau mot de passe doit contenir au moins 8 caractères.",
         )
-    current_user.hashed_password = get_password_hash(payload.new_password)
+    current_user.password_hash = get_password_hash(payload.new_password)
     db.add(current_user)
     db.commit()
     return {"message": "Mot de passe modifié avec succès."}

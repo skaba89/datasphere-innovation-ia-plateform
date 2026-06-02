@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { apiRequest } from '../api/client';
+import FileAttachments from './FileAttachments';
 import type {
   ComplianceMatrixItem,
   ComplianceSummary,
@@ -283,6 +284,10 @@ export function TenderWorkspace({ token }: Props) {
             >
               📄 Rapport de mission complet
             </a>
+          </section>
+          {/* File attachments for this AO */}
+          <section style={{ padding: '0 0 16px' }}>
+            <FileAttachments resourceType="tender" resourceId={selectedTender.id} />
           </section>
 
           <section className="split-layout">

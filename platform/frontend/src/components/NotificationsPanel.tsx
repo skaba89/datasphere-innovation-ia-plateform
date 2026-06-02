@@ -55,9 +55,28 @@ export default function NotificationsPanel() {
 
   useEffect(() => {
     loadCount();
-    const iv = setInterval(loadCount, 20_000);
-    return () => clearInterval(iv);
-  }, []);
+    const iv = setInterval(loadCount, 30_000); // fallback polling every 30s
+
+    // Real-time SSE — refresh count instantly on new notification
+    const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+    const currentToken = token;
+    let es: EventSource | null = null;
+
+    if (currentToken) {
+      try {
+        // Append token as query param for EventSource (no custom headers support)
+        es = new EventSource(`${API_BASE}/notifications/stream?token=${currentToken}`);
+        es.addEventListener('notification', () => { loadCount(); });
+        es.addEventListener('action_approved', () => { loadCount(); if (open) loadAll(); });
+        es.onerror = () => { es?.close(); }; // Browser auto-reconnects via new EventSource
+      } catch { /* SSE not supported or server not ready */ }
+    }
+
+    return () => {
+      clearInterval(iv);
+      es?.close();
+    };
+  }, [token]);
 
   useEffect(() => {
     if (open && notifications.length === 0) loadAll();

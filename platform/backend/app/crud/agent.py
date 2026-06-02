@@ -114,6 +114,11 @@ def approve_action(db: Session, action: AgentAction, approved_by: str) -> AgentA
     db.add(action)
     db.commit()
     db.refresh(action)
+    try:
+        from app.api.v1.endpoints.sse import push_action_approved
+        push_action_approved(action.id, action.title)
+    except Exception:
+        pass
     return action
 
 

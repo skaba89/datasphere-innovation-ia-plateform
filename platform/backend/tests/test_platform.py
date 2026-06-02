@@ -347,3 +347,84 @@ def test_activity_feed_item_fields(client, auth_headers):
         item = data["items"][0]
         for field in ["id", "source", "action", "icon", "title", "timestamp"]:
             assert field in item
+
+
+# ── Contact form tests ─────────────────────────────────────────────────────────
+
+def test_contact_form_returns_200(client):
+    """Contact form should always return 200 with success=True."""
+    resp = client.post("/api/v1/contact", json={
+        "firstname": "Mamadou",
+        "lastname": "Diallo",
+        "email": "mamadou@example.com",
+        "need_type": "Diagnostic data & SI",
+        "message": "Je souhaite un audit de mon SI.",
+    })
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["success"] is True
+    assert "message" in data
+
+
+def test_contact_form_missing_email_rejected(client):
+    """Contact form without email must fail validation."""
+    resp = client.post("/api/v1/contact", json={
+        "firstname": "Test",
+        "lastname": "User",
+        "email": "not-an-email",
+        "need_type": "Autre",
+    })
+    assert resp.status_code == 422
+
+
+# ── Upload tests ───────────────────────────────────────────────────────────────
+
+def _make_tender(client, auth_headers):
+    """Helper: create org + opportunity + tender, return tender_id."""
+    org = client.post("/api/v1/organizations", headers=auth_headers,
+        json={"name": "Upload Test Org", "country": "FR"}).json()
+    opp = client.post("/api/v1/opportunities", headers=auth_headers, json={
+        "title": "Upload Test Opp", "organization_id": org["id"],
+        "status": "active", "probability": 50,
+    }).json()
+    tender = client.post("/api/v1/tenders", headers=auth_headers, json={
+        "title": "AO Upload Test", "status": "draft",
+        "opportunity_id": opp["id"], "reference": "AO-UP-001",
+    }).json()
+    return tender["id"]
+
+
+def test_upload_tender_file(client, auth_headers):
+    """Upload a small file to a tender."""
+    tender_id = _make_tender(client, auth_headers)
+    import io
+    resp = client.post(
+        f"/api/v1/uploads/tenders/{tender_id}",
+        headers={"Authorization": auth_headers["Authorization"]},
+        files={"file": ("test_doc.pdf", io.BytesIO(b"%PDF-1.4 test"), "application/pdf")},
+    )
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["original_name"] == "test_doc.pdf"
+    assert data["resource_type"] == "tender"
+    assert data["resource_id"] == tender_id
+
+
+def test_upload_list_files(client, auth_headers):
+    """List files for a tender returns a list."""
+    tender_id = _make_tender(client, auth_headers)
+    resp = client.get(f"/api/v1/uploads/tenders/{tender_id}", headers=auth_headers)
+    assert resp.status_code == 200
+    assert isinstance(resp.json(), list)
+
+
+def test_upload_blocked_extension(client, auth_headers):
+    """Executable files must be rejected with 415."""
+    tender_id = _make_tender(client, auth_headers)
+    import io
+    resp = client.post(
+        f"/api/v1/uploads/tenders/{tender_id}",
+        headers={"Authorization": auth_headers["Authorization"]},
+        files={"file": ("malware.exe", io.BytesIO(b"MZ"), "application/octet-stream")},
+    )
+    assert resp.status_code == 415

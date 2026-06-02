@@ -20,6 +20,7 @@ from app.api.v1.endpoints import (
     scheduler,
     search,
     sector_templates,
+    sse,
     team,
     tender_governance,
     tender_templates,
@@ -50,6 +51,7 @@ router.include_router(sector_templates.router)
 router.include_router(search.router)
 router.include_router(activity.router)
 router.include_router(notifications.router)
+router.include_router(sse.router)
 router.include_router(health_monitor.router)
 router.include_router(providers.router)
 router.include_router(uploads.router)
