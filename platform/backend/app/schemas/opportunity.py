@@ -20,6 +20,14 @@ class OpportunityBase(BaseModel):
     notes: str | None = None
 
 
+
+    # AI suggestion fields
+    source: str = "manual"
+    validation_status: str = "validated"
+    confidence_score: float | None = None
+    source_url: str | None = None
+    ai_notes: str | None = None
+
 class OpportunityCreate(OpportunityBase):
     pass
 
@@ -37,11 +45,16 @@ class OpportunityUpdate(BaseModel):
     next_action_date: datetime | None = None
     owner_name: str | None = None
     notes: str | None = None
+    validation_status: str | None = None
+    validated_by: str | None = None
 
 
 class OpportunityRead(OpportunityBase):
     id: int
     created_at: datetime
     updated_at: datetime
+
+    validated_by: str | None = None
+    validated_at: datetime | None = None
 
     model_config = ConfigDict(from_attributes=True)

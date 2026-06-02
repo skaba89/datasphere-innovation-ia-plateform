@@ -362,6 +362,29 @@ def _daily_report_job() -> None:
 # Lifecycle
 # ---------------------------------------------------------------------------
 
+def _boamp_scan_job() -> None:
+    """Daily BOAMP scan — fetches new public tenders and creates pending suggestions."""
+    from app.db.session import SessionLocal
+    from app.services.suggestion_service import suggest_from_boamp
+
+    db = SessionLocal()
+    started = datetime.utcnow()
+    error_msg = None
+    count = 0
+    try:
+        result = suggest_from_boamp(db, days_back=2, max_results=15, min_score=0.4)
+        count = result.get("created_tenders", 0)
+        logger.info("BOAMP scan: %s", result)
+        status = "success"
+    except Exception as exc:
+        error_msg = str(exc)
+        status = "error"
+        logger.error("BOAMP scan job failed: %s", exc)
+    finally:
+        _log(db, "boamp_scan", "Veille BOAMP — suggestions AO", status, count, error_msg, started)
+        db.close()
+
+
 def start() -> None:
     """Start the scheduler and register all jobs."""
     if _scheduler.running:
@@ -411,6 +434,19 @@ def start() -> None:
         timezone=tz,
         replace_existing=True,
     )
+
+    # BOAMP scan — daily at 6am (1 hour before the daily report)
+    if getattr(settings, "boamp_scan_enabled", True):
+        _scheduler.add_job(
+            _boamp_scan_job,
+            trigger="cron",
+            hour=max(settings.scheduler_daily_report_hour - 1, 0),
+            minute=0,
+            id="boamp_scan",
+            name="Veille BOAMP — suggestions AO",
+            timezone=tz,
+            replace_existing=True,
+        )
 
     _scheduler.start()
     logger.info(

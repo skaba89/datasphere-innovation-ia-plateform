@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.orm import relationship
 
 from app.db.session import Base
@@ -27,3 +27,13 @@ class Opportunity(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     organization = relationship("Organization", back_populates="opportunities")
+
+    # ── AI suggestion fields ─────────────────────────────────────────────────
+    source = Column(String(50), nullable=False, default="manual", index=True)
+    validation_status = Column(String(20), nullable=False, default="validated", index=True)
+    confidence_score = Column(Float, nullable=True)
+    source_url = Column(String(800), nullable=True)
+    ai_notes = Column(Text, nullable=True)
+    validated_by = Column(String(255), nullable=True)
+    validated_at = Column(DateTime, nullable=True)
+    # ────────────────────────────────────────────────────────────────────────

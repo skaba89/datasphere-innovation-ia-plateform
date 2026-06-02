@@ -67,6 +67,7 @@ class Settings(BaseSettings):
     scheduler_auto_draft_interval_minutes: int = 10
     scheduler_daily_report_hour: int = 7
     scheduler_max_actions_per_run: int = 10
+    boamp_scan_enabled: bool = True         # Daily BOAMP public tender scan
 
     # ── SMTP ──────────────────────────────────────────────────────────────────
     smtp_host: str = ""

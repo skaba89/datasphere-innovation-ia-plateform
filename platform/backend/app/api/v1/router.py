@@ -1,31 +1,12 @@
 from fastapi import APIRouter
 
 from app.api.v1.endpoints import (
-    activity,
-    agent_actions,
-    agents,
-    analytics,
-    audit_logs,
-    auth,
-    contact,
-    contacts,
-    deliverables,
-    excel_export,
-    export,
-    health_monitor,
-    notifications,
-    opportunities,
-    organizations,
-    providers,
-    scheduler,
-    search,
-    sector_templates,
-    sse,
-    team,
-    tender_governance,
-    tender_templates,
-    tenders,
-    uploads,
+    activity, agent_actions, agents, analytics, audit_logs,
+    auth, contact, contacts, deliverables, excel_export, export,
+    health_monitor, notifications, opportunities, organizations,
+    providers, scheduler, search, sector_templates, sse,
+    suggestions, team, tender_governance, tender_templates,
+    tenders, uploads, workspaces,
 )
 
 router = APIRouter()
@@ -52,9 +33,11 @@ router.include_router(search.router)
 router.include_router(activity.router)
 router.include_router(notifications.router)
 router.include_router(sse.router)
+router.include_router(suggestions.router)
 router.include_router(health_monitor.router)
 router.include_router(providers.router)
 router.include_router(uploads.router)
+router.include_router(workspaces.router)
 
 
 @router.get("/health", tags=["health"])
