@@ -33,14 +33,15 @@ def write_log(
     return log
 
 
-def list_audit_logs(
+def _build_query(
     db: Session,
     resource_type: str | None = None,
     resource_id: int | None = None,
     action: str | None = None,
-    limit: int = 100,
-    skip: int = 0,
-) -> list[AuditLog]:
+    user: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+):
     query = db.query(AuditLog).order_by(AuditLog.created_at.desc())
     if resource_type:
         query = query.filter(AuditLog.resource_type == resource_type)
@@ -48,4 +49,45 @@ def list_audit_logs(
         query = query.filter(AuditLog.resource_id == resource_id)
     if action:
         query = query.filter(AuditLog.action == action)
-    return query.offset(skip).limit(limit).all()
+    if user:
+        query = query.filter(
+            (AuditLog.user_email.ilike(f"%{user}%"))
+            | (AuditLog.actor_name.ilike(f"%{user}%"))
+        )
+    if date_from:
+        try:
+            query = query.filter(AuditLog.created_at >= datetime.fromisoformat(date_from))
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            query = query.filter(AuditLog.created_at <= datetime.fromisoformat(date_to + "T23:59:59"))
+        except ValueError:
+            pass
+    return query
+
+
+def list_audit_logs(
+    db: Session,
+    resource_type: str | None = None,
+    resource_id: int | None = None,
+    action: str | None = None,
+    user: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    limit: int = 100,
+    skip: int = 0,
+) -> list[AuditLog]:
+    return _build_query(db, resource_type, resource_id, action, user, date_from, date_to).offset(skip).limit(limit).all()
+
+
+def count_audit_logs(
+    db: Session,
+    resource_type: str | None = None,
+    action: str | None = None,
+    user: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+) -> int:
+    return _build_query(db, resource_type, None, action, user, date_from, date_to).count()
+
