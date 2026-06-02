@@ -428,3 +428,72 @@ def test_upload_blocked_extension(client, auth_headers):
         files={"file": ("malware.exe", io.BytesIO(b"MZ"), "application/octet-stream")},
     )
     assert resp.status_code == 415
+
+
+# ── AI Suggestions tests ──────────────────────────────────────────────────────
+
+def test_suggestions_count_returns_zero_on_fresh_db(client, auth_headers):
+    """Fresh DB has no pending suggestions."""
+    resp = client.get("/api/v1/suggestions/count", headers=auth_headers)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "organizations" in data
+    assert "opportunities" in data
+    assert "tenders" in data
+    assert data["total"] >= 0
+
+
+def test_suggestions_pending_returns_empty(client, auth_headers):
+    """Pending suggestions list returns grouped structure."""
+    resp = client.get("/api/v1/suggestions/pending", headers=auth_headers)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "organizations" in data
+    assert "opportunities" in data
+    assert "tenders" in data
+
+
+def test_suggestions_validate_empty_batch(client, auth_headers):
+    """Empty batch validation returns success with zeros."""
+    resp = client.post("/api/v1/suggestions/validate", headers=auth_headers, json={
+        "items": [],
+        "validated_by": "Test User",
+    })
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["success"] is True
+    assert data["validated"] == 0
+    assert data["rejected"] == 0
+
+
+def test_suggestions_validate_invalid_entity_type(client, auth_headers):
+    """Invalid entity_type returns 400."""
+    resp = client.post("/api/v1/suggestions/validate", headers=auth_headers, json={
+        "items": [{"entity_type": "foobar", "entity_id": 1, "accept": True}],
+        "validated_by": "Test",
+    })
+    assert resp.status_code == 400
+
+
+def test_import_text_too_short(client, auth_headers):
+    """Text import with < 30 chars is rejected."""
+    resp = client.post("/api/v1/suggestions/import/text", headers=auth_headers, json={
+        "text": "trop court",
+    })
+    assert resp.status_code == 400
+
+
+def test_export_contacts_csv(client, auth_headers):
+    """Contacts CSV export returns valid CSV content."""
+    resp = client.get("/api/v1/export/excel/contacts/csv", headers=auth_headers)
+    assert resp.status_code == 200
+    assert "text/csv" in resp.headers["content-type"]
+    content = resp.text
+    assert "Prénom" in content or "ID" in content
+
+
+def test_export_opportunities_csv(client, auth_headers):
+    """Opportunities CSV export returns valid CSV content."""
+    resp = client.get("/api/v1/export/excel/opportunities/csv", headers=auth_headers)
+    assert resp.status_code == 200
+    assert "text/csv" in resp.headers["content-type"]

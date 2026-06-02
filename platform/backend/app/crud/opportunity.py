@@ -32,3 +32,24 @@ def update_opportunity(db: Session, opportunity: Opportunity, payload: Opportuni
 def delete_opportunity(db: Session, opportunity: Opportunity) -> None:
     db.delete(opportunity)
     db.commit()
+
+
+def list_pending_suggestions(db: Session) -> list:
+    from app.models.opportunity import Opportunity
+    return (
+        db.query(Opportunity)
+        .filter(Opportunity.validation_status == "pending")
+        .order_by(Opportunity.created_at.desc())
+        .all()
+    )
+
+
+def validate_suggestion(db: Session, opp, validated_by: str, accept: bool):
+    from datetime import datetime
+    opp.validation_status = "validated" if accept else "rejected"
+    opp.validated_by = validated_by
+    opp.validated_at = datetime.utcnow()
+    db.add(opp)
+    db.commit()
+    db.refresh(opp)
+    return opp

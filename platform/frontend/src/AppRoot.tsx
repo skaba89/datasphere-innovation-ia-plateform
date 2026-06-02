@@ -3,14 +3,15 @@ import { useState } from 'react';
 import AppConnected from './AppConnected';
 import AuditLogPage from './pages/AuditLogPage';
 import CommercialPage from './pages/CommercialPage';
-import DeliverablePage from './pages/DeliverablePage';
 import ConsultantProfilesPage from './pages/ConsultantProfilesPage';
+import DeliverablePage from './pages/DeliverablePage';
 import OperationsPage from './pages/OperationsPage';
 import TeamPage from './pages/TeamPage';
 import TenderPage from './pages/TenderPage';
+import UserProfilePage from './pages/UserProfilePage';
 import './root.css';
 
-type RootView = 'console' | 'tenders' | 'profiles' | 'deliverables' | 'commercial' | 'operations' | 'team' | 'audit';
+type RootView = 'console' | 'tenders' | 'profiles' | 'deliverables' | 'commercial' | 'operations' | 'team' | 'audit' | 'profile';
 
 export default function AppRoot() {
   const [rootView, setRootView] = useState<RootView>('console');
@@ -24,6 +25,7 @@ export default function AppRoot() {
     { key: 'operations',   label: 'Opérations' },
     { key: 'team',         label: 'Équipe' },
     { key: 'audit',        label: 'Audit' },
+    { key: 'profile',      label: 'Mon profil' },
   ];
 
   return (
@@ -48,6 +50,7 @@ export default function AppRoot() {
       {rootView === 'operations'   && <OperationsPage />}
       {rootView === 'team'         && <TeamPage />}
       {rootView === 'audit'        && <AuditLogPage />}
+      {rootView === 'profile'      && <UserProfilePage />}
     </>
   );
 }

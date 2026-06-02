@@ -10,6 +10,12 @@ class OrganizationBase(BaseModel):
     organization_type: str | None = None
     website: str | None = None
     description: str | None = None
+    # AI suggestion fields
+    source: str = "manual"
+    validation_status: str = "validated"
+    confidence_score: float | None = None
+    source_url: str | None = None
+    ai_notes: str | None = None
 
 
 class OrganizationCreate(OrganizationBase):
@@ -23,10 +29,14 @@ class OrganizationUpdate(BaseModel):
     organization_type: str | None = None
     website: str | None = None
     description: str | None = None
+    validation_status: str | None = None
+    validated_by: str | None = None
 
 
 class OrganizationRead(OrganizationBase):
     id: int
+    validated_by: str | None = None
+    validated_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
 
