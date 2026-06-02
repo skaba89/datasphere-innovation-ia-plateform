@@ -383,3 +383,23 @@ def send_deliverable_email(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"SMTP error: {exc}") from exc
+
+
+# ── Mission Report ────────────────────────────────────────────────────────────
+
+@router.get("/tenders/{tender_id}/mission-report", response_class=HTMLResponse)
+def mission_report(tender_id: int, db: Session = Depends(get_db)):
+    """
+    Generate a complete professional mission report for a tender.
+    Aggregates: context, requirements, compliance, agent actions, approved deliverables.
+    Print-ready HTML → browser Save as PDF.
+    """
+    from app.services.mission_report_service import generate_mission_report
+    try:
+        html = generate_mission_report(db, tender_id)
+        return HTMLResponse(
+            content=html,
+            headers={"Content-Disposition": f'inline; filename="rapport_mission_{tender_id}.html"'},
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
