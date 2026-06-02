@@ -14,15 +14,17 @@ import type { SchedulerStatus } from '../api/domainTypes';
 import ActivityFeed from '../components/ActivityFeed';
 import GanttChart from '../components/GanttChart';
 import HealthMonitorPanel from '../components/HealthMonitorPanel';
+import LLMProvidersPanel from '../components/LLMProvidersPanel';
 import PendingApprovalsPanel from '../components/PendingApprovalsPanel';
 import SchedulerPanel from '../components/SchedulerPanel';
+import SuggestionsValidationPanel from '../components/SuggestionsValidationPanel';
 
 // ────────────────────────────────────────────────────────────────────────────
 
-type Tab = 'approvals' | 'scheduler' | 'gantt' | 'exports' | 'activity' | 'health';
+type Tab = 'suggestions' | 'approvals' | 'scheduler' | 'gantt' | 'exports' | 'activity' | 'health' | 'providers';
 
 export default function OperationsPage() {
-  const [tab, setTab] = useState<Tab>('approvals');
+  const [tab, setTab] = useState<Tab>('suggestions');
   const [quickStatus, setQuickStatus] = useState<SchedulerStatus | null>(null);
   const token = tokenStorage.get();
 
@@ -202,6 +204,10 @@ export default function OperationsPage() {
           borderBottom: '1px solid rgba(148,163,184,0.1)',
           marginBottom: 24,
         }}>
+          <button style={tabBtn(tab === 'suggestions')} onClick={() => setTab('suggestions')}>
+            <Bot size={15} />
+            Suggestions IA
+          </button>
           <button style={tabBtn(tab === 'approvals')} onClick={() => setTab('approvals')}>
             <Inbox size={15} />
             Approbations en attente
@@ -234,14 +240,20 @@ export default function OperationsPage() {
             <Activity size={15} />
             Santé
           </button>
+          <button style={tabBtn(tab === 'providers')} onClick={() => setTab('providers')}>
+            <Zap size={15} />
+            Providers IA
+          </button>
         </div>
 
+        {tab === 'suggestions' && <SuggestionsValidationPanel />}
         {tab === 'approvals' && <PendingApprovalsPanel />}
         {tab === 'scheduler' && <SchedulerPanel />}
         {tab === 'gantt' && <GanttChart />}
         {tab === 'exports' && <ExportsPanel />}
         {tab === 'activity' && <ActivityFeed days={14} limit={40} />}
         {tab === 'health' && <HealthMonitorPanel />}
+        {tab === 'providers' && <LLMProvidersPanel />}
       </div>
     </div>
   );

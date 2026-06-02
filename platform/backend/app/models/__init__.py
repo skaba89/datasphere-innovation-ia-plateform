@@ -13,6 +13,7 @@ from app.models.audit_log import AuditLog
 from app.models.sector_template import SectorTemplate
 from app.models.notification import Notification
 from app.models.uploaded_file import UploadedFile
+from app.models.workspace import Workspace, WorkspaceMember
 
 __all__ = [
     "Organization", "Contact", "Opportunity", "User",
@@ -20,5 +21,5 @@ __all__ = [
     "AgentProfile", "AgentAssignment", "AgentAction",
     "Deliverable", "DeliverableSection", "AgentContribution",
     "DeliverableVersion", "SchedulerLog", "AuditLog", "SectorTemplate",
-    "Notification", "UploadedFile",
+    "Notification", "UploadedFile", "Workspace", "WorkspaceMember",
 ]

@@ -74,3 +74,29 @@ def update_tender_requirement(db: Session, requirement: TenderRequirement, paylo
 def delete_tender_requirement(db: Session, requirement: TenderRequirement) -> None:
     db.delete(requirement)
     db.commit()
+
+
+def get_tender_by_reference(db, reference: str):
+    from app.models.tender import Tender
+    return db.query(Tender).filter(Tender.reference == reference).first()
+
+
+def list_pending_suggestions(db) -> list:
+    from app.models.tender import Tender
+    return (
+        db.query(Tender)
+        .filter(Tender.validation_status == "pending")
+        .order_by(Tender.created_at.desc())
+        .all()
+    )
+
+
+def validate_suggestion(db, tender, validated_by: str, accept: bool):
+    from datetime import datetime
+    tender.validation_status = "validated" if accept else "rejected"
+    tender.validated_by = validated_by
+    tender.validated_at = datetime.utcnow()
+    db.add(tender)
+    db.commit()
+    db.refresh(tender)
+    return tender

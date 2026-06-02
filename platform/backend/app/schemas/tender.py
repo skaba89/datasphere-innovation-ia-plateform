@@ -17,6 +17,13 @@ class TenderBase(BaseModel):
     status: str = "draft"
 
 
+
+    # AI suggestion fields
+    source: str = "manual"
+    validation_status: str = "validated"
+    confidence_score: float | None = None
+    ai_notes: str | None = None
+
 class TenderCreate(TenderBase):
     pass
 
@@ -38,6 +45,9 @@ class TenderRead(TenderBase):
     id: int
     created_at: datetime
     updated_at: datetime
+
+    validated_by: str | None = None
+    validated_at: datetime | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -75,5 +85,8 @@ class TenderRequirementRead(TenderRequirementBase):
     id: int
     created_at: datetime
     updated_at: datetime
+
+    validated_by: str | None = None
+    validated_at: datetime | None = None
 
     model_config = ConfigDict(from_attributes=True)

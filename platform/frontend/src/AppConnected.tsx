@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { LogOut } from 'lucide-react';
+import { LogOut, UserCircle } from 'lucide-react';
 
 import { apiRequest, tokenStorage } from './api/client';
 import type { CurrentUser, LoginResult } from './api/authTypes';

@@ -32,3 +32,34 @@ def update_organization(db: Session, organization: Organization, payload: Organi
 def delete_organization(db: Session, organization: Organization) -> None:
     db.delete(organization)
     db.commit()
+
+
+def get_organization_by_name(db: Session, name: str) -> Organization | None:
+    return db.query(Organization).filter(
+        Organization.name.ilike(name.strip())
+    ).first()
+
+
+def list_pending_suggestions(db: Session) -> list[Organization]:
+    return (
+        db.query(Organization)
+        .filter(Organization.validation_status == "pending")
+        .order_by(Organization.created_at.desc())
+        .all()
+    )
+
+
+def validate_suggestion(
+    db: Session,
+    org: Organization,
+    validated_by: str,
+    accept: bool,
+) -> Organization:
+    from datetime import datetime
+    org.validation_status = "validated" if accept else "rejected"
+    org.validated_by = validated_by
+    org.validated_at = datetime.utcnow()
+    db.add(org)
+    db.commit()
+    db.refresh(org)
+    return org
