@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { API_BASE } from '../api/config';
 import {
   Search, Download, RefreshCw, ChevronLeft, ChevronRight,
   Filter, Shield, Clock, User, Tag,
@@ -57,8 +58,7 @@ export default function AuditLogPage() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
-  const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1');
-
+  
   const buildParams = useCallback(() => {
     const p = new URLSearchParams();
     if (filterAction) p.set('action', filterAction);

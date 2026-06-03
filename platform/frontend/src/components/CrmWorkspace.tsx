@@ -49,18 +49,26 @@ export function CrmWorkspace({ token, view }: Props) {
   const [opportunityForm, setOpportunityForm] = useState(initialOpportunityForm);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const refreshData = useCallback(async () => {
-    const [orgs, opps] = await Promise.all([
-      apiRequest<Organization[]>('/organizations', {}, token),
-      apiRequest<Opportunity[]>('/opportunities', {}, token),
-    ]);
-    setOrganizations(orgs);
-    setOpportunities(opps);
+    setLoading(true);
+    try {
+      const [orgs, opps] = await Promise.all([
+        apiRequest<Organization[]>('/organizations', {}, token),
+        apiRequest<Opportunity[]>('/opportunities', {}, token),
+      ]);
+      setOrganizations(orgs);
+      setOpportunities(opps);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur de chargement');
+    } finally {
+      setLoading(false);
+    }
   }, [token]);
 
   useEffect(() => {
-    refreshData().catch((err: Error) => setError(err.message));
+    refreshData();
   }, [refreshData]);
 
   async function createOrganization(event: React.FormEvent<HTMLFormElement>) {

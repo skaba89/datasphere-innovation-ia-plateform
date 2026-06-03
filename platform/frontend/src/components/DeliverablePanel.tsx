@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { API_BASE } from '../api/config';
 import {
   CheckCircle2,
   ChevronDown,
@@ -411,7 +412,7 @@ export function DeliverablePanel({ token }: Props) {
                     {/* Export buttons — always visible */}
                     <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
                       <a
-                        href={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'}/deliverables/${d.id}/export/markdown`}
+                        href={`${API_BASE}/deliverables/${d.id}/export/markdown`}
                         target="_blank"
                         rel="noreferrer"
                         style={{
@@ -426,7 +427,7 @@ export function DeliverablePanel({ token }: Props) {
                         <FileDown size={13} /> .md
                       </a>
                       <a
-                        href={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'}/deliverables/${d.id}/export/html`}
+                        href={`${API_BASE}/deliverables/${d.id}/export/html`}
                         target="_blank"
                         rel="noreferrer"
                         style={{

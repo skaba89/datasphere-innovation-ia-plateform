@@ -1,0 +1,208 @@
+name: E2E Tests — Playwright
+
+on:
+  push:
+    branches: [main, platform/**]
+    paths:
+      - 'platform/frontend/**'
+      - 'platform/backend/**'
+      - '.github/workflows/e2e.yml'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      spec:
+        description: 'Test spec to run (leave empty for all)'
+        required: false
+        default: ''
+
+env:
+  NODE_VERSION: '20'
+  PYTHON_VERSION: '3.12'
+
+jobs:
+  # ── Fast smoke tests (API only, no browser) ───────────────────────────────
+  api-smoke:
+    name: API Smoke Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB:       datasphere_e2e
+          POSTGRES_USER:     datasphere
+          POSTGRES_PASSWORD: e2epassword
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: platform/backend/requirements.txt
+
+      - name: Install backend dependencies
+        run: pip install -r requirements.txt
+        working-directory: platform/backend
+
+      - name: Run Alembic migrations
+        run: python scripts/migrate.py upgrade
+        working-directory: platform/backend
+        env:
+          DATABASE_URL:      postgresql+psycopg2://datasphere:e2epassword@localhost:5432/datasphere_e2e
+          SECRET_KEY:        ci-secret-key-32-chars-e2e-tests!
+          SCHEDULER_ENABLED: 'false'
+
+      - name: Start backend (background)
+        run: |
+          uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+          echo "Waiting for backend..."
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8000/api/v1/health && echo "Backend ready" && break
+            sleep 2
+          done
+        working-directory: platform/backend
+        env:
+          DATABASE_URL:      postgresql+psycopg2://datasphere:e2epassword@localhost:5432/datasphere_e2e
+          SECRET_KEY:        ci-secret-key-32-chars-e2e-tests!
+          SCHEDULER_ENABLED: 'false'
+          SMTP_HOST:         ''
+          APP_ENV:           test
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: platform/frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: platform/frontend
+
+      - name: Install Playwright (Chromium only)
+        run: npx playwright install chromium --with-deps
+        working-directory: platform/frontend
+
+      - name: Run API smoke tests
+        run: npm run test:e2e:smoke
+        working-directory: platform/frontend
+        env:
+          CI:            'true'
+          E2E_BASE_URL:  http://localhost:5173
+          E2E_API_URL:   http://localhost:8000/api/v1
+          E2E_ADMIN_EMAIL:    admin@datasphere.test
+          E2E_ADMIN_PASSWORD: Admin123456!
+
+  # ── Full E2E (browser) ────────────────────────────────────────────────────
+  e2e:
+    name: Full E2E (${{ matrix.spec }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: api-smoke
+
+    strategy:
+      fail-fast: false
+      matrix:
+        spec:
+          - auth
+          - nav
+          - workflow
+          - robust
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB:       datasphere_e2e
+          POSTGRES_USER:     datasphere
+          POSTGRES_PASSWORD: e2epassword
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: platform/backend/requirements.txt
+
+      - name: Install backend + migrate + start
+        run: |
+          pip install -r requirements.txt
+          python scripts/migrate.py upgrade
+          uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8000/api/v1/health && echo "Backend ready" && break
+            sleep 2
+          done
+        working-directory: platform/backend
+        env:
+          DATABASE_URL:      postgresql+psycopg2://datasphere:e2epassword@localhost:5432/datasphere_e2e
+          SECRET_KEY:        ci-secret-key-32-chars-e2e-tests!
+          SCHEDULER_ENABLED: 'false'
+          SMTP_HOST:         ''
+          APP_ENV:           test
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: platform/frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: platform/frontend
+
+      - name: Build frontend
+        run: npm run build
+        working-directory: platform/frontend
+
+      - name: Serve frontend (background)
+        run: |
+          npx serve -s dist -l 5173 &
+          sleep 3
+          curl -sf http://localhost:5173 || echo "Frontend may not be ready yet"
+        working-directory: platform/frontend
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+        working-directory: platform/frontend
+
+      - name: Run E2E tests — ${{ matrix.spec }}
+        run: npm run test:e2e:${{ matrix.spec }}
+        working-directory: platform/frontend
+        env:
+          CI:            'true'
+          E2E_BASE_URL:  http://localhost:5173
+          E2E_API_URL:   http://localhost:8000/api/v1
+          E2E_ADMIN_EMAIL:    admin@datasphere.test
+          E2E_ADMIN_PASSWORD: Admin123456!
+
+      - name: Upload test artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.spec }}-${{ github.run_number }}
+          path: |
+            platform/frontend/playwright-report/
+            platform/frontend/test-results/
+          retention-days: 7

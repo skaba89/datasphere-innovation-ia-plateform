@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { API_BASE } from '../api/config';
 import { Bell, Check, CheckCheck, Clock, RefreshCw, X } from 'lucide-react';
 import { apiRequest, tokenStorage } from '../api/client';
 import type { AppNotification } from '../api/domainTypes';
@@ -58,8 +59,7 @@ export default function NotificationsPanel() {
     const iv = setInterval(loadCount, 30_000); // fallback polling every 30s
 
     // Real-time SSE — refresh count instantly on new notification
-    const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
-    const currentToken = token;
+        const currentToken = token;
     let es: EventSource | null = null;
 
     if (currentToken) {
