@@ -403,3 +403,46 @@ def mission_report(tender_id: int, db: Session = Depends(get_db)):
         )
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.post("/cv/generate")
+def generate_cv(
+    payload: dict,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
+    """
+    Generate a professional consultant CV as DOCX.
+
+    Body: {
+        consultant: {name, title, summary, experience_years, daily_rate,
+                     skills, languages, experiences, education, certifications},
+        tender_id: optional int
+    }
+    """
+    from fastapi.responses import Response
+    from app.services.cv_generator import generate_cv_docx
+    from app.models.tender import Tender
+
+    consultant = payload.get("consultant", {})
+    tender_id = payload.get("tender_id")
+    tender_context = None
+
+    if tender_id:
+        tender = db.query(Tender).filter(Tender.id == tender_id).first()
+        if tender:
+            tender_context = {
+                "tender_title": tender.title,
+                "buyer_name": tender.buyer_name or "",
+                "reference": tender.reference or "",
+            }
+
+    docx_bytes = generate_cv_docx(consultant, tender_context)
+    name = consultant.get("name", "consultant").lower().replace(" ", "_")
+    filename = f"cv_{name}_{datetime.utcnow().strftime('%Y%m%d')}.docx"
+
+    return Response(
+        content=docx_bytes,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )

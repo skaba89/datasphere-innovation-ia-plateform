@@ -4,8 +4,11 @@ from app.models.opportunity import Opportunity
 from app.schemas.opportunity import OpportunityCreate, OpportunityUpdate
 
 
-def list_opportunities(db: Session, skip: int = 0, limit: int = 100) -> list[Opportunity]:
-    return db.query(Opportunity).order_by(Opportunity.created_at.desc()).offset(skip).limit(limit).all()
+def list_opportunities(db: Session, skip: int = 0, limit: int = 100, include_pending: bool = False) -> list[Opportunity]:
+    q = db.query(Opportunity).order_by(Opportunity.created_at.desc())
+    if not include_pending:
+        q = q.filter(Opportunity.validation_status != "pending")
+    return q.offset(skip).limit(limit).all()
 
 
 def get_opportunity(db: Session, opportunity_id: int) -> Opportunity | None:

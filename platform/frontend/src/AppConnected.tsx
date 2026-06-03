@@ -17,8 +17,8 @@ type AuthView = 'login' | 'forgot' | 'reset';
 export default function AppConnected() {
   const [accessKey, setAccessKey] = useState<string | null>(() => tokenStorage.get());
   const [user, setUser] = useState<CurrentUser | null>(null);
-  const [email, setEmail] = useState('admin@example.com');
-  const [password, setPassword] = useState('change-me-now');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<View>('dashboard');
   const [authView, setAuthView] = useState<AuthView>(() => {
@@ -33,6 +33,7 @@ export default function AppConnected() {
       .then(setUser)
       .catch(() => {
         tokenStorage.clear();
+    localStorage.removeItem('ds_user');
         setAccessKey(null);
         setUser(null);
       });
@@ -47,6 +48,7 @@ export default function AppConnected() {
         body: JSON.stringify({ email, password }),
       });
       tokenStorage.set(result.access_token, result.refresh_token);
+      localStorage.setItem('ds_user', JSON.stringify(result.user));
       setAccessKey(result.access_token);
       setUser(result.user);
     } catch (err) {
@@ -56,6 +58,7 @@ export default function AppConnected() {
 
   function logout() {
     tokenStorage.clear();
+    localStorage.removeItem('ds_user');
     setAccessKey(null);
     setUser(null);
   }

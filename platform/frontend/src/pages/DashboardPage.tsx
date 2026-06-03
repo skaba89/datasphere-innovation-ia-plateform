@@ -99,14 +99,22 @@ export default function DashboardPage() {
   const [data, setData] = useState<PipelineAnalytics | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [kpis, setKpis] = useState<any>(null);
+  const [pendingSuggestions, setPendingSuggestions] = useState<{ total: number; tenders: number; opportunities: number; organizations: number } | null>(null);
   const token = tokenStorage.get();
 
   async function load() {
     setLoading(true);
     setError(null);
     try {
-      const analytics = await apiRequest<PipelineAnalytics>('/analytics/pipeline', {}, token);
+      const [analytics, dashKpis, suggestions] = await Promise.all([
+        apiRequest<PipelineAnalytics>('/analytics/pipeline', {}, token),
+        apiRequest<any>('/analytics/dashboard', {}, token).catch(() => null),
+        apiRequest<any>('/suggestions/count', {}, token).catch(() => null),
+      ]);
       setData(analytics);
+      if (dashKpis) setKpis(dashKpis);
+      if (suggestions) setPendingSuggestions(suggestions);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erreur de chargement');
     } finally {
@@ -189,33 +197,57 @@ export default function DashboardPage() {
       </div>
 
       {/* KPI Row */}
-      {data && (
+      {(data || kpis) && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 16 }}>
           <KpiCard
             icon={TrendingUp} color="#facc15"
-            label="Pipeline commercial" value={fmtCurrency(data.opportunities.pipeline_value)}
-            sub={`${data.opportunities.total} opps · moy. ${data.opportunities.avg_probability}%`}
+            label="Pipeline commercial"
+            value={fmtCurrency(kpis?.crm?.pipeline_value_weighted ?? data?.opportunities?.pipeline_value ?? 0)}
+            sub={`${kpis?.crm?.opportunities_active ?? data?.opportunities?.total ?? 0} actives · ${kpis?.crm?.opportunities_won ?? 0} gagnées`}
           />
           <KpiCard
             icon={Target} color="#3b82f6"
-            label="Appels d'offres" value={data.tenders.total}
-            sub={`${data.tenders.go_count} Go · score moy. ${data.tenders.avg_go_score}/100`}
+            label="Appels d'offres"
+            value={kpis?.tenders?.total ?? data?.tenders?.total ?? 0}
+            sub={`${kpis?.tenders?.go_decisions ?? data?.tenders?.go_count ?? 0} Go · ${kpis?.tenders?.upcoming_deadlines_14d ?? 0} deadlines <14j`}
           />
           <KpiCard
             icon={Bot} color="#8b5cf6"
-            label="Actions agents" value={`${data.agents.completion_rate}%`}
-            sub={`${data.agents.actions_done} terminées / ${data.agents.total_actions}`}
+            label="Actions agents"
+            value={`${kpis?.agents?.execution_rate ?? data?.agents?.completion_rate ?? 0}%`}
+            sub={`${kpis?.agents?.done_last_30d ?? data?.agents?.actions_done ?? 0} terminées / 30j`}
           />
           <KpiCard
             icon={FileText} color="#22c55e"
-            label="Livrables approuvés" value={data.deliverables.approved}
-            sub={`${data.deliverables.approval_rate}% taux d'approbation`}
+            label="Livrables approuvés"
+            value={kpis?.deliverables?.approved ?? data?.deliverables?.approved ?? 0}
+            sub={`${kpis?.deliverables?.approval_rate ?? data?.deliverables?.approval_rate ?? 0}% · ${kpis?.deliverables?.in_review ?? 0} en révision`}
           />
           <KpiCard
-            icon={Zap} color={data.agents.actions_pending_approval > 0 ? '#f97316' : '#22c55e'}
-            label="En attente validation" value={data.agents.actions_pending_approval}
-            sub={data.agents.actions_pending_approval > 0 ? 'Révision requise' : 'Pipeline fluide'}
+            icon={Zap}
+            color={(kpis?.agents?.pending_approvals ?? data?.agents?.actions_pending_approval ?? 0) > 0 || (pendingSuggestions?.total ?? 0) > 0 ? '#f97316' : '#22c55e'}
+            label="En attente validation"
+            value={(kpis?.agents?.pending_approvals ?? data?.agents?.actions_pending_approval ?? 0) + (pendingSuggestions?.total ?? 0)}
+            sub={`${pendingSuggestions?.tenders ?? 0} AO · ${pendingSuggestions?.opportunities ?? 0} opps · ${kpis?.notifications?.unread ?? 0} notifs`}
           />
+        </div>
+      )}
+
+      {/* Suggestions IA banner */}
+      {pendingSuggestions && pendingSuggestions.total > 0 && (
+        <div style={{ padding: '14px 18px', borderRadius: 12, background: 'rgba(250,204,21,.06)', border: '1px solid rgba(250,204,21,.2)', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Bot size={16} color="#facc15" style={{ flexShrink: 0 }} />
+          <div style={{ flex: 1 }}>
+            <span style={{ fontWeight: 700, fontSize: '.88rem', color: '#fde68a' }}>
+              {pendingSuggestions.total} suggestion{pendingSuggestions.total > 1 ? 's' : ''} IA en attente de validation
+            </span>
+            <span style={{ color: '#64748b', fontSize: '.8rem', marginLeft: 10 }}>
+              {pendingSuggestions.tenders} AO · {pendingSuggestions.opportunities} opportunités · {pendingSuggestions.organizations} organismes
+            </span>
+          </div>
+          <a href="#" onClick={e => { e.preventDefault(); }} style={{ padding: '6px 14px', borderRadius: 8, background: 'rgba(250,204,21,.12)', border: '1px solid rgba(250,204,21,.25)', color: '#facc15', fontSize: '.78rem', fontWeight: 700, textDecoration: 'none' }}>
+            → Onglet Opérations
+          </a>
         </div>
       )}
 

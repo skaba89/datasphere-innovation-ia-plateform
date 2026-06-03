@@ -9,8 +9,11 @@ from app.schemas.tender import (
 )
 
 
-def list_tenders(db: Session, skip: int = 0, limit: int = 100) -> list[Tender]:
-    return db.query(Tender).order_by(Tender.created_at.desc()).offset(skip).limit(limit).all()
+def list_tenders(db: Session, skip: int = 0, limit: int = 100, include_pending: bool = False) -> list[Tender]:
+    q = db.query(Tender).order_by(Tender.created_at.desc())
+    if not include_pending:
+        q = q.filter(Tender.validation_status != "pending")
+    return q.offset(skip).limit(limit).all()
 
 
 def get_tender(db: Session, tender_id: int) -> Tender | None:
