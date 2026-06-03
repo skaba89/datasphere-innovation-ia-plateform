@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
+import { API_BASE } from '../api/config';
 import { FileDown, Loader, User, Briefcase, Star, Languages, GraduationCap, Plus, Trash2 } from 'lucide-react';
 import { tokenStorage } from '../api/client';
 import { getUserName } from '../api/userContext';
 import { AgentManagementPanel } from '../components/AgentManagementPanel';
 import { AgentOperationsPanel } from '../components/AgentOperationsPanel';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 
 interface Experience {
   title: string;

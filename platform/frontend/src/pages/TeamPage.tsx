@@ -138,6 +138,20 @@ export default function TeamPage() {
 
       {/* Members list */}
       <div style={{ display: 'grid', gap: 12 }}>
+        {loading && (
+          <div style={{ padding: '24px', textAlign: 'center', color: '#64748b', fontSize: '.83rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+            <div style={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid #facc15', borderTopColor: 'transparent', animation: 'ds-spin .75s linear infinite' }} />
+            Chargement de l'équipe…
+            <style>{`@keyframes ds-spin{to{transform:rotate(360deg)}}`}</style>
+          </div>
+        )}
+        {!loading && members.length === 0 && (
+          <div style={{ padding: '32px', textAlign: 'center', color: '#64748b', background: 'rgba(12,20,37,.9)', border: '1px dashed rgba(148,163,184,.12)', borderRadius: 14 }}>
+            <div style={{ fontSize: '1.8rem', marginBottom: 10, opacity: .4 }}>👥</div>
+            <div style={{ fontWeight: 700, marginBottom: 6 }}>Aucun membre pour le moment</div>
+            <p style={{ fontSize: '.78rem', opacity: .7, margin: 0 }}>Invitez votre équipe pour commencer.</p>
+          </div>
+        )}
         {members.map(m => {
           const rc = ROLE_CONFIG[m.role] ?? ROLE_CONFIG.viewer;
           const RoleIcon = rc.icon;

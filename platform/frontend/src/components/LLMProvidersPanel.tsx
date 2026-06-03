@@ -81,10 +81,12 @@ export default function LLMProvidersPanel() {
   const [data, setData] = useState<ProvidersData | null>(null);
   const [reco, setReco] = useState<Recommendations | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<'chain' | 'tasks' | 'tips'>('chain');
 
   async function load() {
     setLoading(true);
+    setError(null);
     try {
       const [prov, rec] = await Promise.all([
         apiRequest<ProvidersData>('/providers', {}, token),
@@ -92,6 +94,8 @@ export default function LLMProvidersPanel() {
       ]);
       setData(prov);
       setReco(rec);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erreur de chargement des providers');
     } finally {
       setLoading(false);
     }
@@ -108,7 +112,20 @@ export default function LLMProvidersPanel() {
 
   if (!data) return (
     <div style={{ padding: 32, textAlign: 'center', color: '#64748b' }}>
-      {loading ? 'Chargement des providers…' : 'Aucune donnée'}
+      {loading && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+          <div style={{ width: 18, height: 18, borderRadius: '50%', border: '2.5px solid #facc15', borderTopColor: 'transparent', animation: 'ds-spin .75s linear infinite' }} />
+          Chargement des providers…
+          <style>{`@keyframes ds-spin{to{transform:rotate(360deg)}}`}</style>
+        </div>
+      )}
+      {error && (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+          <span style={{ color: '#fca5a5' }}>⚠ {error}</span>
+          <button onClick={load} style={{ padding: '7px 14px', borderRadius: 8, border: '1px solid rgba(239,68,68,.25)', background: 'rgba(239,68,68,.08)', color: '#fca5a5', cursor: 'pointer', fontSize: '.8rem' }}>Réessayer</button>
+        </div>
+      )}
+      {!loading && !error && 'Aucune donnée'}
     </div>
   );
 

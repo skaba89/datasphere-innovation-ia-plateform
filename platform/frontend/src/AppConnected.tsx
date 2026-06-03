@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { LogOut, UserCircle } from 'lucide-react';
 
-import { apiRequest, tokenStorage } from './api/client';
+import { apiRequest, authEvents, tokenStorage } from './api/client';
 import type { CurrentUser, LoginResult } from './api/authTypes';
 import { CrmWorkspace } from './components/CrmWorkspace';
 import NotificationBell from './components/NotificationBell';
@@ -27,13 +27,25 @@ export default function AppConnected() {
     return params.has('token') ? 'reset' : 'login';
   });
 
+  // Global session expiry → auto logout
+  useEffect(() => {
+    const unsub = authEvents.onLogout(() => {
+      tokenStorage.clear();
+      localStorage.removeItem('ds_user');
+      setAccessKey(null);
+      setUser(null);
+    });
+    return unsub;
+  }, []);
+
+  // On mount / token change: fetch current user profile
   useEffect(() => {
     if (!accessKey) return;
     apiRequest<CurrentUser>('/auth/me', {}, accessKey)
       .then(setUser)
       .catch(() => {
         tokenStorage.clear();
-    localStorage.removeItem('ds_user');
+        localStorage.removeItem('ds_user');
         setAccessKey(null);
         setUser(null);
       });

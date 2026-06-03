@@ -10,7 +10,15 @@
     "lint": "eslint .",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:report": "playwright show-report"
+    "test:e2e:report": "playwright show-report",
+    "test:e2e:headed": "E2E_HEADLESS=false playwright test",
+    "test:e2e:debug": "PWDEBUG=1 playwright test",
+    "test:e2e:smoke": "playwright test e2e/api-smoke.spec.ts",
+    "test:e2e:auth": "playwright test e2e/auth.spec.ts",
+    "test:e2e:nav": "playwright test e2e/navigation.spec.ts",
+    "test:e2e:workflow": "playwright test e2e/workflow.spec.ts",
+    "test:e2e:robust": "playwright test e2e/ui-robustness.spec.ts",
+    "test:e2e:ci": "CI=true playwright test --reporter=github"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",

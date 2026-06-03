@@ -12,6 +12,19 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000
 
 export type ApiError = { detail?: string };
 
+/**
+ * Emitted when a 401 cannot be recovered by token refresh.
+ * App-level listeners can use this to redirect to login.
+ */
+export const authEvents = {
+  _listeners: new Set<() => void>(),
+  onLogout(fn: () => void): () => void {
+    this._listeners.add(fn);
+    return () => { this._listeners.delete(fn); };
+  },
+  emit()      { this._listeners.forEach(fn => fn()); },
+};
+
 // ── Token storage ──────────────────────────────────────────────────────────────
 export const tokenStorage = {
   getAccess(): string | null {
@@ -106,10 +119,14 @@ export async function apiRequest<T>(
     const newToken = await refreshAccessToken();
     if (newToken) {
       response = await _fetch(path, options, newToken);
+    } else {
+      // Refresh failed → session terminée
+      authEvents.emit();
     }
   }
 
   if (!response.ok) {
+    if (response.status === 401) authEvents.emit();
     let message = `API error ${response.status}`;
     try {
       const data = (await response.json()) as ApiError;

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { API_BASE } from '../api/config';
 
 import { apiRequest } from '../api/client';
 import FileAttachments from './FileAttachments';
@@ -76,6 +77,8 @@ export function TenderWorkspace({ token }: Props) {
   const [complianceForm, setComplianceForm] = useState(initialComplianceForm);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [loadingTenders, setLoadingTenders] = useState(false);
+  const [loadingGovernance, setLoadingGovernance] = useState(false);
 
   const selectedTender = useMemo(
     () => tenders.find((item) => item.id === selectedTenderId) || null,
@@ -83,39 +86,53 @@ export function TenderWorkspace({ token }: Props) {
   );
 
   const refreshTenders = useCallback(async () => {
-    const [opps, tenderList] = await Promise.all([
-      apiRequest<Opportunity[]>('/opportunities', {}, token),
-      apiRequest<Tender[]>('/tenders', {}, token),
-    ]);
-    setOpportunities(opps);
-    setTenders(tenderList);
-    if (!selectedTenderId && tenderList.length > 0) {
-      setSelectedTenderId(tenderList[0].id);
+    setLoadingTenders(true);
+    try {
+      const [opps, tenderList] = await Promise.all([
+        apiRequest<Opportunity[]>('/opportunities', {}, token),
+        apiRequest<Tender[]>('/tenders', {}, token),
+      ]);
+      setOpportunities(opps);
+      setTenders(tenderList);
+      if (!selectedTenderId && tenderList.length > 0) {
+        setSelectedTenderId(tenderList[0].id);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur chargement AO');
+    } finally {
+      setLoadingTenders(false);
     }
   }, [selectedTenderId, token]);
 
   const refreshGovernance = useCallback(async () => {
     if (!selectedTenderId) return;
-    const [reqs, crits, goSummary, compItems, compSummary] = await Promise.all([
-      apiRequest<TenderRequirement[]>(`/tenders/${selectedTenderId}/requirements`, {}, token),
-      apiRequest<GoNoGoCriterion[]>(`/tender-governance/tenders/${selectedTenderId}/go-no-go`, {}, token),
-      apiRequest<GoNoGoSummary>(`/tender-governance/tenders/${selectedTenderId}/go-no-go/summary`, {}, token),
-      apiRequest<ComplianceMatrixItem[]>(`/tender-governance/tenders/${selectedTenderId}/compliance`, {}, token),
-      apiRequest<ComplianceSummary>(`/tender-governance/tenders/${selectedTenderId}/compliance/summary`, {}, token),
-    ]);
-    setRequirements(reqs);
-    setCriteria(crits);
-    setGoNoGoSummary(goSummary);
-    setComplianceItems(compItems);
-    setComplianceSummary(compSummary);
+    setLoadingGovernance(true);
+    try {
+      const [reqs, crits, goSummary, compItems, compSummary] = await Promise.all([
+        apiRequest<TenderRequirement[]>(`/tenders/${selectedTenderId}/requirements`, {}, token),
+        apiRequest<GoNoGoCriterion[]>(`/tender-governance/tenders/${selectedTenderId}/go-no-go`, {}, token),
+        apiRequest<GoNoGoSummary>(`/tender-governance/tenders/${selectedTenderId}/go-no-go/summary`, {}, token),
+        apiRequest<ComplianceMatrixItem[]>(`/tender-governance/tenders/${selectedTenderId}/compliance`, {}, token),
+        apiRequest<ComplianceSummary>(`/tender-governance/tenders/${selectedTenderId}/compliance/summary`, {}, token),
+      ]);
+      setRequirements(reqs);
+      setCriteria(crits);
+      setGoNoGoSummary(goSummary);
+      setComplianceItems(compItems);
+      setComplianceSummary(compSummary);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur chargement gouvernance');
+    } finally {
+      setLoadingGovernance(false);
+    }
   }, [selectedTenderId, token]);
 
   useEffect(() => {
-    refreshTenders().catch((err: Error) => setError(err.message));
+    refreshTenders();
   }, [refreshTenders]);
 
   useEffect(() => {
-    refreshGovernance().catch((err: Error) => setError(err.message));
+    refreshGovernance();
   }, [refreshGovernance]);
 
   async function createTender(event: React.FormEvent<HTMLFormElement>) {
@@ -247,7 +264,8 @@ export function TenderWorkspace({ token }: Props) {
                 <span>{tender.reference || 'Sans reference'} · {tender.status} · {tender.buyer_name || 'Acheteur non renseigne'}</span>
               </button>
             ))}
-            {tenders.length === 0 && <p>Aucun appel d offres pour le moment.</p>}
+            {loadingTenders && <p style={{ color: '#64748b', fontSize: '.82rem', padding: '8px 0' }}>Chargement…</p>}
+            {!loadingTenders && tenders.length === 0 && <p style={{ color: '#64748b', fontSize: '.82rem' }}>Aucun appel d offres pour le moment.</p>}
           </div>
         </section>
       </section>
@@ -268,7 +286,7 @@ export function TenderWorkspace({ token }: Props) {
               </div>
             </div>
             <a
-              href={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'}/deliverables/tenders/${selectedTender.id}/mission-report`}
+              href={`${API_BASE}/deliverables/tenders/${selectedTender.id}/mission-report`}
               target="_blank"
               rel="noreferrer"
               style={{
