@@ -8,17 +8,19 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "eslint .",
-    "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui",
-    "test:e2e:report": "playwright show-report",
-    "test:e2e:headed": "E2E_HEADLESS=false playwright test",
-    "test:e2e:debug": "PWDEBUG=1 playwright test",
-    "test:e2e:smoke": "playwright test e2e/api-smoke.spec.ts",
-    "test:e2e:auth": "playwright test e2e/auth.spec.ts",
-    "test:e2e:nav": "playwright test e2e/navigation.spec.ts",
-    "test:e2e:workflow": "playwright test e2e/workflow.spec.ts",
-    "test:e2e:robust": "playwright test e2e/ui-robustness.spec.ts",
-    "test:e2e:ci": "CI=true playwright test --reporter=github"
+    "test:e2e": "npx playwright test",
+    "test:e2e:ui": "npx playwright test --ui",
+    "test:e2e:report": "npx playwright show-report",
+    "test:e2e:headed": "cross-env E2E_HEADLESS=false npx playwright test",
+    "test:e2e:debug": "cross-env PWDEBUG=1 npx playwright test",
+    "test:e2e:smoke": "npx playwright test e2e/api-smoke.spec.ts",
+    "test:e2e:auth": "npx playwright test e2e/auth.spec.ts",
+    "test:e2e:nav": "npx playwright test e2e/navigation.spec.ts",
+    "test:e2e:workflow": "npx playwright test e2e/workflow.spec.ts",
+    "test:e2e:robust": "npx playwright test e2e/ui-robustness.spec.ts",
+    "test:e2e:ci": "cross-env CI=true npx playwright test --reporter=github",
+    "test:e2e:headed:smoke": "cross-env E2E_HEADLESS=false npx playwright test e2e/api-smoke.spec.ts",
+    "test:e2e:headed:workflow": "cross-env E2E_HEADLESS=false npx playwright test e2e/workflow.spec.ts"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
@@ -32,6 +34,7 @@
     "@playwright/test": "^1.60.0",
     "@types/react": "latest",
     "@types/react-dom": "latest",
+    "cross-env": "^10.1.0",
     "eslint": "latest"
   }
 }

@@ -92,7 +92,37 @@ class Settings(BaseSettings):
 
     @property
     def cors_origin_list(self) -> list[str]:
-        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+        """
+        Parse CORS_ORIGINS env var. Always includes localhost origins in dev.
+        Production: set CORS_ORIGINS to your real domain(s).
+
+        Examples:
+          CORS_ORIGINS=https://datasphere-innovation.fr
+          CORS_ORIGINS=https://app.datasphere.fr,https://datasphere-innovation.fr
+        """
+        # Parse whatever was set
+        parsed = [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+        # Dev always includes localhost (avoids CORS hell during development)
+        if self.app_env in ("development", "dev", "local", "test", ""):
+            dev_origins = [
+                "http://localhost:5173",
+                "http://127.0.0.1:5173",
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
+            ]
+            for origin in dev_origins:
+                if origin not in parsed:
+                    parsed.append(origin)
+
+        # Safety net: never return an empty list (would block everything)
+        if not parsed:
+            return [
+                "http://localhost:5173",
+                "http://127.0.0.1:5173",
+            ]
+
+        return parsed
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
