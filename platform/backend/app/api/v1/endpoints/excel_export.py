@@ -105,9 +105,9 @@ def export_contacts_csv(db: Session = Depends(get_db)):
             contact.id,
             contact.first_name or "",
             contact.last_name or "",
-            contact.email or "",
-            contact.phone or "",
-            contact.position or "",
+            contact.professional_email or "",
+            "",  # phone — field not in current model
+            contact.job_title or "",
             org_name or "",
             contact.source or "",
             (contact.notes or "")[:120],
