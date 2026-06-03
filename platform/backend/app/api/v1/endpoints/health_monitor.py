@@ -5,8 +5,7 @@ DB ping, scheduler state, LLM provider availability, disk/memory (where availabl
 
 from __future__ import annotations
 
-from datetime import datetime
-
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
@@ -114,5 +113,5 @@ def detailed_health(db: Session = Depends(get_db)):
         "overall": overall,
         "version": "1.6.0",
         "checks": checks,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }

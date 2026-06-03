@@ -98,7 +98,7 @@ def validate_suggestion(db, tender, validated_by: str, accept: bool):
     from datetime import datetime
     tender.validation_status = "validated" if accept else "rejected"
     tender.validated_by = validated_by
-    tender.validated_at = datetime.utcnow()
+    tender.validated_at = datetime.now(timezone.utc)
     db.add(tender)
     db.commit()
     db.refresh(tender)

@@ -11,8 +11,7 @@ from __future__ import annotations
 import json
 import logging
 import re
-from datetime import datetime
-
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from app.models.opportunity import Opportunity
@@ -278,5 +277,5 @@ def get_go_no_go_recommendation(
         conditions=rec_dict.get("conditions", []),
         recommended_actions=rec_dict.get("recommended_actions", []),
         provider=provider,
-        computed_at=datetime.utcnow(),
+        computed_at=datetime.now(timezone.utc),
     )

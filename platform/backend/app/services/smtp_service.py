@@ -83,7 +83,7 @@ def send_deliverable(
     # Attach the deliverable as an HTML file
     from app.api.v1.endpoints.export import _md_to_html as md2html
     type_label = _TYPE_LABELS.get(deliverable.deliverable_type, deliverable.deliverable_type)
-    exported_at = datetime.utcnow().strftime("%d/%m/%Y %H:%M")
+    exported_at = datetime.now(timezone.utc).strftime("%d/%m/%Y %H:%M")
     
     # Re-generate full export HTML for attachment
     body_html = md2html(deliverable.content_markdown or "")

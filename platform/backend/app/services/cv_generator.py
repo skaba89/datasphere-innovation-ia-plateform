@@ -8,7 +8,7 @@ The generated CV follows the standard French public procurement format.
 from __future__ import annotations
 
 import io
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 
@@ -235,7 +235,7 @@ def generate_cv_docx(consultant: dict[str, Any], tender_context: dict[str, Any] 
     p_footer = doc.add_paragraph()
     p_footer.paragraph_format.space_before = Pt(20)
     r_footer = p_footer.add_run(
-        f"Document généré par DataSphere Innovation IA Platform — {datetime.utcnow().strftime('%d/%m/%Y')}"
+        f"Document généré par DataSphere Innovation IA Platform — {datetime.now(timezone.utc).strftime('%d/%m/%Y')}"
     )
     r_footer.font.name = "Calibri"
     r_footer.font.size = Pt(8)

@@ -6,8 +6,7 @@ into a unified timeline for the dashboard.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
-
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
@@ -58,7 +57,7 @@ def activity_feed(
     from app.models.scheduler_log import SchedulerLog
     from app.models.deliverable import Deliverable
 
-    since = datetime.utcnow() - timedelta(days=days)
+    since = datetime.now(timezone.utc) - timedelta(days=days)
     items = []
 
     # Audit logs
@@ -147,7 +146,7 @@ def activity_feed(
         "items": items[:limit],
         "total": len(items),
         "days": days,
-        "generated_at": datetime.utcnow().isoformat(),
+        "generated_at": datetime.now(timezone.utc).isoformat(),
     }
 
 

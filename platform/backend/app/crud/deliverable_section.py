@@ -1,5 +1,4 @@
-from datetime import datetime
-
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from app.models.deliverable_section import AgentContribution, DeliverableSection
@@ -52,7 +51,7 @@ def delete_section(db: Session, section: DeliverableSection) -> None:
 def review_section(db: Session, section: DeliverableSection, reviewer_name: str) -> DeliverableSection:
     section.status = "in_review"
     section.reviewed_by = reviewer_name
-    section.reviewed_at = datetime.utcnow()
+    section.reviewed_at = datetime.now(timezone.utc)
     db.add(section)
     db.commit()
     db.refresh(section)
@@ -62,7 +61,7 @@ def review_section(db: Session, section: DeliverableSection, reviewer_name: str)
 def approve_section(db: Session, section: DeliverableSection, approver_name: str) -> DeliverableSection:
     section.status = "approved"
     section.approved_by = approver_name
-    section.approved_at = datetime.utcnow()
+    section.approved_at = datetime.now(timezone.utc)
     db.add(section)
     db.commit()
     db.refresh(section)

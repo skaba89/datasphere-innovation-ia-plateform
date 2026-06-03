@@ -54,13 +54,17 @@ const CHART_TOTAL = LABEL_W + CHART_W + 40;
 export default function GanttChart() {
   const [data, setData] = useState<{ assignments: AssignmentRow[]; generated_at: string } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const token = tokenStorage.get();
 
   async function load() {
     setLoading(true);
+    setError(null);
     try {
       const d = await apiRequest<any>('/analytics/gantt', {}, token);
       setData(d);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erreur');
     } finally { setLoading(false); }
   }
 
