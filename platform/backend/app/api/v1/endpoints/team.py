@@ -144,6 +144,16 @@ def deactivate_team_member(
     return result
 
 
+@router.post("/me/change-password", response_model=UserRead)
+def self_change_password(
+    payload: UserChangePassword,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Change your own password (self-service, no admin required)."""
+    return change_password(db, current_user, payload.new_password)
+
+
 @router.post("/{user_id}/change-password", response_model=UserRead)
 def admin_change_password(
     user_id: int,
@@ -151,18 +161,8 @@ def admin_change_password(
     db: Session = Depends(get_db),
     admin: User = Depends(_require_admin),
 ):
-    """Change a user's password (admin only, or self via /auth/me/password)."""
+    """Change a user's password (admin only, or self via /team/me/change-password)."""
     user = get_user(db, user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return change_password(db, user, payload.new_password)
-
-
-@router.post("/me/change-password", response_model=UserRead)
-def self_change_password(
-    payload: UserChangePassword,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    """Change your own password."""
-    return change_password(db, current_user, payload.new_password)
