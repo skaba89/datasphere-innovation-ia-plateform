@@ -9,9 +9,10 @@ import OperationsPage from './pages/OperationsPage';
 import TeamPage from './pages/TeamPage';
 import TenderPage from './pages/TenderPage';
 import UserProfilePage from './pages/UserProfilePage';
+import WorkspacesPage from './pages/WorkspacesPage';
 import './root.css';
 
-type RootView = 'console' | 'tenders' | 'profiles' | 'deliverables' | 'commercial' | 'operations' | 'team' | 'audit' | 'profile';
+type RootView = 'console' | 'tenders' | 'profiles' | 'deliverables' | 'commercial' | 'operations' | 'team' | 'audit' | 'profile' | 'workspaces';
 
 export default function AppRoot() {
   const [rootView, setRootView] = useState<RootView>('console');
@@ -26,6 +27,7 @@ export default function AppRoot() {
     { key: 'team',         label: 'Équipe' },
     { key: 'audit',        label: 'Audit' },
     { key: 'profile',      label: 'Mon profil' },
+    { key: 'workspaces',   label: 'Workspaces' },
   ];
 
   return (
@@ -51,6 +53,7 @@ export default function AppRoot() {
       {rootView === 'team'         && <TeamPage />}
       {rootView === 'audit'        && <AuditLogPage />}
       {rootView === 'profile'      && <UserProfilePage />}
+      {rootView === 'workspaces'   && <WorkspacesPage />}
     </>
   );
 }

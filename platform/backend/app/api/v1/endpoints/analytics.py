@@ -91,3 +91,158 @@ def gantt_data(db: Session = Depends(get_db)):
         })
 
     return {"assignments": rows, "generated_at": datetime.utcnow().isoformat()}
+
+
+@router.get("/dashboard")
+def dashboard_kpis(db: Session = Depends(get_db)):
+    """
+    Comprehensive dashboard KPIs — all metrics in one call.
+    Covers CRM, AO, deliverables, agents, suggestions, team.
+    """
+    from datetime import datetime, timedelta
+    from sqlalchemy import func
+
+    from app.models.agent import AgentAction, AgentAssignment, AgentProfile
+    from app.models.contact import Contact
+    from app.models.deliverable import Deliverable
+    from app.models.notification import Notification
+    from app.models.opportunity import Opportunity
+    from app.models.organization import Organization
+    from app.models.tender import Tender
+    from app.models.user import User
+
+    now = datetime.utcnow()
+    last_30 = now - timedelta(days=30)
+    last_7 = now - timedelta(days=7)
+
+    # ── CRM ──────────────────────────────────────────────────────────────────
+    total_orgs = db.query(Organization).filter(Organization.validation_status == "validated").count()
+    total_contacts = db.query(Contact).count()
+    total_opps = db.query(Opportunity).filter(Opportunity.validation_status == "validated").count()
+
+    pipeline_value = db.query(
+        func.sum(Opportunity.potential_value * Opportunity.probability / 100)
+    ).filter(
+        Opportunity.validation_status == "validated",
+        Opportunity.potential_value.isnot(None),
+    ).scalar() or 0
+
+    won_opps = db.query(Opportunity).filter(
+        Opportunity.status.in_(["Gagnée", "Signée"]),
+        Opportunity.validation_status == "validated",
+    ).count()
+
+    active_opps = db.query(Opportunity).filter(
+        Opportunity.status.notin_(["Perdue", "Abandonnée", "Gagnée", "Signée"]),
+        Opportunity.validation_status == "validated",
+    ).count()
+
+    # ── AO ────────────────────────────────────────────────────────────────────
+    total_tenders = db.query(Tender).filter(Tender.validation_status == "validated").count()
+    pending_tenders = db.query(Tender).filter(Tender.validation_status == "pending").count()
+    go_tenders = db.query(Tender).filter(Tender.go_no_go_decision == "go").count()
+    submitted_tenders = db.query(Tender).filter(Tender.status == "submitted").count()
+
+    upcoming_deadlines = db.query(Tender).filter(
+        Tender.submission_deadline.isnot(None),
+        Tender.submission_deadline >= now,
+        Tender.submission_deadline <= now + timedelta(days=14),
+        Tender.status != "submitted",
+        Tender.validation_status == "validated",
+    ).count()
+
+    # ── Livrables ─────────────────────────────────────────────────────────────
+    total_deliverables = db.query(Deliverable).count()
+    approved_deliverables = db.query(Deliverable).filter(Deliverable.status == "approved").count()
+    in_review = db.query(Deliverable).filter(Deliverable.status == "in_review").count()
+    draft_deliverables = db.query(Deliverable).filter(Deliverable.status == "draft").count()
+
+    # ── Agents ────────────────────────────────────────────────────────────────
+    pending_approvals = db.query(AgentAction).filter(
+        AgentAction.requires_human_approval == True,  # noqa
+        AgentAction.approved_by.is_(None),
+        AgentAction.status.in_(["auto_ready", "suggested"]),
+    ).count()
+
+    actions_30d = db.query(AgentAction).filter(
+        AgentAction.created_at >= last_30
+    ).count()
+
+    done_actions_30d = db.query(AgentAction).filter(
+        AgentAction.status == "done",
+        AgentAction.created_at >= last_30,
+    ).count()
+
+    # ── Suggestions ───────────────────────────────────────────────────────────
+    pending_suggestions = (
+        db.query(Organization).filter(Organization.validation_status == "pending").count()
+        + db.query(Opportunity).filter(Opportunity.validation_status == "pending").count()
+        + db.query(Tender).filter(Tender.validation_status == "pending").count()
+    )
+
+    # ── Team ──────────────────────────────────────────────────────────────────
+    total_users = db.query(User).filter(User.is_active == True).count()  # noqa
+
+    # ── Notifications ─────────────────────────────────────────────────────────
+    unread_notifications = db.query(Notification).filter(
+        Notification.is_read == False  # noqa
+    ).count()
+
+    # ── Recent activity (last 7 days) ─────────────────────────────────────────
+    new_opps_7d = db.query(Opportunity).filter(
+        Opportunity.created_at >= last_7,
+        Opportunity.validation_status == "validated",
+    ).count()
+    new_tenders_7d = db.query(Tender).filter(
+        Tender.created_at >= last_7,
+        Tender.validation_status == "validated",
+    ).count()
+    new_deliverables_7d = db.query(Deliverable).filter(
+        Deliverable.created_at >= last_7
+    ).count()
+
+    return {
+        "generated_at": now.isoformat(),
+        "crm": {
+            "organizations": total_orgs,
+            "contacts": total_contacts,
+            "opportunities_total": total_opps,
+            "opportunities_active": active_opps,
+            "opportunities_won": won_opps,
+            "pipeline_value_weighted": round(float(pipeline_value), 2),
+        },
+        "tenders": {
+            "total": total_tenders,
+            "pending_validation": pending_tenders,
+            "go_decisions": go_tenders,
+            "submitted": submitted_tenders,
+            "upcoming_deadlines_14d": upcoming_deadlines,
+        },
+        "deliverables": {
+            "total": total_deliverables,
+            "approved": approved_deliverables,
+            "in_review": in_review,
+            "draft": draft_deliverables,
+            "approval_rate": round(approved_deliverables / max(total_deliverables, 1) * 100, 1),
+        },
+        "agents": {
+            "pending_approvals": pending_approvals,
+            "actions_last_30d": actions_30d,
+            "done_last_30d": done_actions_30d,
+            "execution_rate": round(done_actions_30d / max(actions_30d, 1) * 100, 1),
+        },
+        "suggestions": {
+            "pending_validation": pending_suggestions,
+        },
+        "team": {
+            "active_users": total_users,
+        },
+        "notifications": {
+            "unread": unread_notifications,
+        },
+        "activity_7d": {
+            "new_opportunities": new_opps_7d,
+            "new_tenders": new_tenders_7d,
+            "new_deliverables": new_deliverables_7d,
+        },
+    }

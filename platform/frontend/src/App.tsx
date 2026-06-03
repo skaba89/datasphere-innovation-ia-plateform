@@ -33,7 +33,7 @@ const cards = [
 function App() {
   const [token, setToken] = useState<string | null>(() => tokenStorage.get());
   const [user, setUser] = useState<CurrentUser | null>(null);
-  const [email, setEmail] = useState('admin@example.com');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('change-me-now');
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<View>('dashboard');

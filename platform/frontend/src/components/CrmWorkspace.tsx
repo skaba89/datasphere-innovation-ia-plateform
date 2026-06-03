@@ -38,7 +38,7 @@ const initialOpportunityForm = {
   status: 'Prospect identifie',
   priority: 'Moyenne',
   probability: '20',
-  owner_name: 'Sekouna',
+  owner_name: '',
   notes: '',
 };
 
