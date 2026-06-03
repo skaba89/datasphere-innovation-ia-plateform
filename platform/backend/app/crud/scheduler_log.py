@@ -1,5 +1,4 @@
-from datetime import datetime
-
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from app.models.scheduler_log import SchedulerLog
@@ -22,7 +21,7 @@ def create_log(
         status=status,
         items_processed=items_processed,
         error_message=error_message,
-        started_at=started_at or datetime.utcnow(),
+        started_at=started_at or datetime.now(timezone.utc),
         finished_at=finished_at,
         duration_ms=duration_ms,
     )

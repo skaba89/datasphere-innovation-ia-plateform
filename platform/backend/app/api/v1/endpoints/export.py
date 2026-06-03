@@ -4,8 +4,7 @@ No extra dependencies required (no PDF library).
 The HTML export uses @media print CSS so the browser can save as PDF directly.
 """
 
-from datetime import datetime
-
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import HTMLResponse, PlainTextResponse
 from sqlalchemy.orm import Session
@@ -130,7 +129,7 @@ def export_markdown(deliverable_id: int, db: Session = Depends(get_db)):
 **Version :** {d.version}
 **Langue :** {d.language}
 **Généré par :** {d.generated_by or "DataSphere Platform"}
-**Exporté le :** {datetime.utcnow().strftime('%d/%m/%Y %H:%M')} UTC
+**Exporté le :** {datetime.now(timezone.utc).strftime('%d/%m/%Y %H:%M')} UTC
 
 ---
 
@@ -155,7 +154,7 @@ def export_html(deliverable_id: int, db: Session = Depends(get_db)):
 
     type_label = _TYPE_LABELS.get(d.deliverable_type, d.deliverable_type)
     status_label = _STATUS_LABELS.get(d.status, d.status)
-    exported_at = datetime.utcnow().strftime("%d/%m/%Y %H:%M")
+    exported_at = datetime.now(timezone.utc).strftime("%d/%m/%Y %H:%M")
     body_html = _md_to_html(d.content_markdown or "")
     approved_block = ""
     if d.status == "approved":
@@ -403,3 +402,46 @@ def mission_report(tender_id: int, db: Session = Depends(get_db)):
         )
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.post("/cv/generate")
+def generate_cv(
+    payload: dict,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
+    """
+    Generate a professional consultant CV as DOCX.
+
+    Body: {
+        consultant: {name, title, summary, experience_years, daily_rate,
+                     skills, languages, experiences, education, certifications},
+        tender_id: optional int
+    }
+    """
+    from fastapi.responses import Response
+    from app.services.cv_generator import generate_cv_docx
+    from app.models.tender import Tender
+
+    consultant = payload.get("consultant", {})
+    tender_id = payload.get("tender_id")
+    tender_context = None
+
+    if tender_id:
+        tender = db.query(Tender).filter(Tender.id == tender_id).first()
+        if tender:
+            tender_context = {
+                "tender_title": tender.title,
+                "buyer_name": tender.buyer_name or "",
+                "reference": tender.reference or "",
+            }
+
+    docx_bytes = generate_cv_docx(consultant, tender_context)
+    name = consultant.get("name", "consultant").lower().replace(" ", "_")
+    filename = f"cv_{name}_{datetime.now(timezone.utc).strftime('%Y%m%d')}.docx"
+
+    return Response(
+        content=docx_bytes,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )

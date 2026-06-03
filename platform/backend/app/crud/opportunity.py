@@ -4,8 +4,11 @@ from app.models.opportunity import Opportunity
 from app.schemas.opportunity import OpportunityCreate, OpportunityUpdate
 
 
-def list_opportunities(db: Session, skip: int = 0, limit: int = 100) -> list[Opportunity]:
-    return db.query(Opportunity).order_by(Opportunity.created_at.desc()).offset(skip).limit(limit).all()
+def list_opportunities(db: Session, skip: int = 0, limit: int = 100, include_pending: bool = False) -> list[Opportunity]:
+    q = db.query(Opportunity).order_by(Opportunity.created_at.desc())
+    if not include_pending:
+        q = q.filter(Opportunity.validation_status != "pending")
+    return q.offset(skip).limit(limit).all()
 
 
 def get_opportunity(db: Session, opportunity_id: int) -> Opportunity | None:
@@ -48,7 +51,7 @@ def validate_suggestion(db: Session, opp, validated_by: str, accept: bool):
     from datetime import datetime
     opp.validation_status = "validated" if accept else "rejected"
     opp.validated_by = validated_by
-    opp.validated_at = datetime.utcnow()
+    opp.validated_at = datetime.now(timezone.utc)
     db.add(opp)
     db.commit()
     db.refresh(opp)

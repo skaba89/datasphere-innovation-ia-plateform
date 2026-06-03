@@ -36,40 +36,40 @@ def _xlsx_response(data: bytes, filename: str) -> StreamingResponse:
 @router.get("/pipeline")
 def download_pipeline(db: Session = Depends(get_db)):
     """Download pipeline commercial as .xlsx"""
-    from datetime import datetime
-    fn = f"pipeline_{datetime.utcnow().strftime('%Y%m%d')}.xlsx"
+    from datetime import datetime, timezone
+    fn = f"pipeline_{datetime.now(timezone.utc).strftime('%Y%m%d')}.xlsx"
     return _xlsx_response(export_pipeline(db), fn)
 
 
 @router.get("/tenders")
 def download_tenders(db: Session = Depends(get_db)):
     """Download all tenders + Go/No-Go scores as .xlsx"""
-    from datetime import datetime
-    fn = f"appels_offres_{datetime.utcnow().strftime('%Y%m%d')}.xlsx"
+    from datetime import datetime, timezone
+    fn = f"appels_offres_{datetime.now(timezone.utc).strftime('%Y%m%d')}.xlsx"
     return _xlsx_response(export_tenders(db), fn)
 
 
 @router.get("/actions")
 def download_actions(db: Session = Depends(get_db)):
     """Download agent actions report as .xlsx"""
-    from datetime import datetime
-    fn = f"actions_agents_{datetime.utcnow().strftime('%Y%m%d')}.xlsx"
+    from datetime import datetime, timezone
+    fn = f"actions_agents_{datetime.now(timezone.utc).strftime('%Y%m%d')}.xlsx"
     return _xlsx_response(export_actions(db), fn)
 
 
 @router.get("/deliverables")
 def download_deliverables(db: Session = Depends(get_db)):
     """Download deliverables status report as .xlsx"""
-    from datetime import datetime
-    fn = f"livrables_{datetime.utcnow().strftime('%Y%m%d')}.xlsx"
+    from datetime import datetime, timezone
+    fn = f"livrables_{datetime.now(timezone.utc).strftime('%Y%m%d')}.xlsx"
     return _xlsx_response(export_deliverables(db), fn)
 
 
 @router.get("/full-report")
 def download_full_report(db: Session = Depends(get_db)):
     """Download complete multi-sheet report as .xlsx"""
-    from datetime import datetime
-    fn = f"datasphere_rapport_complet_{datetime.utcnow().strftime('%Y%m%d')}.xlsx"
+    from datetime import datetime, timezone
+    fn = f"datasphere_rapport_complet_{datetime.now(timezone.utc).strftime('%Y%m%d')}.xlsx"
     return _xlsx_response(export_full_report(db), fn)
 
 
@@ -80,7 +80,7 @@ def export_contacts_csv(db: Session = Depends(get_db)):
     """Export all contacts as CSV."""
     import csv
     import io
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     from fastapi.responses import Response
 
@@ -113,7 +113,7 @@ def export_contacts_csv(db: Session = Depends(get_db)):
             (contact.notes or "")[:120],
         ])
 
-    filename = f"contacts_{datetime.utcnow().strftime('%Y%m%d')}.csv"
+    filename = f"contacts_{datetime.now(timezone.utc).strftime('%Y%m%d')}.csv"
     return Response(
         content=output.getvalue(),
         media_type="text/csv",
@@ -126,7 +126,7 @@ def export_opportunities_csv(db: Session = Depends(get_db)):
     """Export all opportunities as CSV."""
     import csv
     import io
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     from fastapi.responses import Response
 
@@ -158,7 +158,7 @@ def export_opportunities_csv(db: Session = Depends(get_db)):
             opp.created_at.strftime("%d/%m/%Y") if opp.created_at else "",
         ])
 
-    filename = f"opportunites_{datetime.utcnow().strftime('%Y%m%d')}.csv"
+    filename = f"opportunites_{datetime.now(timezone.utc).strftime('%Y%m%d')}.csv"
     return Response(
         content=output.getvalue(),
         media_type="text/csv",

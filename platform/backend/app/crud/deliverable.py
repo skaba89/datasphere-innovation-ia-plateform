@@ -1,5 +1,4 @@
-from datetime import datetime
-
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from app.models.deliverable import Deliverable
@@ -41,7 +40,7 @@ def delete_deliverable(db: Session, deliverable: Deliverable) -> None:
 def mark_deliverable_in_review(db: Session, deliverable: Deliverable, reviewer_name: str) -> Deliverable:
     deliverable.status = "in_review"
     deliverable.reviewed_by = reviewer_name
-    deliverable.reviewed_at = datetime.utcnow()
+    deliverable.reviewed_at = datetime.now(timezone.utc)
     db.add(deliverable)
     db.commit()
     db.refresh(deliverable)
@@ -51,7 +50,7 @@ def mark_deliverable_in_review(db: Session, deliverable: Deliverable, reviewer_n
 def approve_deliverable(db: Session, deliverable: Deliverable, approver_name: str) -> Deliverable:
     deliverable.status = "approved"
     deliverable.approved_by = approver_name
-    deliverable.approved_at = datetime.utcnow()
+    deliverable.approved_at = datetime.now(timezone.utc)
     db.add(deliverable)
     db.commit()
     db.refresh(deliverable)

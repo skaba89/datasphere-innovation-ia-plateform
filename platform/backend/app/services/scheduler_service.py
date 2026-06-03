@@ -15,8 +15,7 @@ Human validation gate:
 from __future__ import annotations
 
 import logging
-from datetime import datetime
-
+from datetime import datetime, timezone
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.jobstores.memory import MemoryJobStore
 
@@ -48,7 +47,7 @@ def get_scheduler() -> BackgroundScheduler:
 
 def _log(db, job_id: str, job_name: str, status: str, count: int, error: str | None, started: datetime) -> None:
     from app.crud.scheduler_log import create_log
-    finished = datetime.utcnow()
+    finished = datetime.now(timezone.utc)
     ms = int((finished - started).total_seconds() * 1000)
     create_log(
         db,
@@ -80,7 +79,7 @@ def _execute_pending_actions_job() -> None:
 
     settings = get_settings()
     db = SessionLocal()
-    started = datetime.utcnow()
+    started = datetime.now(timezone.utc)
     count = 0
     error_msg = None
 
@@ -137,7 +136,7 @@ def _auto_plan_assignments_job() -> None:
     from app.services.agent_action_engine import build_default_actions_for_assignment
 
     db = SessionLocal()
-    started = datetime.utcnow()
+    started = datetime.now(timezone.utc)
     count = 0
     error_msg = None
 
@@ -194,7 +193,7 @@ def _auto_generate_drafts_job() -> None:
     )
 
     db = SessionLocal()
-    started = datetime.utcnow()
+    started = datetime.now(timezone.utc)
     count = 0
     error_msg = None
 
@@ -288,7 +287,7 @@ def _daily_report_job() -> None:
     from app.crud.notification import push_approval_required, push_deadline_warning, count_unread
 
     db = SessionLocal()
-    started = datetime.utcnow()
+    started = datetime.now(timezone.utc)
     error_msg = None
 
     try:
@@ -324,15 +323,15 @@ def _daily_report_job() -> None:
             db.query(Tender)
             .filter(
                 Tender.submission_deadline.isnot(None),
-                Tender.submission_deadline >= datetime.utcnow(),
-                Tender.submission_deadline <= datetime.utcnow() + timedelta(days=7),
+                Tender.submission_deadline >= datetime.now(timezone.utc),
+                Tender.submission_deadline <= datetime.now(timezone.utc) + timedelta(days=7),
                 Tender.status != "submitted",
             )
             .all()
         )
 
         for tender in upcoming_tenders:
-            days_left = (tender.submission_deadline - datetime.utcnow()).days
+            days_left = (tender.submission_deadline - datetime.now(timezone.utc)).days
             try:
                 push_deadline_warning(db, tender.id, tender.reference or tender.title, days_left)
             except Exception:
@@ -368,7 +367,7 @@ def _boamp_scan_job() -> None:
     from app.services.suggestion_service import suggest_from_boamp
 
     db = SessionLocal()
-    started = datetime.utcnow()
+    started = datetime.now(timezone.utc)
     error_msg = None
     count = 0
     try:

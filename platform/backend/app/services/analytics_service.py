@@ -5,8 +5,7 @@ Aggregates data from all tables into a unified dashboard payload.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
-
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -76,7 +75,7 @@ def _tender_stats(db: Session) -> TenderStats:
     by_status: dict[str, int] = {}
     by_decision: dict[str, int] = {}
     scores = []
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     week_later = now + timedelta(days=7)
     deadlines_this_week = 0
 
@@ -157,7 +156,7 @@ def _scheduler_stats(db: Session) -> SchedulerStats:
     from app.services.scheduler_service import get_scheduler
 
     sched = get_scheduler()
-    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
 
     last_log = (
         db.query(SchedulerLog)
@@ -186,7 +185,7 @@ def _scheduler_stats(db: Session) -> SchedulerStats:
 
 def _notifications(db: Session) -> list[NotificationItem]:
     items: list[NotificationItem] = []
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     # 1. Actions en attente d'approbation humaine
     pending_actions = (
@@ -271,5 +270,5 @@ def get_pipeline_analytics(db: Session) -> PipelineAnalytics:
         deliverables=_deliverable_stats(db),
         scheduler=_scheduler_stats(db),
         notifications=_notifications(db),
-        computed_at=datetime.utcnow(),
+        computed_at=datetime.now(timezone.utc),
     )

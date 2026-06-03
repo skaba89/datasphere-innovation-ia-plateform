@@ -20,7 +20,7 @@ Uses:
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import httpx
@@ -67,7 +67,7 @@ def _fetch_boamp(
     Fetch recent BOAMP notices via the public search API.
     Returns raw notice dicts.
     """
-    since = (datetime.utcnow() - timedelta(days=days_back)).strftime("%Y-%m-%d")
+    since = (datetime.now(timezone.utc) - timedelta(days=days_back)).strftime("%Y-%m-%d")
     params = {
         "q": " OR ".join(RELEVANCE_KEYWORDS[:8]),
         "rows": max_results,
@@ -267,7 +267,7 @@ def suggest_from_boamp(
         "created_tenders": created_tenders,
         "skipped": skipped,
         "source": "boamp",
-        "run_at": datetime.utcnow().isoformat(),
+        "run_at": datetime.now(timezone.utc).isoformat(),
     }
     logger.info("BOAMP suggestions: %s", result)
     return result

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { getUserName } from '../api/userContext';
 import { CheckCircle2, PlayCircle, RefreshCw, Route, WandSparkles } from 'lucide-react';
 
 import { apiRequest } from '../api/client';
@@ -68,7 +69,7 @@ export function AgentOperationsPanel({ token }: Props) {
         expected_deliverable: expectedDeliverable,
         priority: 'Haute',
         status: 'planned',
-        human_reviewer: 'Sekouna',
+        human_reviewer: getUserName(),
       };
 
       const created = await apiRequest<AgentAssignment>('/agents/assignments', {
@@ -110,7 +111,7 @@ export function AgentOperationsPanel({ token }: Props) {
     setMessage(null);
     setError(null);
     try {
-      await apiRequest<AgentAction>(`/agent-actions/${actionId}/approve?actor_name=Sekouna`, { method: 'POST' }, token);
+      await apiRequest<AgentAction>(`/agent-actions/${actionId}/approve?actor_name=${encodeURIComponent(getUserName())}`, { method: 'POST' }, token);
       setMessage('Action approuvee.');
       await refreshData();
     } catch (err) {

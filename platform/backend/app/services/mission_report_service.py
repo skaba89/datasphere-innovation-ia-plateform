@@ -6,7 +6,7 @@ deliverables (approved). Returns print-ready HTML.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from app.models.agent import AgentAction, AgentAssignment, AgentProfile
@@ -83,7 +83,7 @@ def generate_mission_report(db: Session, tender_id: int) -> str:
         .all()
     )
 
-    today = datetime.utcnow().strftime("%d/%m/%Y")
+    today = datetime.now(timezone.utc).strftime("%d/%m/%Y")
     score_total = sum((c.score or 0) * (c.weight or 1) for c in criteria)
     max_score = sum(10 * (c.weight or 1) for c in criteria) or 1
     score_pct = round(score_total / max_score * 100, 1)

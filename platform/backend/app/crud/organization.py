@@ -4,8 +4,11 @@ from app.models.organization import Organization
 from app.schemas.organization import OrganizationCreate, OrganizationUpdate
 
 
-def list_organizations(db: Session, skip: int = 0, limit: int = 100) -> list[Organization]:
-    return db.query(Organization).order_by(Organization.created_at.desc()).offset(skip).limit(limit).all()
+def list_organizations(db: Session, skip: int = 0, limit: int = 100, include_pending: bool = False) -> list[Organization]:
+    q = db.query(Organization).order_by(Organization.created_at.desc())
+    if not include_pending:
+        q = q.filter(Organization.validation_status != "pending")
+    return q.offset(skip).limit(limit).all()
 
 
 def get_organization(db: Session, organization_id: int) -> Organization | None:
@@ -58,7 +61,7 @@ def validate_suggestion(
     from datetime import datetime
     org.validation_status = "validated" if accept else "rejected"
     org.validated_by = validated_by
-    org.validated_at = datetime.utcnow()
+    org.validated_at = datetime.now(timezone.utc)
     db.add(org)
     db.commit()
     db.refresh(org)

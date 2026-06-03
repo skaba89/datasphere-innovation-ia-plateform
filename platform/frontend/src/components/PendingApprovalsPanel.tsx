@@ -163,7 +163,7 @@ export default function PendingApprovalsPanel() {
         <input
           value={reviewerName}
           onChange={(e) => setReviewerName(e.target.value)}
-          placeholder="Votre nom (ex. Sekouna)"
+          placeholder="Votre nom"
           style={{
             flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(148,163,184,0.2)',
             borderRadius: 8, padding: '7px 12px', color: '#f1f5f9', fontSize: '0.84rem',

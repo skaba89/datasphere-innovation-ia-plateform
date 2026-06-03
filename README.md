@@ -3,30 +3,66 @@
 > **Cabinet de conseil augmenté par IA** — Missions Data, IT, IA et réponse aux appels d'offres  
 > France & Afrique francophone
 
-[![CI Quality Gates](https://github.com/skaba89/datasphere-innovation-ia-plateform/actions/workflows/ci.yml/badge.svg)](https://github.com/skaba89/datasphere-innovation-ia-plateform/actions)
+[![CI](https://github.com/skaba89/datasphere-innovation-ia-plateform/actions/workflows/ci.yml/badge.svg)](https://github.com/skaba89/datasphere-innovation-ia-plateform/actions)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-blue)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green)](https://fastapi.tiangolo.com)
 [![React 18](https://img.shields.io/badge/React-18-61dafb)](https://react.dev)
-[![Tests](https://img.shields.io/badge/Tests-176%20passing-brightgreen)]()
-[![Version](https://img.shields.io/badge/Version-1.6.0-yellow)]()
+[![Tests](https://img.shields.io/badge/Tests-200%2B%20passing-brightgreen)]()
+[![Version](https://img.shields.io/badge/Version-1.8.0-yellow)]()
 
 ---
 
-## Démarrage en 30 secondes
+## Démarrage en 5 minutes
+
+### Prérequis
+- Docker Desktop 4.x
+- Git
+
+### Lancement local (Docker)
 
 ```bash
-git clone git@github.com:skaba89/datasphere-innovation-ia-plateform.git
+git clone https://github.com/skaba89/datasphere-innovation-ia-plateform.git
 cd datasphere-innovation-ia-plateform
-cp .env.example .env          # Éditer SECRET_KEY et POSTGRES_PASSWORD
-docker compose up --build     # Démarre tout
 
-# Créer l'admin (une seule fois)
+# 1. Copier et configurer l'environnement
+cp .env.example .env
+# Éditer .env : définir SECRET_KEY et POSTGRES_PASSWORD au minimum
+
+# 2. Démarrer les services
+docker compose up -d
+
+# 3. Créer l'admin initial (une seule fois)
 curl -X POST http://localhost:8000/api/v1/auth/bootstrap-admin \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@datasphere-innovation.net","password":"Admin123456!","first_name":"Admin","last_name":"DataSphere","role":"admin","is_active":true}'
+  -d '{"email":"admin@datasphere.fr","password":"Admin123456!","first_name":"Admin","last_name":"DataSphere","role":"admin","is_active":true}'
 
-open http://localhost:5173     # Interface web
-open http://localhost:8000/docs # Swagger API
+# 4. Ouvrir l'application
+open http://localhost:5173
+```
+
+### Lancement dev (sans Docker)
+
+```bash
+# Terminal 1 — PostgreSQL
+docker run -d --name pg -p 5432:5432 \
+  -e POSTGRES_DB=datasphere_platform \
+  -e POSTGRES_USER=datasphere \
+  -e POSTGRES_PASSWORD=devpassword \
+  postgres:16-alpine
+
+# Terminal 2 — Backend
+cd platform/backend
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+cp ../../.env.example .env
+# Modifier DATABASE_URL avec les credentials ci-dessus
+python scripts/migrate.py upgrade   # Apply migrations
+uvicorn app.main:app --reload
+
+# Terminal 3 — Frontend
+cd platform/frontend
+npm install
+npm run dev
 ```
 
 ---
@@ -34,190 +70,188 @@ open http://localhost:8000/docs # Swagger API
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    DataSphere IA Platform                    │
-├──────────────────┬──────────────────┬───────────────────────┤
-│   React 18       │   FastAPI 0.115  │   PostgreSQL 16       │
-│   TypeScript     │   SQLAlchemy 2   │   Alembic migrations  │
-│   Vite           │   APScheduler    │                       │
-│   353 kB bundle  │   + LLM service  │                       │
-└──────────────────┴──────────────────┴───────────────────────┘
-                          │
-        ┌─────────────────┴──────────────────┐
-        │      LLM Provider Chain            │
-        │  Anthropic → OpenAI → Simulation   │
-        └────────────────────────────────────┘
+datasphere-innovation-ia-plateform/
+├── platform/
+│   ├── backend/                 # FastAPI + SQLAlchemy + PostgreSQL
+│   │   ├── app/
+│   │   │   ├── api/v1/endpoints/  # 27 modules d'endpoints (156 routes)
+│   │   │   ├── models/            # 22 tables SQLAlchemy
+│   │   │   ├── schemas/           # Pydantic v2 schemas
+│   │   │   ├── crud/              # Couche d'accès données
+│   │   │   ├── services/          # Logique métier (LLM, CV, analytics...)
+│   │   │   └── core/              # Config, security, settings
+│   │   ├── alembic/versions/      # 4 migrations
+│   │   ├── tests/                 # 200+ tests pytest
+│   │   └── requirements.txt
+│   └── frontend/                # React 18 + TypeScript + Vite
+│       ├── src/
+│       │   ├── pages/           # 12 pages (Dashboard, Tenders, Workspaces...)
+│       │   ├── components/      # 27 composants réutilisables
+│       │   └── api/             # Client API + types + userContext
+│       ├── e2e/                 # 18 tests Playwright
+│       └── package.json
+├── ops/
+│   └── backup.sh                # Script backup PostgreSQL
+├── .github/workflows/ci.yml     # CI GitHub Actions
+├── docker-compose.yml           # Dev
+├── docker-compose.prod.yml      # Production (Gunicorn + Nginx + backup)
+├── .env.example                 # Template variables d'environnement
+└── .env.prod.example            # Template production
 ```
-
----
-
-## Fonctionnalités
-
-### 🎯 Pipeline commercial
-- CRM Organisations & Opportunités
-- **Kanban pipeline** 8 colonnes — déplacement par clic
-- Contacts CRM par organisation
-- Dashboard KPIs (pipeline value pondérée, taux conversion)
-
-### 📋 Appels d'offres
-- Création AO, exigences, matrice de conformité
-- **Go/No-Go IA** avec confiance, risques et opportunités
-- Scoring pondéré multi-critères + **Radar chart**
-- Templates sectoriels (Télécom, Finance, Public, Énergie, IT)
-
-### 🤖 Agents autonomes
-- 5 profils consultants (Data Architect, Expert AO, Gouvernance…)
-- Affectations avec objectifs et livrables attendus
-- **Scheduler APScheduler** 4 jobs (execute / plan / draft / report)
-- **Gouvernance humaine** : actions sensibles bloquées sans approbation
-
-### 📄 Livrables
-- 7 types de documents (mémoire technique, note de cadrage, offre…)
-- Génération de brouillon IA depuis le contexte mission
-- **Versioning** avec snapshots, diff ligne par ligne, restauration
-- Workflow Draft → In Review → Approved
-- Export Markdown / HTML imprimable (PDF)
-- **Email client** généré automatiquement
-
-### 📊 Analytics & Export
-- Dashboard pipeline temps réel
-- **Gantt** des missions avec actions colorées
-- 5 exports Excel (pipeline, AO, actions, livrables, rapport complet)
-- **Rapport de mission** HTML/PDF complet par AO
-- Activity feed avec journal unifié
-
-### 👥 Équipe & Sécurité
-- Multi-utilisateurs (admin / manager / consultant / viewer)
-- **Notifications persistantes** in-app (mark read, TTL, priorité)
-- Recherche globale ⌘K (6 entités)
-- Audit logs complets
-- Rate limiting sur l'API (slowapi)
-- Security headers (CSP, HSTS, X-Frame…)
-
-### ⚙ Opérations
-- Santé système (DB, Scheduler, LLM, SMTP)
-- Logs scheduler + historique exécutions
-- Approbations en attente avec validation 1-clic
 
 ---
 
 ## Stack technique
 
-| Couche | Technologie |
-|--------|-------------|
-| Backend | FastAPI 0.115, SQLAlchemy 2.0, Pydantic v2 |
-| Auth | JWT (python-jose), bcrypt |
-| Base de données | PostgreSQL 16, Alembic migrations |
-| Scheduler | APScheduler 3.10 |
-| LLM | Anthropic / OpenAI / OpenRouter / Mistral / Simulation |
-| Export | openpyxl (Excel), HTML print-ready (PDF natif) |
-| Frontend | React 18, TypeScript, Vite, Lucide icons |
-| CI/CD | GitHub Actions |
-| Dev | Docker Compose |
-| Prod | Gunicorn + Uvicorn, Nginx reverse proxy |
+| Couche | Technologie | Version |
+|---|---|---|
+| API | FastAPI | 0.115 |
+| ORM | SQLAlchemy | 2.0 |
+| Migrations | Alembic | 1.x |
+| Base de données | PostgreSQL | 16 |
+| Auth | JWT (python-jose) + bcrypt | — |
+| Scheduler | APScheduler | 3.x |
+| Frontend | React + TypeScript | 18 + 5.x |
+| Build | Vite | 5.x |
+| Tests backend | pytest | 8.x |
+| Tests E2E | Playwright | 1.x |
+| CI | GitHub Actions | — |
+| Containers | Docker + Compose | — |
 
 ---
 
-## Structure du projet
+## Configuration LLM — 11 providers (coût-first)
 
-```
-datasphere-innovation-ia-plateform/
-├── platform/
-│   ├── backend/
-│   │   ├── app/
-│   │   │   ├── api/v1/endpoints/   # 22 routers REST
-│   │   │   ├── core/               # Config, sécurité
-│   │   │   ├── crud/               # 16 modules CRUD
-│   │   │   ├── models/             # 19 tables SQLAlchemy
-│   │   │   ├── schemas/            # Pydantic schemas
-│   │   │   └── services/           # LLM, scheduler, exports
-│   │   ├── alembic/                # Migrations DB
-│   │   ├── tests/                  # 176 tests pytest
-│   │   ├── Dockerfile              # Dev
-│   │   └── Dockerfile.prod         # Production (Gunicorn)
-│   └── frontend/
-│       ├── src/
-│       │   ├── pages/              # 8 pages
-│       │   ├── components/         # 20+ composants
-│       │   └── api/                # Client HTTP + types
-│       ├── Dockerfile.prod         # Multi-stage Nginx
-│       └── nginx.spa.conf
-├── ops/
-│   ├── nginx/nginx.prod.conf       # Reverse proxy prod
-│   └── deploy.sh                   # Script de déploiement
-├── docker-compose.yml              # Développement
-├── docker-compose.prod.yml         # Production
-├── .env.example                    # Variables dev
-└── .env.prod.example               # Variables prod
-```
+| Tier | Provider | Coût | Clé requise |
+|---|---|---|---|
+| **Gratuit** | GLM-4-Flash (ZhipuAI) | 0 € | `GLM_API_KEY` |
+| **Quasi-gratuit** | Groq (Llama 3.3 70B) | ~0 € | `GROQ_API_KEY` |
+| **Quasi-gratuit** | Gemini Flash | ~0 € | `GEMINI_API_KEY` |
+| **Budget** | Together AI | ~0.18$/M tokens | `TOGETHER_API_KEY` |
+| **Budget** | Qwen Turbo | très peu cher | `QWEN_API_KEY` |
+| **Standard** | OpenRouter | variable | `OPENROUTER_API_KEY` |
+| **Standard** | Mistral small | ~0.2$/M tokens | `MISTRAL_API_KEY` |
+| **Standard** | Cohere R | standard | `COHERE_API_KEY` |
+| **Standard** | Perplexity Sonar | ~0.001$/req | `PERPLEXITY_API_KEY` |
+| **Premium** | OpenAI GPT | ~1$/M tokens | `OPENAI_API_KEY` |
+| **Premium** | Anthropic Claude | ~1.25$/M tokens | `ANTHROPIC_API_KEY` |
+
+**Configuration minimale 0 €/mois** : définir `GLM_API_KEY` + `GROQ_API_KEY` + `GEMINI_API_KEY`.
+
+---
+
+## Endpoints API (156 routes)
+
+Documentation interactive : `http://localhost:8000/docs` (Swagger UI)  
+Documentation alternative : `http://localhost:8000/redoc`
+
+### Groupes principaux
+
+| Préfixe | Description | Auth |
+|---|---|---|
+| `/auth` | Login, refresh, reset password | Mixte |
+| `/team` | Gestion équipe (admin) | ✓ Requis |
+| `/organizations` | CRM — Organismes | ✓ Requis |
+| `/opportunities` | CRM — Opportunités | ✓ Requis |
+| `/tenders` | Appels d'offres | ✓ Requis |
+| `/deliverables` | Livrables + workflow | ✓ Requis |
+| `/agents` | Agents IA + affectations | ✓ Requis |
+| `/agent-actions` | Actions gouvernées | ✓ Requis |
+| `/analytics` | KPIs + Gantt + Dashboard | ✓ Requis |
+| `/suggestions` | Suggestions IA + validation | ✓ Requis |
+| `/workspaces` | Multi-tenant | ✓ Requis |
+| `/uploads` | Pièces jointes | ✓ Requis |
+| `/providers` | Statut LLM providers | ✓ Requis |
+| `/audit-logs` | Journal d'audit | ✓ Requis |
+| `/notifications` | Notifications + SSE | ✓ Requis |
+| `/contact` | Formulaire contact public | Public |
+| `/health` | Santé application | Public |
+
+---
+
+## Gouvernance IA (règle immuable)
+
+Toute action d'agent avec `requires_human_approval=True` **ne s'exécute jamais automatiquement**.  
+Elle attend une validation explicite via `POST /agent-actions/{id}/approve`.
+
+Toute entité suggérée par l'IA (BOAMP, import texte) a `validation_status="pending"` et est **invisible dans le CRM normal** jusqu'à validation humaine via le panel "Suggestions IA".
 
 ---
 
 ## Tests
 
 ```bash
+# Tests backend (unitaires + intégration)
 cd platform/backend
-pytest -q                    # Suite complète (176 tests, ~2 min)
-pytest tests/test_crm.py     # Module spécifique
-pytest --cov=app -q          # Avec couverture
+python -m pytest tests/ -v
+
+# Tests spécifiques
+python -m pytest tests/test_rbac.py -v          # RBAC
+python -m pytest tests/test_api_hardening.py -v  # Hardening
+python -m pytest tests/test_auth.py -v           # Auth
+
+# Tests E2E Playwright (frontend + backend)
+cd platform/frontend
+npx playwright install chromium
+npm run test:e2e
 ```
 
-Tests organisés par module : `test_auth`, `test_crm`, `test_tenders`, `test_agents`, `test_deliverables`, `test_scheduler`, `test_analytics`, `test_exports`, `test_commercial`, `test_platform`, `test_advanced`.
+---
+
+## CI/CD
+
+Le pipeline GitHub Actions vérifie à chaque PR :
+1. Lint (ruff)
+2. Tests backend (pytest, 200+ tests)
+3. Build frontend (tsc + vite)
+4. Tests E2E Playwright (sur PR vers main)
 
 ---
 
 ## Déploiement production
 
 ```bash
+# Variables obligatoires en prod
 cp .env.prod.example .env.prod
-# Remplir SECRET_KEY, POSTGRES_PASSWORD, ANTHROPIC_API_KEY...
+# Définir : SECRET_KEY, POSTGRES_PASSWORD, GLM_API_KEY, GROQ_API_KEY, GEMINI_API_KEY
 
-./ops/deploy.sh              # Pre-flight + tests + build + migrate
-# ou step by step:
-docker compose -f docker-compose.prod.yml build
+# Démarrage
 docker compose -f docker-compose.prod.yml up -d
-docker compose -f docker-compose.prod.yml exec backend alembic upgrade head
-```
 
-### Migrations Alembic
-
-```bash
-# Appliquer
-alembic upgrade head
-
-# Rollback
-alembic downgrade -1
-
-# Créer une migration
-python scripts/migrate.py create "add_column_x_to_y"
-
-# Vérifier (CI)
-python scripts/migrate.py check
+# Backup quotidien automatique dans ./backups/
+# Rotation : 14 jours
 ```
 
 ---
 
-## Gouvernance IA
+## Variables d'environnement requises
 
-> **Règle fondamentale** : Les agents IA proposent et exécutent les actions routinières. Toute action marquée `requires_human_approval=True` est **bloquée** jusqu'à validation explicite via `POST /api/v1/agent-actions/{id}/approve`.
+| Variable | Requis | Default | Description |
+|---|---|---|---|
+| `DATABASE_URL` | ✓ | — | PostgreSQL connection string |
+| `SECRET_KEY` | ✓ | — | JWT signing key (min 32 chars) |
+| `POSTGRES_PASSWORD` | ✓ | — | DB password |
+| `GLM_API_KEY` | Recommandé | — | Gratuit — open.bigmodel.ai |
+| `GROQ_API_KEY` | Recommandé | — | Gratuit — console.groq.com |
+| `GEMINI_API_KEY` | Recommandé | — | Gratuit — aistudio.google.com |
+| `SMTP_HOST` | Optionnel | — | Désactivé = mode preview uniquement |
+| `SCHEDULER_ENABLED` | Non | `true` | Désactiver pour tests |
+| `BOAMP_SCAN_ENABLED` | Non | `true` | Veille BOAMP quotidienne |
 
-```
-auto_ready → exécuté automatiquement par le scheduler
-approved   → exécuté après validation humaine
-```
-
-Le scheduler ne contourne jamais cette règle. Audit trail sur chaque décision.
-
----
-
-## Equipe
-
-**Co-fondateur & Lead Data Architect** : Sekouna KABA (Cheickna)  
-Expertise : Snowflake, dbt, Apache Airflow, PySpark, AWS/GCP/Azure  
-Spécialité : Architecture Lakehouse, missions Data Afrique francophone
+Voir `.env.example` pour la liste complète documentée.
 
 ---
 
-## Licence
+## Sécurité
 
-Propriété de DataSphere Innovation. Utilisation privée uniquement.
+- **Auth** : JWT (access 60min + refresh 30j), bcrypt pour les passwords
+- **RBAC** : 4 rôles (admin / manager / consultant / viewer), enforced sur toutes les routes
+- **Rate limiting** : SlowAPI sur login (10/min) et contact (5/10min)
+- **File uploads** : extension whitelist + MIME check + 20MB limit
+- **CORS** : origines explicites depuis `CORS_ORIGINS` env var
+- **SQL** : SQLAlchemy ORM (pas de raw SQL dans l'app)
+- **Secrets** : aucun secret hardcodé (`.env` gitignorés)
+
+---
+
+*DataSphere Innovation — v1.8.0 — Dernière mise à jour : juin 2026*

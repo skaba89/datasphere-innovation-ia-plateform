@@ -78,7 +78,7 @@ export function DeliverablePanel({ token }: Props) {
   const [genAudience, setGenAudience] = useState('Direction');
 
   // Review/approve inline
-  const [reviewName, setReviewName] = useState('Sekouna');
+  const [reviewName, setReviewName] = useState('');
   const [approveName, setApproveName] = useState('Cheickna KABA');
 
   async function refresh() {
