@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { API_BASE } from '../api/config';
 import {
   Activity,
   Bot,
@@ -261,7 +262,6 @@ export default function OperationsPage() {
 
 // ── Exports panel ─────────────────────────────────────────────────────────────
 
-const API = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 
 function ExportsPanel() {
   const exports = [
@@ -269,35 +269,35 @@ function ExportsPanel() {
       key: 'pipeline',
       label: 'Pipeline commercial',
       desc: 'Toutes les opportunités avec valeur, probabilité, pipeline pondéré et prochaine action.',
-      url: `${API}/export/excel/pipeline`,
+      url: `${API_BASE}/export/excel/pipeline`,
       color: '#facc15',
     },
     {
       key: 'tenders',
       label: 'Appels d\'offres',
       desc: 'Tous les AO avec scores Go/No-Go, statuts, deadlines et nombre d\'exigences.',
-      url: `${API}/export/excel/tenders`,
+      url: `${API_BASE}/export/excel/tenders`,
       color: '#3b82f6',
     },
     {
       key: 'actions',
       label: 'Actions agents',
       desc: 'Rapport complet des actions : statut, approbations, exécutions, résultats.',
-      url: `${API}/export/excel/actions`,
+      url: `${API_BASE}/export/excel/actions`,
       color: '#8b5cf6',
     },
     {
       key: 'deliverables',
       label: 'Livrables',
       desc: 'Tous les livrables : statut, version, reviewer, approbateur, résumé.',
-      url: `${API}/export/excel/deliverables`,
+      url: `${API_BASE}/export/excel/deliverables`,
       color: '#22c55e',
     },
     {
       key: 'full-report',
       label: 'Rapport complet (multi-onglets)',
       desc: '4 onglets en un seul fichier : Pipeline + AO + Actions + Livrables.',
-      url: `${API}/export/excel/full-report`,
+      url: `${API_BASE}/export/excel/full-report`,
       color: '#f97316',
       featured: true,
     },

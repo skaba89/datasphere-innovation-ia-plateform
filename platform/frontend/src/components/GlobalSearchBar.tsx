@@ -39,6 +39,7 @@ export default function GlobalSearchBar() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResults | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const token = tokenStorage.get();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -58,11 +59,12 @@ export default function GlobalSearchBar() {
   }, []);
 
   useEffect(() => {
-    if (!open) { setQuery(''); setResults(null); }
+    if (!open) { setQuery(''); setResults(null); setError(null); }
   }, [open]);
 
   function handleInput(val: string) {
     setQuery(val);
+    setError(null);
     clearTimeout(debounceRef.current);
     if (val.length < 2) { setResults(null); return; }
     debounceRef.current = setTimeout(async () => {
@@ -70,6 +72,9 @@ export default function GlobalSearchBar() {
       try {
         const data = await apiRequest<SearchResults>(`/search?q=${encodeURIComponent(val)}&limit=6`, {}, token);
         setResults(data);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Erreur de recherche');
+        setResults(null);
       } finally { setLoading(false); }
     }, 250);
   }
@@ -154,7 +159,12 @@ export default function GlobalSearchBar() {
                   Tapez au moins 2 caractères pour rechercher dans toute la plateforme.
                 </div>
               )}
-              {query.length >= 2 && !loading && results?.total === 0 && (
+              {error && (
+                <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 8, color: '#fca5a5', fontSize: '.82rem' }}>
+                  <span>⚠</span> {error}
+                </div>
+              )}
+              {query.length >= 2 && !loading && !error && results?.total === 0 && (
                 <div style={{ padding: '20px 18px', color: '#475569', fontSize: '0.84rem', textAlign: 'center' }}>
                   Aucun résultat pour <strong style={{ color: '#94a3b8' }}>« {query} »</strong>
                 </div>

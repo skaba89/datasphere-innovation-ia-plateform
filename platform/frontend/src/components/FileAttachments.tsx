@@ -3,6 +3,7 @@
  * Used in TenderWorkspace and DeliverablePanel.
  */
 import { useEffect, useRef, useState } from 'react';
+import { API_BASE } from '../api/config';
 import { Paperclip, Upload, Download, Trash2, FileText, Image, Archive } from 'lucide-react';
 import { uploadFile, apiRequest, tokenStorage } from '../api/client';
 
@@ -20,7 +21,6 @@ interface Props {
   resourceId: number;
 }
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 
 function formatSize(bytes: number | null) {
   if (!bytes) return '?';
