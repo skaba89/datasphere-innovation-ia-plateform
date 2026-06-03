@@ -6,8 +6,7 @@ Uses openpyxl with styled headers, auto-column widths and freeze panes.
 from __future__ import annotations
 
 import io
-from datetime import datetime
-
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from app.models.agent import AgentAction, AgentAssignment, AgentProfile
@@ -257,7 +256,7 @@ def export_full_report(db: Session) -> bytes:
     from openpyxl.styles import Alignment, Font
     ws_cover["A1"] = "DataSphere Innovation IA Platform"
     ws_cover["A1"].font = Font(name="Calibri", bold=True, size=20, color="0F172A")
-    ws_cover["A2"] = f"Rapport complet — {datetime.utcnow().strftime('%d/%m/%Y %H:%M')} UTC"
+    ws_cover["A2"] = f"Rapport complet — {datetime.now(timezone.utc).strftime('%d/%m/%Y %H:%M')} UTC"
     ws_cover["A2"].font = Font(name="Calibri", size=12, color="64748B")
     ws_cover.column_dimensions["A"].width = 60
 

@@ -1,5 +1,4 @@
-from datetime import datetime
-
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from app.models.sector_template import SectorTemplate
@@ -40,7 +39,7 @@ def install_builtin_templates(db: Session) -> list[SectorTemplate]:
         if existing is not None:
             installed.append(existing)
             continue
-        tpl = SectorTemplate(**data, is_builtin=True, created_at=datetime.utcnow(), updated_at=datetime.utcnow())
+        tpl = SectorTemplate(**data, is_builtin=True, created_at=datetime.now(timezone.utc), updated_at=datetime.now(timezone.utc))
         db.add(tpl)
         db.commit()
         db.refresh(tpl)

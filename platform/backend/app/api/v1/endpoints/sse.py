@@ -15,7 +15,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import AsyncGenerator
 
 from fastapi import APIRouter, Depends, Request
@@ -61,7 +61,7 @@ def push_notification_created(notification_id: int, title: str, priority: str, u
         "id": notification_id,
         "title": title,
         "priority": priority,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     })
 
 
@@ -71,7 +71,7 @@ def push_action_approved(action_id: int, action_title: str) -> None:
         "type": "action_approved",
         "id": action_id,
         "title": action_title,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     })
 
 
@@ -99,7 +99,7 @@ async def _event_generator(user_id: int, request: Request) -> AsyncGenerator[str
                 yield f"event: {event['type']}\ndata: {json.dumps(event)}\n\n"
             except asyncio.TimeoutError:
                 # Keep-alive heartbeat
-                yield f"event: heartbeat\ndata: {json.dumps({'ts': datetime.utcnow().isoformat()})}\n\n"
+                yield f"event: heartbeat\ndata: {json.dumps({'ts': datetime.now(timezone.utc).isoformat()})}\n\n"
 
     except asyncio.CancelledError:
         pass

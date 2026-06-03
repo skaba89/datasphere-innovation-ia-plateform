@@ -23,6 +23,7 @@ function fmtDate(iso: string) {
 export default function DeliverableVersionsPanel({ deliverableId, currentVersion, onRestored }: Props) {
   const [versions, setVersions] = useState<DeliverableVersionItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [diffData, setDiffData] = useState<{ version_old: number; version_new: number; lines_added: number; lines_removed: number; diff: DiffLine[] } | null>(null);
   const [diffLoading, setDiffLoading] = useState(false);
@@ -32,9 +33,12 @@ export default function DeliverableVersionsPanel({ deliverableId, currentVersion
 
   async function load() {
     setLoading(true);
+    setError(null);
     try {
       const vs = await apiRequest<DeliverableVersionItem[]>(`/deliverables/${deliverableId}/versions`, {}, token);
       setVersions(vs);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erreur');
     } finally { setLoading(false); }
   }
 

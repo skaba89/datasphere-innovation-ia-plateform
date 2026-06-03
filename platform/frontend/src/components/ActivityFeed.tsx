@@ -23,16 +23,20 @@ export default function ActivityFeed({ days = 7, limit = 20, compact = false }: 
   const [items, setItems] = useState<ActivityItem[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const token = tokenStorage.get();
 
   async function load() {
     setLoading(true);
+    setError(null);
     try {
       const data = await apiRequest<{ items: ActivityItem[]; total: number }>(
         `/activity/feed?days=${days}&limit=${limit}`, {}, token,
       );
       setItems(data.items);
       setTotal(data.total);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erreur de chargement');
     } finally { setLoading(false); }
   }
 
@@ -41,6 +45,16 @@ export default function ActivityFeed({ days = 7, limit = 20, compact = false }: 
     const iv = setInterval(load, 30_000);
     return () => clearInterval(iv);
   }, []);
+
+
+  if (error) {
+    return (
+      <div style={{ padding: '16px 20px', borderRadius: 12, background: 'rgba(239,68,68,.06)', border: '1px solid rgba(239,68,68,.2)', color: '#fca5a5', fontSize: '.82rem', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <span>⚠ {error}</span>
+        <button onClick={load} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#fca5a5', textDecoration: 'underline', fontSize: '.78rem' }}>Réessayer</button>
+      </div>
+    );
+  }
 
   if (compact) {
     return (

@@ -51,7 +51,7 @@ def validate_suggestion(db: Session, opp, validated_by: str, accept: bool):
     from datetime import datetime
     opp.validation_status = "validated" if accept else "rejected"
     opp.validated_by = validated_by
-    opp.validated_at = datetime.utcnow()
+    opp.validated_at = datetime.now(timezone.utc)
     db.add(opp)
     db.commit()
     db.refresh(opp)

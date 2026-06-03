@@ -1,5 +1,4 @@
-from datetime import datetime
-
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from app.models.audit_log import AuditLog
@@ -25,7 +24,7 @@ def write_log(
         actor_name=actor_name,
         detail=detail,
         status=status,
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
     )
     db.add(log)
     db.commit()

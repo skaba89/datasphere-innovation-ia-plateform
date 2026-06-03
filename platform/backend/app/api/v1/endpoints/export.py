@@ -4,8 +4,7 @@ No extra dependencies required (no PDF library).
 The HTML export uses @media print CSS so the browser can save as PDF directly.
 """
 
-from datetime import datetime
-
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import HTMLResponse, PlainTextResponse
 from sqlalchemy.orm import Session
@@ -130,7 +129,7 @@ def export_markdown(deliverable_id: int, db: Session = Depends(get_db)):
 **Version :** {d.version}
 **Langue :** {d.language}
 **Généré par :** {d.generated_by or "DataSphere Platform"}
-**Exporté le :** {datetime.utcnow().strftime('%d/%m/%Y %H:%M')} UTC
+**Exporté le :** {datetime.now(timezone.utc).strftime('%d/%m/%Y %H:%M')} UTC
 
 ---
 
@@ -155,7 +154,7 @@ def export_html(deliverable_id: int, db: Session = Depends(get_db)):
 
     type_label = _TYPE_LABELS.get(d.deliverable_type, d.deliverable_type)
     status_label = _STATUS_LABELS.get(d.status, d.status)
-    exported_at = datetime.utcnow().strftime("%d/%m/%Y %H:%M")
+    exported_at = datetime.now(timezone.utc).strftime("%d/%m/%Y %H:%M")
     body_html = _md_to_html(d.content_markdown or "")
     approved_block = ""
     if d.status == "approved":
@@ -439,7 +438,7 @@ def generate_cv(
 
     docx_bytes = generate_cv_docx(consultant, tender_context)
     name = consultant.get("name", "consultant").lower().replace(" ", "_")
-    filename = f"cv_{name}_{datetime.utcnow().strftime('%Y%m%d')}.docx"
+    filename = f"cv_{name}_{datetime.now(timezone.utc).strftime('%Y%m%d')}.docx"
 
     return Response(
         content=docx_bytes,

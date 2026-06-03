@@ -42,9 +42,9 @@ def list_team_members(
     return list_users(db, role=role, skip=skip, limit=limit)
 
 
-@router.get("/roles")
+@router.get("/roles", dependencies=[Depends(get_current_user)])
 def get_roles():
-    """Return available roles."""
+    """Return available roles (authenticated users only)."""
     return {
         "roles": [
             {"key": "admin",      "label": "Administrateur",  "description": "Accès complet, gestion équipe"},

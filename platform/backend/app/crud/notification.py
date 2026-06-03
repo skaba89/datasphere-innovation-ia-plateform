@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 
 from app.models.notification import Notification
@@ -21,7 +21,7 @@ def push(
     ttl_hours: int | None = 72,
 ) -> Notification:
     """Create a new notification. ttl_hours=None means no expiry."""
-    expires = datetime.utcnow() + timedelta(hours=ttl_hours) if ttl_hours else None
+    expires = datetime.now(timezone.utc) + timedelta(hours=ttl_hours) if ttl_hours else None
     n = Notification(
         user_id=user_id,
         type=type,
@@ -96,7 +96,7 @@ def list_notifications(
     unread_only: bool = False,
     limit: int = 30,
 ) -> list[Notification]:
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     q = (
         db.query(Notification)
         .filter(
@@ -116,7 +116,7 @@ def list_notifications(
 
 
 def count_unread(db: Session, user_id: int | None = None) -> int:
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     q = db.query(Notification).filter(
         Notification.is_read == False,  # noqa: E712
         (Notification.expires_at.is_(None)) | (Notification.expires_at > now),
@@ -132,7 +132,7 @@ def mark_read(db: Session, notification_id: int) -> Notification | None:
     n = db.query(Notification).filter(Notification.id == notification_id).first()
     if n and not n.is_read:
         n.is_read = True
-        n.read_at = datetime.utcnow()
+        n.read_at = datetime.now(timezone.utc)
         db.add(n)
         db.commit()
         db.refresh(n)
@@ -146,6 +146,6 @@ def mark_all_read(db: Session, user_id: int | None = None) -> int:
             (Notification.user_id.is_(None)) | (Notification.user_id == user_id)
         )
     count = q.count()
-    q.update({"is_read": True, "read_at": datetime.utcnow()}, synchronize_session=False)
+    q.update({"is_read": True, "read_at": datetime.now(timezone.utc)}, synchronize_session=False)
     db.commit()
     return count

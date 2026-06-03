@@ -1,5 +1,4 @@
-from datetime import datetime
-
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from app.models.agent import AgentAction, AgentAssignment, AgentProfile
@@ -110,7 +109,7 @@ def update_action(db: Session, action: AgentAction, payload: AgentActionUpdate) 
 def approve_action(db: Session, action: AgentAction, approved_by: str) -> AgentAction:
     action.status = "approved"
     action.approved_by = approved_by
-    action.approved_at = datetime.utcnow()
+    action.approved_at = datetime.now(timezone.utc)
     db.add(action)
     db.commit()
     db.refresh(action)
@@ -124,7 +123,7 @@ def approve_action(db: Session, action: AgentAction, approved_by: str) -> AgentA
 
 def mark_action_executed(db: Session, action: AgentAction, result_summary: str, next_step: str | None = None) -> AgentAction:
     action.status = "done"
-    action.executed_at = datetime.utcnow()
+    action.executed_at = datetime.now(timezone.utc)
     action.result_summary = result_summary
     action.next_step = next_step
     db.add(action)

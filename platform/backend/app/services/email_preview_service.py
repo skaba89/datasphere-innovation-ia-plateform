@@ -5,8 +5,7 @@ No SMTP required: the preview is displayed in-app and can be copied to any email
 
 from __future__ import annotations
 
-from datetime import datetime
-
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from app.models.deliverable import Deliverable
@@ -57,7 +56,7 @@ def generate_email_preview(db: Session, deliverable_id: int) -> EmailPreview:
 
     ctx = _resolve_context(db, d)
     type_label = _TYPE_LABELS.get(d.deliverable_type, d.deliverable_type)
-    today = datetime.utcnow().strftime("%d/%m/%Y")
+    today = datetime.now(timezone.utc).strftime("%d/%m/%Y")
     org = ctx["org_name"]
     ref = ctx["tender_ref"]
     ref_str = f" — Réf. {ref}" if ref else ""

@@ -31,7 +31,7 @@ def gantt_data(db: Session = Depends(get_db)):
     from app.models.agent import AgentAction, AgentAssignment, AgentProfile
     from app.models.opportunity import Opportunity
     from app.models.tender import Tender
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, timezone
 
     assignments = (
         db.query(AgentAssignment)
@@ -90,7 +90,7 @@ def gantt_data(db: Session = Depends(get_db)):
             "done_actions": sum(1 for ac in actions if ac.status == "done"),
         })
 
-    return {"assignments": rows, "generated_at": datetime.utcnow().isoformat()}
+    return {"assignments": rows, "generated_at": datetime.now(timezone.utc).isoformat()}
 
 
 @router.get("/dashboard")
@@ -99,7 +99,7 @@ def dashboard_kpis(db: Session = Depends(get_db)):
     Comprehensive dashboard KPIs — all metrics in one call.
     Covers CRM, AO, deliverables, agents, suggestions, team.
     """
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, timezone
     from sqlalchemy import func
 
     from app.models.agent import AgentAction, AgentAssignment, AgentProfile
@@ -111,7 +111,7 @@ def dashboard_kpis(db: Session = Depends(get_db)):
     from app.models.tender import Tender
     from app.models.user import User
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     last_30 = now - timedelta(days=30)
     last_7 = now - timedelta(days=7)
 

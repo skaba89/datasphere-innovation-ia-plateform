@@ -1,29 +1,50 @@
-# Politique de securite
+# Politique de sécurité — DataSphere Innovation IA Platform
 
-## Principes
+## Versions supportées
 
-- Aucun secret ne doit etre stocke dans le depot.
-- Les fichiers .env reels sont interdits dans Git.
-- Les exemples de variables doivent etre documentes dans .env.example.
-- Les livrables clients doivent etre relus par un humain avant envoi.
-- Les agents IA sont des assistants supervises, pas des decideurs autonomes.
+| Version | Support sécurité |
+|---|---|
+| 1.8.x (current) | ✅ Active |
+| < 1.7.0 | ❌ Non supportée |
 
-## Donnees sensibles
+## Signaler une vulnérabilité
 
-Ne jamais commiter :
+**Ne pas ouvrir d'issue publique GitHub pour une vulnérabilité de sécurité.**
 
-- mots de passe ;
-- cles API ;
-- tokens GitHub ;
-- cles cloud ;
-- donnees personnelles client ;
-- documents confidentiels non anonymises.
+Contacter directement : contact@datasphere-innovation.fr
 
-## Validation
+Nous nous engageons à répondre sous **48h** et à publier un correctif sous **7 jours** pour les vulnérabilités critiques.
 
-Toute evolution importante doit passer par :
+## Mesures de sécurité en place
 
-1. une branche dediee ;
-2. une Pull Request ;
-3. une revue qualite ;
-4. une validation humaine.
+### Authentification
+- JWT access tokens (60 min) + refresh tokens (30 jours)
+- Passwords hashés avec bcrypt (12 rounds)
+- Rate limiting sur le login : 10 tentatives/minute par IP
+
+### Autorisation (RBAC)
+- 4 niveaux : admin / manager / consultant / viewer
+- Toutes les routes protégées par `get_current_user` ou `_require_admin`
+- Seules routes publiques : `/health`, `/contact`, `/auth/login`,
+  `/auth/bootstrap-admin`, `/auth/forgot-password`,
+  `/auth/reset-password`, `/auth/refresh`
+
+### Protection des données
+- Aucun secret dans le code source (tout via `.env`)
+- `.env` et `.env.prod` exclus du versioning
+- CORS restreint aux origines configurées dans `CORS_ORIGINS`
+- Uploads filtrés par extension whitelist + MIME type, 20 MB max
+- Aucun SQL brut dans l'application (100% SQLAlchemy ORM)
+
+### Infrastructure
+- HTTPS en production (Let's Encrypt)
+- Backups PostgreSQL quotidiens avec rotation 14 jours
+- HEALTHCHECK Docker sur toutes les images
+
+## Générer une SECRET_KEY sécurisée
+
+```bash
+openssl rand -hex 64
+```
+
+Ne jamais committer `.env` ou `.env.prod` dans Git.

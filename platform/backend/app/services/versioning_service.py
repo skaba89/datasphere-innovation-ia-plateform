@@ -4,8 +4,7 @@ Deliverable versioning — snapshot + simple line-level diff.
 
 from __future__ import annotations
 
-from datetime import datetime
-
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from app.models.deliverable import Deliverable
@@ -32,7 +31,7 @@ def snapshot(
         summary=deliverable.summary,
         created_by=created_by,
         change_note=change_note,
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
     )
     db.add(v)
     db.commit()

@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy.orm import Session
 
@@ -102,7 +103,7 @@ def export_audit_logs_csv(
             str(log.details or ""),
         ])
 
-    filename = f"audit_log_{datetime.utcnow().strftime('%Y%m%d_%H%M')}.csv"
+    filename = f"audit_log_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M')}.csv"
     return Response(
         content=output.getvalue(),
         media_type="text/csv",
