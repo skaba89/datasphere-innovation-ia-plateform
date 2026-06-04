@@ -57,14 +57,14 @@ export default function OperationsPage() {
     background: 'rgba(15,30,54,0.85)',
     border: `1px solid ${color}25`,
     borderRadius: 14,
-    padding: '18px 22px',
+    padding: 'clamp(12px,2.5vw,18px) clamp(14px,3vw,22px)',
     flex: 1,
   });
 
   // ── render ──────────────────────────────────────────────────────────────
   return (
     <div style={{
-      padding: '32px 40px',
+      padding: 'clamp(16px,3vw,32px) clamp(16px,4vw,40px)',
       maxWidth: 960,
       minHeight: '100vh',
       background: 'transparent',

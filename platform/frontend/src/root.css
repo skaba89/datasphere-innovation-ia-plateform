@@ -1,28 +1,94 @@
+/* ═══════════════════════════════════════════════════════════
+   DataSphere IA Platform — Navigation & Layout
+
+   Tab bar strategy:
+   - Desktop (>= 1024px): pills horizontaux, sticky top
+   - Tablette (640–1023px): scroll horizontal, sans barre de scroll
+   - Mobile (< 640px): grille 2×N collapsable via bouton ☰
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Root switcher wrapper ───────────────────────────────── */
+
 .root-switcher {
   position: sticky;
-  top: 16px;
-  z-index: 20;
-  width: min(1120px, calc(100% - 32px));
-  margin: 16px auto 0;
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
+  top: 57px;          /* hauteur du header AppRoot */
+  z-index: 100;
+  width: 100%;
+  background: rgba(6, 14, 24, 0.95);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+  backdrop-filter: blur(12px);
+  padding: 6px 16px;
 }
 
-.root-switcher button {
-  min-height: 42px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 999px;
-  padding: 0 16px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #f8fafc;
+/* Inner scroll container */
+.root-switcher-inner {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  /* Allow scroll past last tab */
+  padding-bottom: 2px;
+  /* Center on very wide screens */
+  max-width: 1120px;
+  margin: 0 auto;
+}
+.root-switcher-inner::-webkit-scrollbar { display: none; }
+
+/* ── Tab buttons ─────────────────────────────────────────── */
+
+.root-switcher-inner button {
+  flex-shrink: 0;
+  white-space: nowrap;
+  min-height: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 0 14px;
+  background: transparent;
+  color: #94a3b8;
+  font-weight: 600;
+  font-size: 0.82rem;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.root-switcher-inner button:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #f1f5f9;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.root-switcher-inner button.active {
+  background: rgba(250, 204, 21, 0.12);
+  color: #facc15;
+  border-color: rgba(250, 204, 21, 0.35);
   font-weight: 800;
 }
 
-.root-switcher button.active {
-  background: #facc15;
-  color: #0f172a;
+/* ── Mobile tab toggle ───────────────────────────────────── */
+
+.root-switcher-toggle {
+  display: none;  /* hidden by default on desktop */
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  min-height: 34px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: #f1f5f9;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
 }
+
+/* Mobile menu expanded */
+.root-switcher-inner.expanded {
+  flex-wrap: wrap;
+  overflow: visible;
+}
+
+/* ── Automation panel ────────────────────────────────────── */
 
 .automation-panel {
   display: grid;
@@ -32,7 +98,7 @@
 
 .automation-actions {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) auto auto;
+  grid-template-columns: 1fr auto auto;
   gap: 12px;
   align-items: end;
 }
@@ -46,11 +112,12 @@
 
 .automation-actions input {
   min-height: 44px;
-  border-radius: 16px;
+  border-radius: 12px;
   border: 1px solid rgba(148, 163, 184, 0.35);
   background: rgba(2, 6, 23, 0.72);
   color: #f8fafc;
   padding: 0 14px;
+  width: 100%;
 }
 
 .automation-actions button {
@@ -61,6 +128,7 @@
   background: #facc15;
   color: #0f172a;
   font-weight: 800;
+  white-space: nowrap;
 }
 
 .automation-actions button:disabled {
@@ -73,53 +141,72 @@
   font-size: 0.98rem;
 }
 
-@media (max-width: 760px) {
+/* ── Responsive breakpoints ─────────────────────────────── */
+
+@media (max-width: 1024px) {
+  .root-switcher-inner button {
+    font-size: 0.78rem;
+    padding: 0 10px;
+  }
+}
+
+/* Tablette: scroll + show toggle hint */
+@media (max-width: 768px) {
+  .root-switcher {
+    padding: 6px 12px;
+  }
+  .root-switcher-inner {
+    /* On tablet: allow scroll, show all tabs */
+    overflow-x: auto;
+  }
+  .root-switcher-inner button {
+    font-size: 0.76rem;
+    padding: 0 10px;
+    min-height: 32px;
+  }
+}
+
+/* Mobile: 2-column grid toggle */
+@media (max-width: 640px) {
+  .root-switcher-toggle {
+    display: inline-flex;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .root-switcher-inner {
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    overflow: visible;
+    margin-top: 6px;
+  }
+
+  .root-switcher-inner.open {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .root-switcher-inner button {
+    width: 100%;
+    text-align: left;
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    min-height: 36px;
+  }
+}
+
+/* ── Automation responsive ───────────────────────────────── */
+
+@media (max-width: 640px) {
   .automation-actions {
     grid-template-columns: 1fr;
   }
 }
 
-/* ── RESPONSIVE NAVIGATION ─────────────────────────────────────────────────── */
+/* ── Print ───────────────────────────────────────────────── */
 
-@media (max-width: 900px) {
-  .root-switcher {
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    gap: 4px;
-  }
-  .root-switcher::-webkit-scrollbar { display: none; }
-  .root-switcher button {
-    white-space: nowrap;
-    flex-shrink: 0;
-    font-size: 0.78rem;
-    padding: 8px 12px;
-  }
-}
-
-@media (max-width: 640px) {
-  .topbar {
-    flex-wrap: wrap;
-    gap: 10px;
-    padding: 12px 16px;
-  }
-  .topbar h1 { font-size: 1.2rem; }
-  .user-box { width: 100%; justify-content: flex-end; }
-
-  /* Stack kanban columns on mobile */
-  .kanban-scroll { overflow-x: auto; }
-
-  /* Full-width forms */
-  .form label,
-  .form input,
-  .form select,
-  .form textarea { width: 100% !important; }
-}
-
-/* ── PRINT IMPROVEMENTS ──────────────────────────────────────────────────── */
 @media print {
-  .root-switcher,
-  .topbar { display: none !important; }
+  .root-switcher { display: none !important; }
   body { background: #fff; color: #000; }
 }
