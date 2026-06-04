@@ -3,6 +3,7 @@ import { Brain, BriefcaseBusiness, FileCheck2, ShieldCheck } from 'lucide-react'
 
 import { apiRequest } from '../api/client';
 import type { Opportunity, Organization } from '../api/domainTypes';
+import { can } from '../auth/rbac';
 import { OpportunityForm, OpportunitiesList } from './OpportunityForm';
 import { OrganizationForm, OrganizationsList } from './OrganizationForm';
 
@@ -11,6 +12,7 @@ type View = 'dashboard' | 'organizations' | 'opportunities';
 type Props = {
   token: string;
   view: View;
+  role?: string | null;
 };
 
 const cards = [
@@ -42,7 +44,7 @@ const initialOpportunityForm = {
   notes: '',
 };
 
-export function CrmWorkspace({ token, view }: Props) {
+export function CrmWorkspace({ token, view, role }: Props) {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [organizationForm, setOrganizationForm] = useState(initialOrganizationForm);
@@ -51,6 +53,7 @@ export function CrmWorkspace({ token, view }: Props) {
   const [success, setSuccess] = useState<string | null>(null);
   const [isCreatingOrganization, setIsCreatingOrganization] = useState(false);
   const [isCreatingOpportunity, setIsCreatingOpportunity] = useState(false);
+  const canWriteCrm = can(role, 'crm:write');
 
   const refreshData = useCallback(async () => {
     const [orgs, opps] = await Promise.all([
@@ -67,6 +70,10 @@ export function CrmWorkspace({ token, view }: Props) {
 
   async function createOrganization(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!canWriteCrm) {
+      setError("Tu n'as pas les droits nécessaires pour créer une organisation.");
+      return;
+    }
     if (isCreatingOrganization) return;
     setError(null);
     setSuccess(null);
@@ -96,6 +103,10 @@ export function CrmWorkspace({ token, view }: Props) {
 
   async function createOpportunity(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!canWriteCrm) {
+      setError("Tu n'as pas les droits nécessaires pour créer une opportunité.");
+      return;
+    }
     if (isCreatingOpportunity) return;
     setError(null);
     setSuccess(null);
@@ -156,14 +167,22 @@ export function CrmWorkspace({ token, view }: Props) {
 
       {view === 'organizations' && (
         <section className="split-layout crm-split-layout">
-          <OrganizationForm form={organizationForm} setForm={setOrganizationForm} onSubmit={createOrganization} isSubmitting={isCreatingOrganization} />
+          {canWriteCrm ? (
+            <OrganizationForm form={organizationForm} setForm={setOrganizationForm} onSubmit={createOrganization} isSubmitting={isCreatingOrganization} />
+          ) : (
+            <section className="panel"><h2>Lecture seule</h2><p className="subtitle">Ton rôle permet de consulter les organisations, mais pas d'en créer.</p></section>
+          )}
           <OrganizationsList organizations={organizations} />
         </section>
       )}
 
       {view === 'opportunities' && (
         <section className="split-layout crm-split-layout">
-          <OpportunityForm form={opportunityForm} setForm={setOpportunityForm} organizations={organizations} onSubmit={createOpportunity} isSubmitting={isCreatingOpportunity} />
+          {canWriteCrm ? (
+            <OpportunityForm form={opportunityForm} setForm={setOpportunityForm} organizations={organizations} onSubmit={createOpportunity} isSubmitting={isCreatingOpportunity} />
+          ) : (
+            <section className="panel"><h2>Lecture seule</h2><p className="subtitle">Ton rôle permet de consulter les opportunités, mais pas d'en créer.</p></section>
+          )}
           <OpportunitiesList opportunities={opportunities} />
         </section>
       )}
