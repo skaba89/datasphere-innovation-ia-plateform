@@ -14,10 +14,10 @@ type Props = {
 };
 
 const cards = [
-  { title: 'CRM Opportunites', description: 'Suivre prospects, partenaires, appels d offres et pipeline commercial.', icon: BriefcaseBusiness },
+  { title: 'CRM Opportunités', description: 'Suivre prospects, partenaires, appels d offres et pipeline commercial.', icon: BriefcaseBusiness },
   { title: 'Appels d offres', description: 'Analyser les cahiers des charges, produire matrices et livrables.', icon: FileCheck2 },
-  { title: 'Agents IA', description: 'Utiliser des agents specialises supervises par des experts humains.', icon: Brain },
-  { title: 'Gouvernance', description: 'Tracer les decisions, valider les livrables et securiser les donnees.', icon: ShieldCheck },
+  { title: 'Agents IA', description: 'Utiliser des agents spécialisés supervisés par des experts humains.', icon: Brain },
+  { title: 'Gouvernance', description: 'Tracer les décisions, valider les livrables et sécuriser les données.', icon: ShieldCheck },
 ];
 
 const initialOrganizationForm = {
@@ -82,9 +82,9 @@ export function CrmWorkspace({ token, view }: Props) {
       }, token);
       setOrganizationForm(initialOrganizationForm);
       await refreshData();
-      setSuccess('Organisation creee avec succes.');
+      setSuccess('Organisation créée avec succès.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur creation organisation');
+      setError(err instanceof Error ? err.message : 'Erreur création organisation');
     }
   }
 
@@ -111,46 +111,52 @@ export function CrmWorkspace({ token, view }: Props) {
       }, token);
       setOpportunityForm(initialOpportunityForm);
       await refreshData();
-      setSuccess('Opportunite creee avec succes.');
+      setSuccess('Opportunité créée avec succès.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur creation opportunite');
+      setError(err instanceof Error ? err.message : 'Erreur création opportunité');
     }
   }
 
   return (
-    <>
+    <section className="crm-workspace" aria-label="CRM DataSphere">
       {error && <p className="error">{error}</p>}
       {success && <p className="success">{success}</p>}
 
       {view === 'dashboard' && (
         <>
-          <section className="stats">
+          <section className="stats crm-stats" aria-label="Indicateurs CRM">
             <article><strong>{organizations.length}</strong><span>Organisations</span></article>
-            <article><strong>{opportunities.length}</strong><span>Opportunites</span></article>
-            <article><strong>{opportunities.filter((item) => item.priority === 'Haute').length}</strong><span>Priorite haute</span></article>
+            <article><strong>{opportunities.length}</strong><span>Opportunités</span></article>
+            <article><strong>{opportunities.filter((item) => item.priority === 'Haute').length}</strong><span>Priorité haute</span></article>
           </section>
-          <section className="grid">
+          <section className="grid crm-feature-grid">
             {cards.map((card) => {
               const Icon = card.icon;
-              return <article key={card.title} className="card"><Icon size={28} /><h2>{card.title}</h2><p>{card.description}</p></article>;
+              return (
+                <article key={card.title} className="card crm-feature-card">
+                  <Icon size={28} />
+                  <h2>{card.title}</h2>
+                  <p>{card.description}</p>
+                </article>
+              );
             })}
           </section>
         </>
       )}
 
       {view === 'organizations' && (
-        <section className="split-layout">
+        <section className="split-layout crm-split-layout">
           <OrganizationForm form={organizationForm} setForm={setOrganizationForm} onSubmit={createOrganization} />
           <OrganizationsList organizations={organizations} />
         </section>
       )}
 
       {view === 'opportunities' && (
-        <section className="split-layout">
+        <section className="split-layout crm-split-layout">
           <OpportunityForm form={opportunityForm} setForm={setOpportunityForm} organizations={organizations} onSubmit={createOpportunity} />
           <OpportunitiesList opportunities={opportunities} />
         </section>
       )}
-    </>
+    </section>
   );
 }
