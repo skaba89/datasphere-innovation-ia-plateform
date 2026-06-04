@@ -81,7 +81,7 @@ export default function WorkspacesPage() {
   };
 
   return (
-    <div style={{ padding: '28px 32px', maxWidth: 1100, margin: '0 auto' }}>
+    <div style={{ padding: 'clamp(16px,3vw,28px) clamp(12px,3vw,32px)', maxWidth: 1100, margin: '0 auto' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
         <Building2 size={20} color="#facc15" />
@@ -108,7 +108,7 @@ export default function WorkspacesPage() {
       {showCreate && (
         <div style={{ ...s.card, padding: 24, marginBottom: 20 }}>
           <h3 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, marginBottom: 18, fontSize: '.95rem' }}>Créer un workspace</h3>
-          <form onSubmit={handleCreate} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          <form onSubmit={handleCreate} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px,100%), 1fr))', gap: 14 }}>
             <div><label style={s.lbl}>Nom *</label><input style={s.inp} value={form.name} onChange={e => { setForm(f => ({ ...f, name: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') })); }} placeholder="Acme Corp" required /></div>
             <div><label style={s.lbl}>Slug * (URL-safe)</label><input style={s.inp} value={form.slug} onChange={e => setForm(f => ({ ...f, slug: e.target.value }))} placeholder="acme-corp" pattern="[a-z0-9-]+" required /></div>
             <div style={{ gridColumn: '1/-1' }}><label style={s.lbl}>Description</label><input style={s.inp} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Workspace dédié au client Acme Corp" /></div>
@@ -122,7 +122,7 @@ export default function WorkspacesPage() {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: selected ? '1fr 1.4fr' : '1fr', gap: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: selected ? 'minmax(0,1fr) minmax(0,1.4fr)' : '1fr', gap: 20 }}>
         {/* Workspace list */}
         <div style={{ display: 'grid', gap: 12, alignContent: 'start' }}>
           {workspaces.length === 0 && !loading && (

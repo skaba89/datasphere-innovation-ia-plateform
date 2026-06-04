@@ -200,8 +200,8 @@ export default function KanbanPipeline() {
       )}
 
       {/* Kanban columns - horizontal scroll */}
-      <div style={{ overflowX: 'auto', paddingBottom: 12 }}>
-        <div style={{ display: 'flex', gap: 14, minWidth: 'max-content' }}>
+      <div style={{ overflowX: 'auto', paddingBottom: 12, WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory' }}>
+        <div style={{ display: 'flex', gap: 14, minWidth: 'min-content' }}>
           {columns.map((col) => {
             const color = STATUS_COLORS[col.status] ?? '#64748b';
             const activeItems = col.items.filter(i => ['Gagnée', 'Perdue', 'Abandonnée'].includes(col.status) || true);

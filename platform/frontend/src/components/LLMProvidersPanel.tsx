@@ -136,7 +136,7 @@ export default function LLMProvidersPanel() {
   return (
     <div style={{ display: 'grid', gap: 18 }}>
       {/* Header KPIs */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: 12 }}>
         {[
           { label: 'Providers actifs', val: summary.configured, color: '#86efac' },
           { label: 'Provider actif', val: summary.active_provider.split('/')[0], color: '#facc15', small: true },

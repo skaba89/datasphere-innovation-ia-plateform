@@ -80,7 +80,7 @@ export default function UserProfilePage() {
   const role = user ? ROLE_LABELS[user.role] : null;
 
   return (
-    <div style={{ maxWidth: 760, margin: '32px auto', padding: '0 24px', display: 'grid', gap: 20 }}>
+    <div style={{ maxWidth: 760, margin: 'clamp(16px,3vw,32px) auto', padding: '0 clamp(12px,3vw,24px)', display: 'grid', gap: 20 }}>
 
       {/* Profile header */}
       <div style={{ ...card, padding: 28, display: 'flex', gap: 20, alignItems: 'center', background: 'linear-gradient(135deg,rgba(250,204,21,.04),rgba(12,20,37,.9))' }}>
