@@ -1,7 +1,6 @@
 import { tokenStorage } from '../api/client';
 import { TenderAutomationPanel } from '../components/TenderAutomationPanel';
 import { TenderWorkspace } from '../components/TenderWorkspace';
-import FileAttachments from '../components/FileAttachments';
 
 export default function TenderPage() {
   const accessKey = tokenStorage.get();
