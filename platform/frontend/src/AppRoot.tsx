@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { LogOut, UserCircle, ChevronDown } from 'lucide-react';
+import { LogOut, UserCircle, ChevronDown, Menu, X } from 'lucide-react';
 
 import { apiRequest, tokenStorage } from './api/client';
 import { getUserName } from './api/userContext';
@@ -17,6 +17,7 @@ import TeamPage from './pages/TeamPage';
 import TenderPage from './pages/TenderPage';
 import UserProfilePage from './pages/UserProfilePage';
 import WorkspacesPage from './pages/WorkspacesPage';
+import OnboardingWizard, { shouldShowOnboarding, markOnboardingDone } from './components/OnboardingWizard';
 import { CrmWorkspace } from './components/CrmWorkspace';
 import GlobalSearchBar from './components/GlobalSearchBar';
 import NotificationBell from './components/NotificationBell';
@@ -129,6 +130,8 @@ export default function AppRoot() {
   );
   const [view, setView] = useState<RootView>('dashboard');
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(() => shouldShowOnboarding());
 
   // Validate token on mount
   useEffect(() => {
@@ -320,19 +323,43 @@ export default function AppRoot() {
         />
       )}
 
+      {/* ── Onboarding wizard (first login) ──────────────────────── */}
+      {showOnboarding && (
+        <OnboardingWizard onComplete={() => setShowOnboarding(false)} />
+      )}
+
       {/* ── Navigation tabs ───────────────────────────────────────── */}
-      <div className="root-switcher">
-        {tabs.map(t => (
-          <button
-            key={t.key}
-            className={view === t.key ? 'active' : ''}
-            onClick={() => setView(t.key)}
-            type="button"
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <nav className="root-switcher" aria-label="Navigation principale">
+        {/* Mobile toggle */}
+        <button
+          className="root-switcher-toggle"
+          onClick={() => setNavOpen(o => !o)}
+          aria-expanded={navOpen}
+          type="button"
+        >
+          <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+            {navOpen ? <X size={14} /> : <Menu size={14} />}
+            {tabs.find(t => t.key === view)?.label ?? 'Navigation'}
+          </span>
+          <ChevronDown size={13} style={{ transform: navOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
+        </button>
+
+        {/* Tab list */}
+        <div className={`root-switcher-inner${navOpen ? ' open' : ''}`} role="tablist">
+          {tabs.map(t => (
+            <button
+              key={t.key}
+              role="tab"
+              aria-selected={view === t.key}
+              className={view === t.key ? 'active' : ''}
+              onClick={() => { setView(t.key); setNavOpen(false); }}
+              type="button"
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </nav>
 
       {/* ── Page content ──────────────────────────────────────────── */}
       {view === 'dashboard'     && <DashboardPage />}
