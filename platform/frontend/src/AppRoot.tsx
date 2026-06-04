@@ -17,6 +17,7 @@ import TeamPage from './pages/TeamPage';
 import TenderPage from './pages/TenderPage';
 import UserProfilePage from './pages/UserProfilePage';
 import WorkspacesPage from './pages/WorkspacesPage';
+import OnboardingWizard, { shouldShowOnboarding, markOnboardingDone } from './components/OnboardingWizard';
 import { CrmWorkspace } from './components/CrmWorkspace';
 import GlobalSearchBar from './components/GlobalSearchBar';
 import NotificationBell from './components/NotificationBell';
@@ -130,6 +131,7 @@ export default function AppRoot() {
   const [view, setView] = useState<RootView>('dashboard');
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(() => shouldShowOnboarding());
 
   // Validate token on mount
   useEffect(() => {
@@ -321,24 +323,25 @@ export default function AppRoot() {
         />
       )}
 
+      {/* ── Onboarding wizard (first login) ──────────────────────── */}
+      {showOnboarding && (
+        <OnboardingWizard onComplete={() => setShowOnboarding(false)} />
+      )}
+
       {/* ── Navigation tabs ───────────────────────────────────────── */}
       <nav className="root-switcher" aria-label="Navigation principale">
-        {/* Mobile toggle button */}
+        {/* Mobile toggle */}
         <button
           className="root-switcher-toggle"
           onClick={() => setNavOpen(o => !o)}
           aria-expanded={navOpen}
-          aria-label="Menu navigation"
           type="button"
         >
           <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
             {navOpen ? <X size={14} /> : <Menu size={14} />}
             {tabs.find(t => t.key === view)?.label ?? 'Navigation'}
           </span>
-          <ChevronDown
-            size={13}
-            style={{ transform: navOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}
-          />
+          <ChevronDown size={13} style={{ transform: navOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
         </button>
 
         {/* Tab list */}

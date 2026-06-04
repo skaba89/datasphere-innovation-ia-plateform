@@ -14,6 +14,7 @@ export default function WorkspacesPage() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [selected, setSelected] = useState<Workspace | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
+  const [planUsage, setPlanUsage] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -34,7 +35,14 @@ export default function WorkspacesPage() {
   }
 
   async function loadMembers(wsId: number) {
-    try { setMembers(await apiRequest<Member[]>(`/workspaces/${wsId}/members`, {}, token)); }
+    try {
+      const [membersData, planData] = await Promise.all([
+        apiRequest<Member[]>(`/workspaces/${wsId}/members`, {}, token),
+        apiRequest<Record<string, unknown>>(`/workspaces/${wsId}/plan`, {}, token).catch(() => null),
+      ]);
+      setMembers(membersData);
+      if (planData) setPlanUsage(planData);
+    }
     catch { setMembers([]); }
   }
 
@@ -161,6 +169,55 @@ export default function WorkspacesPage() {
         {/* Workspace detail */}
         {selected && (
           <div style={{ display: 'grid', gap: 14, alignContent: 'start' }}>
+            {/* Plan usage */}
+            {planUsage && (() => {
+              const usage = (planUsage as any).usage ?? {};
+              const label = (planUsage as any).plan_label ?? selected.plan;
+              const upgradeUrl = (planUsage as any).upgrade_url;
+              const planColor = PLAN_COLORS[selected.plan] || '#64748b';
+              const bars = [
+                { key: 'members',        label: 'Membres' },
+                { key: 'tenders',        label: 'Appels d\'offres' },
+                { key: 'ai_actions_30d', label: 'Actions IA / 30j' },
+              ];
+              return (
+                <div style={s.card}>
+                  <div style={{ padding: '12px 18px', borderBottom: '1px solid rgba(148,163,184,.08)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Crown size={14} color={planColor} />
+                    <span style={{ fontWeight: 700, fontSize: '.84rem', flex: 1 }}>Plan {label}</span>
+                    {upgradeUrl && (
+                      <a href={upgradeUrl} target="_blank" rel="noreferrer" style={{ fontSize: '.7rem', padding: '2px 9px', borderRadius: 99, background: 'rgba(250,204,21,.1)', color: '#facc15', border: '1px solid rgba(250,204,21,.2)', textDecoration: 'none', fontWeight: 700 }}>
+                        Upgrader →
+                      </a>
+                    )}
+                  </div>
+                  <div style={{ padding: '12px 18px', display: 'grid', gap: 10 }}>
+                    {bars.map(b => {
+                      const u = usage[b.key] ?? {};
+                      const pct = u.pct ?? null;
+                      const isUnlimited = u.limit === -1;
+                      const barColor = pct == null || isUnlimited ? '#22c55e' : pct > 90 ? '#ef4444' : pct > 70 ? '#f97316' : '#22c55e';
+                      return (
+                        <div key={b.key}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.72rem', marginBottom: 4 }}>
+                            <span style={{ color: '#64748b' }}>{b.label}</span>
+                            <span style={{ color: '#94a3b8', fontFamily: 'monospace' }}>
+                              {u.used ?? 0}{isUnlimited ? ' / ∞' : ` / ${u.limit ?? 0}`}
+                            </span>
+                          </div>
+                          {!isUnlimited && pct !== null && (
+                            <div style={{ height: 4, background: 'rgba(148,163,184,.1)', borderRadius: 2, overflow: 'hidden' }}>
+                              <div style={{ height: '100%', width: `${pct}%`, background: barColor, borderRadius: 2, transition: 'width .4s' }} />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+
             <div style={s.card}>
               <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(148,163,184,.08)', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Users size={15} color="#facc15" />

@@ -111,7 +111,7 @@ def detailed_health(db: Session = Depends(get_db)):
 
     return {
         "overall": overall,
-        "version": "1.6.0",
+        "version": "1.8.0",
         "checks": checks,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }

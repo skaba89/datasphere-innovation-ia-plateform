@@ -35,14 +35,23 @@ function StatusBadge({ status }: { status: string }) {
 
 export default function HealthMonitorPanel() {
   const [health, setHealth] = useState<PlatformHealth | null>(null);
+  const [perf, setPerf] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const token = tokenStorage.get();
 
   async function load() {
     setLoading(true);
+    setError(null);
     try {
-      const data = await apiRequest<PlatformHealth>('/health/detailed', {}, token);
-      setHealth(data);
+      const [healthData, perfData] = await Promise.all([
+        apiRequest<PlatformHealth>('/health/detailed', {}, token),
+        apiRequest<Record<string, unknown>>('/analytics/performance', {}, token).catch(() => null),
+      ]);
+      setHealth(healthData);
+      if (perfData) setPerf(perfData);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erreur de chargement');
     } finally { setLoading(false); }
   }
 
@@ -140,11 +149,50 @@ export default function HealthMonitorPanel() {
         </div>
       )}
 
-      {!health && !loading && (
+      {!health && !loading && !error && (
         <div style={{ textAlign: 'center', padding: 32, color: '#64748b', fontSize: '0.84rem' }}>
           Impossible de charger l'état du système.
         </div>
       )}
+
+      {error && (
+        <div style={{ padding: '12px 16px', borderRadius: 10, background: 'rgba(239,68,68,.07)', border: '1px solid rgba(239,68,68,.2)', color: '#fca5a5', fontSize: '.82rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span>⚠</span> {error}
+          <button onClick={load} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#fca5a5', fontSize: '.76rem', textDecoration: 'underline' }}>Réessayer</button>
+        </div>
+      )}
+
+      {/* Performance metrics section */}
+      {perf && (() => {
+        const g = (perf as any).growth ?? {};
+        const a = (perf as any).agents ?? {};
+        const f = (perf as any).funnel ?? {};
+        const kpis = [
+          { label: 'Organisations',       value: g.organizations_total ?? 0 },
+          { label: 'AO total',            value: g.tenders_total ?? 0 },
+          { label: 'Livrables approuvés', value: `${g.deliverables_approved ?? 0} / ${g.deliverables_total ?? 0}` },
+          { label: 'Taux approbation',    value: `${g.approval_rate_pct ?? 0} %` },
+          { label: 'Actions IA (30j)',    value: a.actions_last_30d ?? 0 },
+          { label: 'Taux exécution IA',   value: `${a.execution_rate_pct ?? 0} %` },
+          { label: 'AO → Go',             value: `${f.go_rate_pct ?? 0} %` },
+          { label: 'Déliv. app. (30j)',   value: f.deliverables_approved_30d ?? 0 },
+        ];
+        return (
+          <div style={{ marginTop: 20, borderTop: '1px solid rgba(148,163,184,.08)', paddingTop: 18 }}>
+            <div style={{ fontSize: '.8rem', fontWeight: 700, color: '#64748b', letterSpacing: '.06em', textTransform: 'uppercase', fontFamily: 'monospace', marginBottom: 12 }}>
+              Métriques de performance
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(160px,100%), 1fr))', gap: 10 }}>
+              {kpis.map(k => (
+                <div key={k.label} style={{ background: 'rgba(15,30,54,.85)', border: '1px solid rgba(148,163,184,.1)', borderRadius: 10, padding: '12px 14px' }}>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#facc15', fontFamily: 'Syne, sans-serif' }}>{k.value}</div>
+                  <div style={{ fontSize: '.72rem', color: '#475569', marginTop: 3 }}>{k.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>

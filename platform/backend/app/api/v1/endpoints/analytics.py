@@ -246,3 +246,99 @@ def dashboard_kpis(db: Session = Depends(get_db)):
             "new_deliverables": new_deliverables_7d,
         },
     }
+
+
+@router.get("/performance")
+def performance_metrics(db: Session = Depends(get_db)):
+    """
+    Métriques de performance et statistiques d'utilisation de la plateforme.
+    Utile pour la page de monitoring et les rapports SaaS.
+    """
+    from datetime import datetime, timedelta, timezone
+    from sqlalchemy import func
+
+    from app.models.agent import AgentAction, AgentAssignment, AgentProfile
+    from app.models.deliverable import Deliverable
+    from app.models.notification import Notification
+    from app.models.organization import Organization
+    from app.models.tender import Tender
+    from app.models.user import User
+
+    now = datetime.now(timezone.utc)
+    last_7d  = now - timedelta(days=7)
+    last_30d = now - timedelta(days=30)
+    last_90d = now - timedelta(days=90)
+
+    def count(model, since=None, status=None, status_field="status"):
+        q = db.query(model)
+        if since:
+            q = q.filter(model.created_at >= since)
+        if status:
+            q = q.filter(getattr(model, status_field) == status)
+        return q.count()
+
+    # ── Growth metrics ────────────────────────────────────────────────────────
+    orgs_total   = count(Organization)
+    orgs_30d     = count(Organization, since=last_30d)
+    tenders_total = count(Tender)
+    deliv_total  = count(Deliverable)
+    deliv_approved = count(Deliverable, status="approved")
+    agents_total = count(AgentProfile)
+    actions_total = count(AgentAction)
+    actions_30d  = count(AgentAction, since=last_30d)
+    actions_done = count(AgentAction, status="done")
+
+    # ── Conversion funnel ─────────────────────────────────────────────────────
+    tender_submitted = count(Tender, status="submitted")
+    tender_go        = db.query(Tender).filter(Tender.go_no_go_decision == "go").count()
+    deliv_approved_30d = count(Deliverable, since=last_30d, status="approved")
+
+    # ── Team activity ─────────────────────────────────────────────────────────
+    active_users = count(User)
+    notifs_unread = db.query(Notification).filter(Notification.is_read == False).count()  # noqa
+
+    # ── Weekly trend (last 4 weeks) ───────────────────────────────────────────
+    weekly_tenders = []
+    for week in range(4, 0, -1):
+        wstart = now - timedelta(weeks=week)
+        wend   = now - timedelta(weeks=week - 1)
+        wcount = db.query(Tender).filter(
+            Tender.created_at >= wstart,
+            Tender.created_at < wend,
+        ).count()
+        weekly_tenders.append({
+            "week": f"S-{week}",
+            "tenders": wcount,
+        })
+
+    return {
+        "generated_at": now.isoformat(),
+        "growth": {
+            "organizations_total": orgs_total,
+            "organizations_last_30d": orgs_30d,
+            "tenders_total": tenders_total,
+            "deliverables_total": deliv_total,
+            "deliverables_approved": deliv_approved,
+            "approval_rate_pct": round(deliv_approved / max(deliv_total, 1) * 100, 1),
+        },
+        "agents": {
+            "profiles_total": agents_total,
+            "actions_total": actions_total,
+            "actions_last_30d": actions_30d,
+            "actions_done": actions_done,
+            "execution_rate_pct": round(actions_done / max(actions_total, 1) * 100, 1),
+        },
+        "funnel": {
+            "tenders_submitted": tender_submitted,
+            "tenders_go_decision": tender_go,
+            "go_rate_pct": round(tender_go / max(tenders_total, 1) * 100, 1),
+            "deliverables_approved_30d": deliv_approved_30d,
+        },
+        "team": {
+            "active_users": active_users,
+            "unread_notifications": notifs_unread,
+        },
+        "trend": {
+            "weekly_tenders": weekly_tenders,
+        },
+    }
