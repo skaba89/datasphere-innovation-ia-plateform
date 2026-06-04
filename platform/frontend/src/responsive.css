@@ -1,0 +1,266 @@
+/* Responsive component layer for Dashboard, CRM and Tender workspaces. */
+
+.dashboard-page,
+.crm-workspace,
+.tender-workspace {
+  display: grid;
+  gap: clamp(18px, 3vw, 28px);
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  min-width: 0;
+}
+
+.dashboard-page {
+  padding: clamp(16px, 3vw, 32px) clamp(12px, 4vw, 40px);
+}
+
+.dashboard-header,
+.tender-selected-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.dashboard-header h1 {
+  font-family: var(--font-head, Syne, sans-serif);
+  font-size: clamp(1.45rem, 4vw, 2rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin-bottom: 6px;
+}
+
+.dashboard-header p,
+.dashboard-eyebrow,
+.dashboard-kpi-label,
+.dashboard-kpi-subtitle,
+.dashboard-mini-card span,
+.dashboard-scheduler-row p,
+.dashboard-alert-item p,
+.tender-meta,
+.crm-card-meta {
+  overflow-wrap: anywhere;
+}
+
+.dashboard-eyebrow {
+  font-family: var(--font-head, Syne, sans-serif);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #facc15;
+  margin-bottom: 8px;
+}
+
+.dashboard-header p {
+  color: #64748b;
+  font-size: 0.84rem;
+  margin: 0;
+}
+
+.dashboard-refresh-button,
+.dashboard-secondary-button,
+.tender-report-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 8px 18px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(255, 255, 255, 0.04);
+  color: #94a3b8;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.dashboard-secondary-button {
+  margin-top: 16px;
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.tender-report-link {
+  background: rgba(250, 204, 21, 0.12);
+  border-color: rgba(250, 204, 21, 0.25);
+  color: #facc15;
+}
+
+.dashboard-error-state {
+  padding: clamp(24px, 5vw, 40px);
+  text-align: center;
+  color: #fca5a5;
+}
+
+.dashboard-kpi-grid,
+.dashboard-card-grid,
+.dashboard-mini-grid,
+.crm-feature-grid,
+.tender-mini-grid {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.dashboard-kpi-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr));
+}
+
+.dashboard-card-grid-three {
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+}
+
+.dashboard-card-grid-two {
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+}
+
+.dashboard-kpi-card {
+  background: rgba(15, 30, 54, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 16px;
+  padding: clamp(16px, 3vw, 22px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.dashboard-kpi-topline,
+.dashboard-status-labels,
+.dashboard-scheduler-status,
+.dashboard-warning-box,
+.dashboard-success-box,
+.dashboard-alert-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.dashboard-kpi-topline,
+.dashboard-status-labels,
+.dashboard-alert-title {
+  justify-content: space-between;
+}
+
+.dashboard-kpi-icon {
+  width: 40px;
+  height: 40px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+.dashboard-kpi-trend {
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.dashboard-kpi-value {
+  font-size: clamp(1.5rem, 4vw, 1.8rem);
+  font-weight: 800;
+  font-family: monospace;
+  line-height: 1;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-kpi-label {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-top: 6px;
+  font-weight: 600;
+}
+
+.dashboard-kpi-subtitle {
+  font-size: 0.74rem;
+  color: #64748b;
+  margin-top: 3px;
+}
+
+.dashboard-status-row { margin-bottom: 10px; }
+.dashboard-status-labels { margin-bottom: 5px; font-size: 0.8rem; color: #94a3b8; }
+.dashboard-status-labels strong { font-weight: 700; white-space: nowrap; }
+.dashboard-status-labels em { color: #64748b; font-style: normal; font-weight: 400; }
+.dashboard-progress-track { height: 6px; background: rgba(148, 163, 184, 0.1); border-radius: 99px; overflow: hidden; }
+.dashboard-progress-value { height: 100%; border-radius: 99px; transition: width 0.6s ease; }
+
+.dashboard-mini-grid { grid-template-columns: repeat(auto-fit, minmax(min(130px, 100%), 1fr)); margin-bottom: 16px; }
+.dashboard-mini-grid-three { grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr)); }
+.dashboard-mini-card { padding: 12px 14px; border-radius: 10px; background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(148, 163, 184, 0.08); min-width: 0; }
+.dashboard-mini-card strong { display: block; font-size: 1.2rem; font-weight: 800; font-family: monospace; overflow-wrap: anywhere; }
+.dashboard-mini-card span { display: block; font-size: 0.72rem; color: #64748b; margin-bottom: 5px; }
+.dashboard-mini-card-centered { text-align: center; }
+.dashboard-mini-card-centered span { margin: 4px 0 0; }
+
+.dashboard-highlight-box,
+.dashboard-warning-box,
+.dashboard-success-box {
+  margin-top: 16px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+}
+
+.dashboard-highlight-box { background: rgba(250, 204, 21, 0.06); border: 1px solid rgba(250, 204, 21, 0.15); }
+.dashboard-highlight-box div { font-size: 0.72rem; color: #64748b; margin-bottom: 4px; }
+.dashboard-highlight-box strong { color: #facc15; font-family: monospace; font-size: 1.1rem; }
+.dashboard-warning-box { background: rgba(249, 115, 22, 0.08); border: 1px solid rgba(249, 115, 22, 0.2); color: #fb923c; flex-wrap: wrap; }
+.dashboard-success-box { background: rgba(34, 197, 94, 0.06); border: 1px solid rgba(34, 197, 94, 0.15); color: #86efac; font-weight: 600; }
+
+.dashboard-stack { display: grid; gap: 20px; min-width: 0; }
+.dashboard-scheduler-row { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.dashboard-scheduler-status span { width: 10px; height: 10px; border-radius: 50%; background: #64748b; flex: 0 0 auto; }
+.dashboard-scheduler-status span.is-running { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+.dashboard-scheduler-status strong { color: #94a3b8; font-size: 0.88rem; }
+.dashboard-scheduler-status span.is-running + strong { color: #22c55e; }
+.dashboard-scheduler-status em,
+.dashboard-scheduler-row p { color: #64748b; font-size: 0.78rem; font-style: normal; }
+.dashboard-scheduler-count { text-align: right; min-width: 140px; }
+.dashboard-scheduler-count strong { display: block; font-size: 1.4rem; color: #facc15; font-family: monospace; }
+.dashboard-scheduler-count span { display: block; color: #64748b; font-size: 0.72rem; }
+.dashboard-scheduler-count em { display: block; color: #ef4444; font-size: 0.72rem; font-style: normal; margin-top: 2px; }
+
+.dashboard-alert-title span { padding: 2px 8px; border-radius: 99px; font-size: 0.72rem; font-weight: 700; background: rgba(239, 68, 68, 0.15); color: #fca5a5; }
+.dashboard-alert-list { display: grid; gap: 8px; }
+.dashboard-alert-item { display: grid; grid-template-columns: 6px minmax(0, 1fr); gap: 10px; align-items: flex-start; padding: 8px 10px; border-radius: 8px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(148, 163, 184, 0.08); }
+.dashboard-alert-item.is-high { background: rgba(239, 68, 68, 0.06); border-color: rgba(239, 68, 68, 0.15); }
+.dashboard-alert-item > span { width: 6px; height: 6px; border-radius: 50%; background: #f97316; margin-top: 5px; }
+.dashboard-alert-item.is-high > span { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
+.dashboard-alert-item strong { font-size: 0.8rem; line-height: 1.3; }
+.dashboard-alert-item p { margin: 2px 0 0; font-size: 0.72rem; color: #64748b; }
+.dashboard-empty-state { color: #64748b; font-size: 0.84rem; text-align: center; padding: 20px 0; display: grid; place-items: center; gap: 8px; }
+
+.crm-workspace { gap: 20px; }
+.crm-split-layout,
+.tender-split-layout { align-items: start; }
+.crm-feature-card { min-height: 170px; }
+.crm-list-card,
+.tender-list-card { display: grid; gap: 8px; }
+.crm-card-meta,
+.tender-meta { color: #cbd5e1; line-height: 1.55; }
+
+.tender-workspace { gap: 24px; }
+.tender-selected-header { align-items: center; }
+.tender-selected-header > div { min-width: min(100%, 320px); flex: 1; }
+.tender-selected-header strong { display: block; overflow-wrap: anywhere; }
+.tender-attachments-wrap { padding: 0 0 16px; min-width: 0; }
+.tender-mini-grid { grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)); }
+
+@media (max-width: 760px) {
+  .dashboard-page { padding: 16px 0; }
+  .dashboard-header,
+  .tender-selected-header { align-items: stretch; }
+  .dashboard-refresh-button,
+  .tender-report-link { width: 100%; }
+  .dashboard-scheduler-count { text-align: left; }
+  .dashboard-card-grid-two { grid-template-columns: 1fr; }
+}
