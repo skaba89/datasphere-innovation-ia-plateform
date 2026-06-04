@@ -114,7 +114,7 @@ function CVGeneratorModal({ token, onClose }: { token: string; onClose: () => vo
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: 20 }}>
-      <div style={{ background: '#0c1425', border: '1px solid rgba(148,163,184,.15)', borderRadius: 18, maxWidth: 600, width: '100%', maxHeight: '92vh', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ background: '#0c1425', border: '1px solid rgba(148,163,184,.15)', borderRadius: 18, maxWidth: 600, width: 'min(600px, 100%)', maxHeight: '92vh', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
         {/* Header */}
         <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid rgba(148,163,184,.1)', display: 'flex', alignItems: 'center', gap: 10, position: 'sticky', top: 0, background: '#0c1425', zIndex: 1 }}>
           <FileDown size={18} color="#facc15" />
@@ -129,7 +129,7 @@ function CVGeneratorModal({ token, onClose }: { token: string; onClose: () => vo
           {step === 1 && (
             <>
               {/* Infos de base */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(180px,100%), 1fr))', gap: 12 }}>
                 <div style={{ gridColumn: '1 / -1' }}>
                   <label style={lbl}><User size={10} style={{ display: 'inline', marginRight: 4 }} />Nom complet *</label>
                   <input style={inp} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Nom du consultant" required
@@ -193,7 +193,7 @@ function CVGeneratorModal({ token, onClose }: { token: string; onClose: () => vo
                 </div>
                 {form.experiences.map((exp, i) => (
                   <div key={i} style={{ padding: 14, borderRadius: 10, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(148,163,184,.1)', marginBottom: 10, display: 'grid', gap: 8 }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(160px,100%), 1fr))', gap: 8 }}>
                       <input style={inp} value={exp.title} onChange={e => updateExp(i, 'title', e.target.value)} placeholder="Titre du poste"
                         onFocus={e => (e.target.style.borderColor = 'rgba(250,204,21,.4)')} onBlur={e => (e.target.style.borderColor = 'rgba(148,163,184,.15)')} />
                       <input style={inp} value={exp.company} onChange={e => updateExp(i, 'company', e.target.value)} placeholder="Entreprise / Client"

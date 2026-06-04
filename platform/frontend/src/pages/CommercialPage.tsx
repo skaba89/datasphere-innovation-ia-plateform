@@ -20,7 +20,7 @@ export default function CommercialPage() {
 
   return (
     <div style={{
-      padding: '32px 40px',
+      padding: 'clamp(16px,3vw,32px) clamp(16px,4vw,40px)',
       maxWidth: 1400,
       minHeight: '100vh',
       display: 'grid',

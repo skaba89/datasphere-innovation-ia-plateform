@@ -159,7 +159,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div style={{ padding: '32px 40px', maxWidth: 1200, display: 'grid', gap: 28 }}>
+    <div style={{ padding: 'clamp(16px, 3vw, 32px) clamp(16px, 4vw, 40px)', maxWidth: 1200, display: 'grid', gap: 28 }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
@@ -198,7 +198,7 @@ export default function DashboardPage() {
 
       {/* KPI Row */}
       {(data || kpis) && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(180px, 100%), 1fr))', gap: 16 }}>
           <KpiCard
             icon={TrendingUp} color="#facc15"
             label="Pipeline commercial"
@@ -253,7 +253,7 @@ export default function DashboardPage() {
 
       {/* Middle row */}
       {data && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))', gap: 20 }}>
           {/* Opportunities funnel */}
           <div style={card}>
             <div style={sectionTitle}>
@@ -292,7 +292,7 @@ export default function DashboardPage() {
               <Target size={12} style={{ verticalAlign: 'middle', marginRight: 6 }} />
               Appels d'offres
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: 12, marginBottom: 16 }}>
               {[
                 { label: 'Décision Go', value: data.tenders.go_count, color: '#22c55e' },
                 { label: 'No-Go', value: data.tenders.no_go_count, color: '#ef4444' },
@@ -354,14 +354,14 @@ export default function DashboardPage() {
 
       {/* Bottom row: Agents + Scheduler + Notifications */}
       {data && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: 20 }}>
           {/* Agents activity */}
           <div style={card}>
             <div style={sectionTitle}>
               <Bot size={12} style={{ verticalAlign: 'middle', marginRight: 6 }} />
               Activité des agents
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: 12, marginBottom: 16 }}>
               {[
                 { label: 'Profils', value: data.agents.total_profiles, color: '#8b5cf6' },
                 { label: 'Affectations', value: data.agents.total_assignments, color: '#3b82f6' },

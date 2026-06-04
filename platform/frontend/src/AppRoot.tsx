@@ -213,7 +213,7 @@ export default function AppRoot() {
       <header
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '10px 24px',
+          padding: 'clamp(8px, 2vw, 10px) clamp(12px, 3vw, 24px)',
           background: 'rgba(6,14,24,.97)',
           borderBottom: '1px solid rgba(148,163,184,.08)',
           position: 'sticky', top: 0, zIndex: 200,
