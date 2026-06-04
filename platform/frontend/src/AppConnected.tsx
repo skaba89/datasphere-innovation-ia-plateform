@@ -21,8 +21,8 @@ export default function AppConnected() {
   const [password, setPassword] = useState('change-me-now');
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<View>('dashboard');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [authView, setAuthView] = useState<AuthView>(() => {
-    // Auto-route to reset page if URL has ?token=
     const params = new URLSearchParams(window.location.search);
     return params.has('token') ? 'reset' : 'login';
   });
@@ -40,17 +40,21 @@ export default function AppConnected() {
 
   async function handleLogin(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isLoggingIn) return;
     setError(null);
+    setIsLoggingIn(true);
     try {
       const result = await apiRequest<LoginResult>('/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: email.trim(), password }),
       });
       tokenStorage.set(result.access_token, result.refresh_token);
       setAccessKey(result.access_token);
       setUser(result.user);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur de connexion');
+    } finally {
+      setIsLoggingIn(false);
     }
   }
 
@@ -70,18 +74,19 @@ export default function AppConnected() {
     return (
       <main className="app-shell auth-shell">
         <section className="hero auth-card">
-          <p className="eyebrow">Connexion securisee</p>
-          <h1>Acceder a la plateforme DataSphere</h1>
-          <p className="subtitle">Connecte-toi avec le compte administrateur cree au demarrage.</p>
-          <form className="form" onSubmit={handleLogin}>
-            <label>Email<input value={email} onChange={(event) => setEmail(event.target.value)} type="email" /></label>
-            <label>Mot de passe<input value={password} onChange={(event) => setPassword(event.target.value)} type="password" /></label>
+          <p className="eyebrow">Connexion sécurisée</p>
+          <h1>Accéder à la plateforme DataSphere</h1>
+          <p className="subtitle">Connecte-toi avec le compte administrateur créé au démarrage.</p>
+          <form className="form" onSubmit={handleLogin} aria-busy={isLoggingIn}>
+            <label>Email<input value={email} onChange={(event) => setEmail(event.target.value)} type="email" disabled={isLoggingIn} /></label>
+            <label>Mot de passe<input value={password} onChange={(event) => setPassword(event.target.value)} type="password" disabled={isLoggingIn} /></label>
             {error && <p className="error">{error}</p>}
-            <button type="submit">Se connecter</button>
+            <button type="submit" disabled={isLoggingIn}>{isLoggingIn ? 'Connexion…' : 'Se connecter'}</button>
             <button
               type="button"
               onClick={() => setAuthView('forgot')}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', fontSize: '.8rem', marginTop: 8, textDecoration: 'underline' }}
+              disabled={isLoggingIn}
+              style={{ background: 'none', border: 'none', cursor: isLoggingIn ? 'not-allowed' : 'pointer', color: '#64748b', fontSize: '.8rem', marginTop: 8, textDecoration: 'underline' }}
             >
               Mot de passe oublié ?
             </button>
@@ -104,7 +109,7 @@ export default function AppConnected() {
           <NotificationBell />
           <span>{user?.email}</span>
           <button className="icon-button" onClick={logout} type="button">
-            <LogOut size={18} /> Deconnexion
+            <LogOut size={18} /> Déconnexion
           </button>
         </div>
       </header>
@@ -117,7 +122,7 @@ export default function AppConnected() {
           Organisations
         </button>
         <button className={view === 'opportunities' ? 'active' : ''} onClick={() => setView('opportunities')} type="button">
-          Opportunites
+          Opportunités
         </button>
       </nav>
 
