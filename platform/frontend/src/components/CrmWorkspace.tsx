@@ -49,6 +49,8 @@ export function CrmWorkspace({ token, view }: Props) {
   const [opportunityForm, setOpportunityForm] = useState(initialOpportunityForm);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [isCreatingOrganization, setIsCreatingOrganization] = useState(false);
+  const [isCreatingOpportunity, setIsCreatingOpportunity] = useState(false);
 
   const refreshData = useCallback(async () => {
     const [orgs, opps] = await Promise.all([
@@ -65,14 +67,16 @@ export function CrmWorkspace({ token, view }: Props) {
 
   async function createOrganization(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isCreatingOrganization) return;
     setError(null);
     setSuccess(null);
+    setIsCreatingOrganization(true);
 
     try {
       await apiRequest<Organization>('/organizations', {
         method: 'POST',
         body: JSON.stringify({
-          name: organizationForm.name,
+          name: organizationForm.name.trim(),
           country: organizationForm.country || null,
           sector: organizationForm.sector || null,
           organization_type: organizationForm.organization_type || null,
@@ -85,20 +89,24 @@ export function CrmWorkspace({ token, view }: Props) {
       setSuccess('Organisation créée avec succès.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur création organisation');
+    } finally {
+      setIsCreatingOrganization(false);
     }
   }
 
   async function createOpportunity(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isCreatingOpportunity) return;
     setError(null);
     setSuccess(null);
+    setIsCreatingOpportunity(true);
 
     try {
       await apiRequest<Opportunity>('/opportunities', {
         method: 'POST',
         body: JSON.stringify({
           organization_id: Number(opportunityForm.organization_id),
-          title: opportunityForm.title,
+          title: opportunityForm.title.trim(),
           opportunity_type: opportunityForm.opportunity_type || null,
           country: opportunityForm.country || null,
           sector: opportunityForm.sector || null,
@@ -114,6 +122,8 @@ export function CrmWorkspace({ token, view }: Props) {
       setSuccess('Opportunité créée avec succès.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur création opportunité');
+    } finally {
+      setIsCreatingOpportunity(false);
     }
   }
 
@@ -146,14 +156,14 @@ export function CrmWorkspace({ token, view }: Props) {
 
       {view === 'organizations' && (
         <section className="split-layout crm-split-layout">
-          <OrganizationForm form={organizationForm} setForm={setOrganizationForm} onSubmit={createOrganization} />
+          <OrganizationForm form={organizationForm} setForm={setOrganizationForm} onSubmit={createOrganization} isSubmitting={isCreatingOrganization} />
           <OrganizationsList organizations={organizations} />
         </section>
       )}
 
       {view === 'opportunities' && (
         <section className="split-layout crm-split-layout">
-          <OpportunityForm form={opportunityForm} setForm={setOpportunityForm} organizations={organizations} onSubmit={createOpportunity} />
+          <OpportunityForm form={opportunityForm} setForm={setOpportunityForm} organizations={organizations} onSubmit={createOpportunity} isSubmitting={isCreatingOpportunity} />
           <OpportunitiesList opportunities={opportunities} />
         </section>
       )}
