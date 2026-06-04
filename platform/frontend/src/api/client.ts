@@ -2,17 +2,48 @@
  * DataSphere Innovation — API Client
  *
  * Features:
- * - Automatic JWT refresh (silent token renewal before 401)
+ * - Automatic JWT refresh on 401
  * - Retry once on 401 with fresh token
  * - Persistent token storage (access + refresh)
- * - File upload support (multipart/form-data)
+ * - File upload support with refresh handling
+ * - Consistent FastAPI error messages
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 
-export type ApiError = { detail?: string };
+type ApiErrorDetail = string | { msg?: string; message?: string; loc?: unknown[] }[] | Record<string, unknown>;
+export type ApiError = { detail?: ApiErrorDetail; message?: string };
 
-// ── Token storage ──────────────────────────────────────────────────────────────
+function getErrorMessage(status: number, data?: ApiError | null): string {
+  const detail = data?.detail;
+  if (typeof detail === 'string' && detail.trim()) return detail;
+  if (Array.isArray(detail) && detail.length > 0) {
+    return detail
+      .map((item) => {
+        const location = Array.isArray(item.loc) ? item.loc.join('.') : '';
+        const message = item.msg || item.message || 'Champ invalide';
+        return location ? `${location}: ${message}` : message;
+      })
+      .join(' · ');
+  }
+  if (data?.message) return data.message;
+
+  if (status === 401) return 'Session expirée. Merci de te reconnecter.';
+  if (status === 403) return "Tu n'as pas les droits nécessaires pour cette action.";
+  if (status === 404) return 'Ressource introuvable.';
+  if (status >= 500) return 'Erreur serveur. Merci de réessayer plus tard.';
+  return `Erreur API ${status}`;
+}
+
+async function readApiError(response: Response): Promise<string> {
+  try {
+    const data = (await response.json()) as ApiError;
+    return getErrorMessage(response.status, data);
+  } catch {
+    return getErrorMessage(response.status);
+  }
+}
+
 export const tokenStorage = {
   getAccess(): string | null {
     return localStorage.getItem('ds_access_token');
@@ -22,33 +53,29 @@ export const tokenStorage = {
   },
   setAccess(t: string): void {
     localStorage.setItem('ds_access_token', t);
+    localStorage.setItem('datasphere_access_token', t);
   },
   setRefresh(t: string): void {
     localStorage.setItem('ds_refresh_token', t);
   },
   set(access: string, refresh?: string): void {
-    localStorage.setItem('ds_access_token', access);
-    // Backwards-compat key used by older components
-    localStorage.setItem('datasphere_access_token', access);
-    if (refresh) localStorage.setItem('ds_refresh_token', refresh);
+    this.setAccess(access);
+    if (refresh) this.setRefresh(refresh);
   },
   clear(): void {
     localStorage.removeItem('ds_access_token');
     localStorage.removeItem('ds_refresh_token');
     localStorage.removeItem('datasphere_access_token');
   },
-  // Backwards-compat: old components call tokenStorage.get()
   get(): string | null {
     return localStorage.getItem('ds_access_token')
       ?? localStorage.getItem('datasphere_access_token');
   },
 };
 
-// ── Refresh logic ──────────────────────────────────────────────────────────────
 let _refreshing: Promise<string | null> | null = null;
 
 async function refreshAccessToken(): Promise<string | null> {
-  // Deduplicate concurrent refresh calls
   if (_refreshing) return _refreshing;
 
   _refreshing = (async () => {
@@ -64,8 +91,8 @@ async function refreshAccessToken(): Promise<string | null> {
         tokenStorage.clear();
         return null;
       }
-      const data = await res.json() as { access_token: string };
-      tokenStorage.set(data.access_token);
+      const data = await res.json() as { access_token: string; refresh_token?: string };
+      tokenStorage.set(data.access_token, data.refresh_token);
       return data.access_token;
     } catch {
       tokenStorage.clear();
@@ -78,7 +105,6 @@ async function refreshAccessToken(): Promise<string | null> {
   return _refreshing;
 }
 
-// ── Core request ──────────────────────────────────────────────────────────────
 async function _fetch(
   path: string,
   options: RequestInit,
@@ -101,7 +127,6 @@ export async function apiRequest<T>(
   const activeToken = token ?? tokenStorage.get();
   let response = await _fetch(path, options, activeToken);
 
-  // Silent token refresh on 401
   if (response.status === 401 && tokenStorage.getRefresh()) {
     const newToken = await refreshAccessToken();
     if (newToken) {
@@ -110,45 +135,46 @@ export async function apiRequest<T>(
   }
 
   if (!response.ok) {
-    let message = `API error ${response.status}`;
-    try {
-      const data = (await response.json()) as ApiError;
-      if (data.detail) message = data.detail;
-    } catch { /* keep default */ }
-    throw new Error(message);
+    throw new Error(await readApiError(response));
   }
 
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
 }
 
-// ── File upload (multipart) ────────────────────────────────────────────────────
+async function uploadWithToken(path: string, file: File, token: string | null): Promise<Response> {
+  const form = new FormData();
+  form.append('file', file);
+
+  const headers = new Headers();
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+
+  return fetch(`${API_BASE_URL}${path}`, {
+    method: 'POST',
+    headers,
+    body: form,
+  });
+}
+
 export async function uploadFile<T>(
   path: string,
   file: File,
   token?: string | null,
 ): Promise<T> {
   const activeToken = token ?? tokenStorage.get();
-  const form = new FormData();
-  form.append('file', file);
+  let response = await uploadWithToken(path, file, activeToken);
 
-  const headers = new Headers();
-  if (activeToken) headers.set('Authorization', `Bearer ${activeToken}`);
-  // Do NOT set Content-Type — browser sets multipart boundary automatically
-
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    method: 'POST',
-    headers,
-    body: form,
-  });
+  if (response.status === 401 && tokenStorage.getRefresh()) {
+    const newToken = await refreshAccessToken();
+    if (newToken) {
+      response = await uploadWithToken(path, file, newToken);
+    }
+  }
 
   if (!response.ok) {
-    let message = `Upload error ${response.status}`;
-    try {
-      const data = (await response.json()) as ApiError;
-      if (data.detail) message = data.detail;
-    } catch { /* keep default */ }
-    throw new Error(message);
+    throw new Error(await readApiError(response));
   }
+
+  if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
 }
