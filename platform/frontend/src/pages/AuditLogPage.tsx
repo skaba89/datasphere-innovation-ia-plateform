@@ -104,7 +104,7 @@ export default function AuditLogPage() {
   const statusBg = (s: string) => STATUS_COLORS[s] || 'rgba(148,163,184,.08)';
 
   const s = {
-    page: { padding: '28px 32px', maxWidth: 1200, margin: '0 auto' } as React.CSSProperties,
+    page: { padding: 'clamp(14px,3vw,28px) clamp(12px,3vw,32px)', maxWidth: 1200, margin: '0 auto' } as React.CSSProperties,
     card: { background: 'rgba(15,30,54,.85)', border: '1px solid rgba(148,163,184,.12)', borderRadius: 14, overflow: 'hidden' } as React.CSSProperties,
     input: { background: 'rgba(255,255,255,.05)', border: '1px solid rgba(148,163,184,.15)', borderRadius: 8, padding: '8px 12px', color: '#f1f5f9', fontSize: '.82rem', outline: 'none', fontFamily: 'inherit' } as React.CSSProperties,
     select: { background: '#0c1425', border: '1px solid rgba(148,163,184,.15)', borderRadius: 8, padding: '8px 12px', color: '#f1f5f9', fontSize: '.82rem', outline: 'none', fontFamily: 'inherit' } as React.CSSProperties,
@@ -174,7 +174,7 @@ export default function AuditLogPage() {
 
       {/* Table */}
       <div style={s.card}>
-        <div style={{ overflowX: 'auto' }}>
+        <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid rgba(148,163,184,.1)', background: 'rgba(255,255,255,.02)' }}>

@@ -276,3 +276,55 @@ def remove_member(
     db.delete(member)
     db.commit()
     return {"removed": True, "user_id": user_id, "workspace_id": workspace_id}
+
+
+# ── Plan limits ────────────────────────────────────────────────────────────────
+
+PLAN_LIMITS = {
+    "free":       {"max_members": 3,  "max_tenders": 10,  "ai_actions_month": 50,  "label": "Gratuit"},
+    "starter":    {"max_members": 10, "max_tenders": 50,  "ai_actions_month": 500, "label": "Starter"},
+    "pro":        {"max_members": 25, "max_tenders": 200, "ai_actions_month": 2000,"label": "Pro"},
+    "enterprise": {"max_members": -1, "max_tenders": -1,  "ai_actions_month": -1,  "label": "Entreprise"},
+}
+
+
+@router.get("/{workspace_id}/plan")
+def get_workspace_plan(
+    workspace_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Return workspace plan details and current usage vs limits."""
+    from app.models.tender import Tender
+    from app.models.agent import AgentAction
+    from datetime import datetime, timedelta, timezone
+
+    ws = db.query(Workspace).filter(Workspace.id == workspace_id).first()
+    if not ws:
+        raise HTTPException(status_code=404, detail="Workspace not found")
+
+    limits = PLAN_LIMITS.get(ws.plan, PLAN_LIMITS["free"])
+    member_count = db.query(WorkspaceMember).filter(WorkspaceMember.workspace_id == workspace_id).count()
+
+    # For now usage is platform-wide (single tenant) — Phase 2 will scope by workspace
+    tender_count = db.query(Tender).count()
+    since = datetime.now(timezone.utc) - timedelta(days=30)
+    action_count = db.query(AgentAction).filter(AgentAction.created_at >= since).count()
+
+    def pct(used: int, limit: int) -> int | None:
+        if limit < 0:
+            return None
+        return min(100, round(used / max(limit, 1) * 100))
+
+    return {
+        "workspace_id": workspace_id,
+        "plan": ws.plan,
+        "plan_label": limits["label"],
+        "limits": limits,
+        "usage": {
+            "members":       {"used": member_count,  "limit": limits["max_members"],      "pct": pct(member_count,  limits["max_members"])},
+            "tenders":       {"used": tender_count,   "limit": limits["max_tenders"],      "pct": pct(tender_count,   limits["max_tenders"])},
+            "ai_actions_30d":{"used": action_count,   "limit": limits["ai_actions_month"], "pct": pct(action_count,   limits["ai_actions_month"])},
+        },
+        "upgrade_url": "https://datasphere-innovation.fr/pricing" if ws.plan == "free" else None,
+    }

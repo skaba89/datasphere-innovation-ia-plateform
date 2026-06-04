@@ -336,3 +336,90 @@ class TestAnalytics:
         r = client.get(f"{BASE_ANA}/gantt", headers=auth_headers)
         assert r.status_code == 200
         assert r.json()["assignments"] == []
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# PERFORMANCE METRICS + WORKSPACE PLAN
+# ══════════════════════════════════════════════════════════════════════════════
+
+class TestPerformanceMetrics:
+    def test_performance_endpoint_exists(self, client, auth_headers):
+        r = client.get("/api/v1/analytics/performance", headers=auth_headers)
+        assert r.status_code == 200
+
+    def test_performance_has_growth_section(self, client, auth_headers):
+        data = client.get("/api/v1/analytics/performance", headers=auth_headers).json()
+        assert "growth" in data
+        g = data["growth"]
+        assert "organizations_total" in g
+        assert "tenders_total" in g
+        assert "deliverables_total" in g
+        assert "approval_rate_pct" in g
+
+    def test_performance_has_agents_section(self, client, auth_headers):
+        data = client.get("/api/v1/analytics/performance", headers=auth_headers).json()
+        assert "agents" in data
+        a = data["agents"]
+        assert "actions_total" in a
+        assert "execution_rate_pct" in a
+
+    def test_performance_has_funnel_section(self, client, auth_headers):
+        data = client.get("/api/v1/analytics/performance", headers=auth_headers).json()
+        assert "funnel" in data
+        assert "trend" in data
+
+    def test_performance_has_weekly_trend(self, client, auth_headers):
+        data = client.get("/api/v1/analytics/performance", headers=auth_headers).json()
+        trend = data["trend"]["weekly_tenders"]
+        assert isinstance(trend, list)
+        assert len(trend) == 4  # 4 semaines
+
+    def test_performance_requires_auth(self, client):
+        r = client.get("/api/v1/analytics/performance")
+        assert r.status_code == 401
+
+    def test_performance_no_500_empty_db(self, client, auth_headers):
+        """Performance metrics should return zeros, not crash on empty DB."""
+        r = client.get("/api/v1/analytics/performance", headers=auth_headers)
+        assert r.status_code == 200
+        data = r.json()
+        assert data["growth"]["organizations_total"] == 0
+        assert data["growth"]["approval_rate_pct"] == 0.0
+
+
+class TestWorkspacePlan:
+    def test_workspace_plan_endpoint(self, client, auth_headers):
+        # Create a workspace first
+        ws = client.post("/api/v1/workspaces", headers=auth_headers, json={
+            "name": "Test WS Plan", "slug": f"test-ws-plan-{__import__('time').time_ns()}"
+        }).json()
+        r = client.get(f"/api/v1/workspaces/{ws['id']}/plan", headers=auth_headers)
+        assert r.status_code == 200
+        data = r.json()
+        assert "plan" in data
+        assert "limits" in data
+        assert "usage" in data
+
+    def test_workspace_plan_has_usage_bars(self, client, auth_headers):
+        ws = client.post("/api/v1/workspaces", headers=auth_headers, json={
+            "name": "Test WS Plan 2", "slug": f"test-ws-plan2-{__import__('time').time_ns()}"
+        }).json()
+        data = client.get(f"/api/v1/workspaces/{ws['id']}/plan", headers=auth_headers).json()
+        usage = data["usage"]
+        assert "members" in usage
+        assert "tenders" in usage
+        assert "ai_actions_30d" in usage
+        assert isinstance(usage["members"]["used"], int)
+
+    def test_free_plan_has_limits(self, client, auth_headers):
+        ws = client.post("/api/v1/workspaces", headers=auth_headers, json={
+            "name": "Free WS", "slug": f"free-ws-{__import__('time').time_ns()}"
+        }).json()
+        data = client.get(f"/api/v1/workspaces/{ws['id']}/plan", headers=auth_headers).json()
+        assert data["plan"] == "free"
+        assert data["limits"]["max_members"] == 3
+        assert data["usage"]["members"]["limit"] == 3
+
+    def test_workspace_plan_nonexistent(self, client, auth_headers):
+        r = client.get("/api/v1/workspaces/999999/plan", headers=auth_headers)
+        assert r.status_code == 404
