@@ -18,7 +18,7 @@ export default function AppConnected() {
   const [accessKey, setAccessKey] = useState<string | null>(() => tokenStorage.get());
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [email, setEmail] = useState('admin@example.com');
-  const [password, setPassword] = useState('change-me-now');
+  const [passwordInput, setPasswordInput] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<View>('dashboard');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -46,7 +46,7 @@ export default function AppConnected() {
     try {
       const result = await apiRequest<LoginResult>('/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ email: email.trim(), password }),
+        body: JSON.stringify({ email: email.trim(), password: passwordInput }),
       });
       tokenStorage.set(result.access_token, result.refresh_token);
       setAccessKey(result.access_token);
@@ -79,15 +79,10 @@ export default function AppConnected() {
           <p className="subtitle">Connecte-toi avec le compte administrateur créé au démarrage.</p>
           <form className="form" onSubmit={handleLogin} aria-busy={isLoggingIn}>
             <label>Email<input value={email} onChange={(event) => setEmail(event.target.value)} type="email" disabled={isLoggingIn} /></label>
-            <label>Mot de passe<input value={password} onChange={(event) => setPassword(event.target.value)} type="password" disabled={isLoggingIn} /></label>
+            <label>Mot de passe<input value={passwordInput} onChange={(event) => setPasswordInput(event.target.value)} type="password" disabled={isLoggingIn} /></label>
             {error && <p className="error">{error}</p>}
             <button type="submit" disabled={isLoggingIn}>{isLoggingIn ? 'Connexion…' : 'Se connecter'}</button>
-            <button
-              type="button"
-              onClick={() => setAuthView('forgot')}
-              disabled={isLoggingIn}
-              style={{ background: 'none', border: 'none', cursor: isLoggingIn ? 'not-allowed' : 'pointer', color: '#64748b', fontSize: '.8rem', marginTop: 8, textDecoration: 'underline' }}
-            >
+            <button type="button" onClick={() => setAuthView('forgot')} disabled={isLoggingIn} style={{ background: 'none', border: 'none', cursor: isLoggingIn ? 'not-allowed' : 'pointer', color: '#64748b', fontSize: '.8rem', marginTop: 8, textDecoration: 'underline' }}>
               Mot de passe oublié ?
             </button>
           </form>
@@ -115,20 +110,14 @@ export default function AppConnected() {
       </header>
 
       <nav className="tabs">
-        <button className={view === 'dashboard' ? 'active' : ''} onClick={() => setView('dashboard')} type="button">
-          Dashboard
-        </button>
-        <button className={view === 'organizations' ? 'active' : ''} onClick={() => setView('organizations')} type="button">
-          Organisations
-        </button>
-        <button className={view === 'opportunities' ? 'active' : ''} onClick={() => setView('opportunities')} type="button">
-          Opportunités
-        </button>
+        <button className={view === 'dashboard' ? 'active' : ''} onClick={() => setView('dashboard')} type="button">Dashboard</button>
+        <button className={view === 'organizations' ? 'active' : ''} onClick={() => setView('organizations')} type="button">Organisations</button>
+        <button className={view === 'opportunities' ? 'active' : ''} onClick={() => setView('opportunities')} type="button">Opportunités</button>
       </nav>
 
       {view === 'dashboard' && <DashboardPage />}
       {(view === 'organizations' || view === 'opportunities') && (
-        <CrmWorkspace token={accessKey} view={view} />
+        <CrmWorkspace token={accessKey} view={view} role={user?.role} />
       )}
     </main>
   );
