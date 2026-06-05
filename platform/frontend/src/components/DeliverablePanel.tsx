@@ -247,15 +247,21 @@ export function DeliverablePanel({ token }: Props) {
                   </label>
                 </div>
                 <pre>{deliverable.content_markdown}</pre>
-                <DeliverableVersionsPanel deliverableId={deliverable.id} token={token} />
-                <FileAttachments entityType="deliverable" entityId={deliverable.id} token={token} />
+                <DeliverableVersionsPanel deliverableId={deliverable.id} currentVersion={deliverable.version} onRestored={refresh} />
+                <FileAttachments resourceType="deliverable" resourceId={deliverable.id} />
               </div>
             )}
           </article>
         ))}
         {deliverables.length === 0 && !error && <p className="dashboard-empty-state"><FilePlus2 size={18} /> Aucun livrable pour le moment.</p>}
       </div>
-      {emailPreviewId && <EmailPreviewModal deliverableId={emailPreviewId} token={token} onClose={() => setEmailPreviewId(null)} />}
+      {emailPreviewId && (
+        <EmailPreviewModal
+          deliverableId={emailPreviewId}
+          deliverableTitle={deliverables.find((item) => item.id === emailPreviewId)?.title ?? 'Livrable'}
+          onClose={() => setEmailPreviewId(null)}
+        />
+      )}
       {loading && <p className="dashboard-empty-state"><RefreshCw size={16} /> Traitement en cours…</p>}
     </div>
   );
