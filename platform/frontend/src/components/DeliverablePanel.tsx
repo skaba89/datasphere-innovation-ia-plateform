@@ -40,20 +40,21 @@ const STATUS_LABELS: Record<string, string> = {
   draft: 'Brouillon',
   in_review: 'En révision',
   approved: 'Approuvé',
+  rejected: 'Rejeté',
+  archived: 'Archivé',
 };
 
-const STATUS_STYLES: Record<string, React.CSSProperties> = {
-  draft: { background: 'rgba(234, 179, 8, 0.15)', color: '#fde047', border: '1px solid rgba(234,179,8,0.3)' },
-  in_review: { background: 'rgba(59, 130, 246, 0.15)', color: '#93c5fd', border: '1px solid rgba(59,130,246,0.3)' },
-  approved: { background: 'rgba(34, 197, 94, 0.15)', color: '#86efac', border: '1px solid rgba(34,197,94,0.3)' },
+const STATUS_COLORS: Record<string, string> = {
+  draft: '#94a3b8',
+  in_review: '#facc15',
+  approved: '#22c55e',
+  rejected: '#ef4444',
+  archived: '#64748b',
 };
-
-// ---------------------------------------------------------------------------
-// Props
-// ---------------------------------------------------------------------------
 
 type Props = {
   token: string;
+  role?: string;
 };
 
 // ---------------------------------------------------------------------------
@@ -117,383 +118,147 @@ export function DeliverablePanel({ token }: Props) {
       if (genScopeKind === 'opportunity') payload.opportunity_id = Number(genScopeId);
       else payload.tender_id = Number(genScopeId);
 
-      const created = await apiRequest<Deliverable>(
-        '/deliverables/generate-draft',
-        { method: 'POST', body: JSON.stringify(payload) },
-        token,
-      );
-      setMessage(`Brouillon "${created.title}" généré avec succès (v${created.version}).`);
+      const created = await apiRequest<Deliverable>('/deliverables/generate-draft', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }, token);
+      setDeliverables((items) => [created, ...items]);
+      setMessage(`Brouillon "${created.title}" généré avec succès.`);
       setShowGenerateForm(false);
-      await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur lors de la génération.');
+      setError(err instanceof Error ? err.message : 'Erreur génération brouillon');
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleReview(id: number) {
-    if (!reviewName.trim()) return;
+  async function updateStatus(id: number, action: 'review' | 'approve', name: string) {
     setLoading(true);
     setError(null);
     try {
-      await apiRequest<Deliverable>(
-        `/deliverables/${id}/review`,
-        { method: 'POST', body: JSON.stringify({ reviewer_name: reviewName }) },
-        token,
-      );
-      setMessage(`Livrable ${id} soumis en révision par ${reviewName}.`);
-      await refresh();
+      const endpoint = action === 'review' ? `/deliverables/${id}/review` : `/deliverables/${id}/approve`;
+      const payload = action === 'review' ? { reviewed_by: name } : { approved_by: name };
+      const updated = await apiRequest<Deliverable>(endpoint, { method: 'POST', body: JSON.stringify(payload) }, token);
+      setDeliverables((items) => items.map((d) => (d.id === id ? updated : d)));
+      setMessage(action === 'review' ? 'Livrable soumis en révision.' : 'Livrable approuvé.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur lors de la révision.');
+      setError(err instanceof Error ? err.message : 'Erreur workflow');
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleApprove(id: number) {
-    if (!approveName.trim()) return;
+  async function deleteDeliverable(id: number) {
+    if (!confirm('Supprimer ce livrable ?')) return;
     setLoading(true);
     setError(null);
     try {
-      await apiRequest<Deliverable>(
-        `/deliverables/${id}/approve`,
-        { method: 'POST', body: JSON.stringify({ approver_name: approveName }) },
-        token,
-      );
-      setMessage(`Livrable ${id} approuvé par ${approveName}.`);
-      await refresh();
+      await apiRequest(`/deliverables/${id}`, { method: 'DELETE' }, token);
+      setDeliverables((items) => items.filter((d) => d.id !== id));
+      setMessage('Livrable supprimé.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur lors de l approbation.');
+      setError(err instanceof Error ? err.message : 'Erreur suppression');
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleDelete(id: number) {
-    setLoading(true);
-    setError(null);
-    try {
-      await apiRequest<void>(`/deliverables/${id}`, { method: 'DELETE' }, token);
-      setMessage(`Livrable #${id} supprimé.`);
-      if (expandedId === id) setExpandedId(null);
-      await refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur lors de la suppression.');
-    } finally {
-      setLoading(false);
-    }
+  function downloadHref(id: number, fmt: 'markdown' | 'html' | 'pdf') {
+    return `${API_BASE}/deliverables/${id}/export/${fmt}?token=${encodeURIComponent(tokenStorage.get() ?? '')}`;
   }
-
-  const scopeOptions = genScopeKind === 'opportunity'
-    ? opportunities.map((o) => ({ id: o.id, label: o.title }))
-    : tenders.map((t) => ({ id: t.id, label: t.title }));
-
-  const draftCount = deliverables.filter((d) => d.status === 'draft').length;
-  const reviewCount = deliverables.filter((d) => d.status === 'in_review').length;
-  const approvedCount = deliverables.filter((d) => d.status === 'approved').length;
 
   return (
-    <section className="panel workspace-stack" style={{ marginTop: 24 }}>
-      {/* Header */}
-      <div>
-        <p className="eyebrow">Livrables gouvernés</p>
-        <h2>Bibliothèque de livrables</h2>
-        <p className="subtitle compact-subtitle">
-          Génère des brouillons structurés par type, soumets-les en révision et approuve-les
-          avant toute transmission client.
-        </p>
-      </div>
-
-      {/* KPIs */}
-      <div className="stats">
-        <article>
-          <strong>{draftCount}</strong>
-          <span>Brouillons</span>
-        </article>
-        <article>
-          <strong>{reviewCount}</strong>
-          <span>En révision</span>
-        </article>
-        <article>
-          <strong>{approvedCount}</strong>
-          <span>Approuvés</span>
-        </article>
-      </div>
-
-      {/* Actions */}
-      <div className="automation-actions" style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        <button
-          type="button"
-          onClick={() => { setShowGenerateForm((v) => !v); setMessage(null); setError(null); }}
-          disabled={loading}
-        >
-          <WandSparkles size={18} /> Générer un brouillon
-        </button>
-        <button
-          type="button"
-          onClick={() => refresh().catch((err: Error) => setError(err.message))}
-          disabled={loading}
-        >
-          <RefreshCw size={18} /> Actualiser
-        </button>
-      </div>
-
-      {/* Generate form */}
-      {showGenerateForm && (
-        <div className="panel" style={{ marginTop: 0 }}>
-          <p className="eyebrow">Nouveau brouillon</p>
-          <h3 style={{ margin: '0 0 16px' }}>Paramètres de génération</h3>
-          <form className="form compact-form" onSubmit={handleGenerateDraft}>
-            <label>
-              Type de livrable
-              <select value={genType} onChange={(e) => setGenType(e.target.value)}>
-                {Object.entries(DELIVERABLE_TYPES).map(([key, label]) => (
-                  <option key={key} value={key}>{label}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Contexte
-              <select value={genScopeKind} onChange={(e) => setGenScopeKind(e.target.value as 'opportunity' | 'tender')}>
-                <option value="opportunity">Opportunité CRM</option>
-                <option value="tender">Appel d offres</option>
-              </select>
-            </label>
-            <label>
-              {genScopeKind === 'opportunity' ? 'Opportunité' : 'Appel d offres'}
-              <select value={genScopeId} onChange={(e) => setGenScopeId(e.target.value)} required>
-                <option value="">-- Sélectionner --</option>
-                {scopeOptions.map((opt) => (
-                  <option key={opt.id} value={opt.id}>{opt.label}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Audience cible
-              <input
-                value={genAudience}
-                onChange={(e) => setGenAudience(e.target.value)}
-                placeholder="ex. Direction, DSI, Comité de pilotage…"
-              />
-            </label>
-            <div style={{ display: 'flex', gap: 12 }}>
-              <button type="submit" disabled={loading}>
-                <Sparkles size={16} /> Générer
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowGenerateForm(false)}
-                style={{ background: 'rgba(255,255,255,0.08)', color: '#f8fafc', border: '1px solid rgba(255,255,255,0.12)' }}
-              >
-                Annuler
-              </button>
-            </div>
-          </form>
+    <div className="panel">
+      <div className="dashboard-header">
+        <div>
+          <p className="eyebrow">Livrables</p>
+          <h2>Bibliothèque de livrables</h2>
+          <p className="compact-subtitle">Génération, review, approbation et export documentaire.</p>
         </div>
-      )}
-
-      {message && <p className="success">{message}</p>}
-      {error && <p className="error">{error}</p>}
-
-      {/* Deliverable list */}
-      <div className="table">
-        {deliverables.length === 0 && (
-          <p style={{ color: '#94a3b8' }}>
-            Aucun livrable pour le moment. Utilise «&nbsp;Générer un brouillon&nbsp;» pour démarrer.
-          </p>
-        )}
-        {deliverables.map((d) => {
-          const isExpanded = expandedId === d.id;
-          const statusStyle = STATUS_STYLES[d.status] ?? STATUS_STYLES.draft;
-          const typeLabel = DELIVERABLE_TYPES[d.deliverable_type] ?? d.deliverable_type;
-
-          return (
-            <article key={d.id} className="row-card" style={{ gap: 0, padding: 0, overflow: 'hidden' }}>
-              {/* Row header */}
-              <div
-                style={{ padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}
-              >
-                <FilePlus2 size={20} style={{ color: '#facc15', flexShrink: 0 }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <strong style={{ display: 'block', fontSize: '0.95rem' }}>{d.title}</strong>
-                  <span style={{ fontSize: '0.82rem' }}>
-                    {typeLabel} · v{d.version}
-                    {d.audience && ` · ${d.audience}`}
-                  </span>
-                </div>
-                <span style={{ ...statusStyle, padding: '4px 12px', borderRadius: 999, fontSize: '0.78rem', fontWeight: 700, flexShrink: 0 }}>
-                  {STATUS_LABELS[d.status] ?? d.status}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setExpandedId(isExpanded ? null : d.id)}
-                  style={{ background: 'transparent', border: 'none', color: '#94a3b8', padding: '4px 8px' }}
-                  title={isExpanded ? 'Réduire' : 'Voir le détail'}
-                >
-                  {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                </button>
-              </div>
-
-              {/* Expanded detail */}
-              {isExpanded && (
-                <div style={{ borderTop: '1px solid rgba(148,163,184,0.18)', padding: '18px' }}>
-                  {/* Markdown preview */}
-                  <div style={{ marginBottom: 18 }}>
-                    <p className="eyebrow" style={{ marginBottom: 8 }}>Contenu</p>
-                    <pre style={{
-                      background: 'rgba(2,6,23,0.72)',
-                      border: '1px solid rgba(148,163,184,0.2)',
-                      borderRadius: 12,
-                      padding: '14px 16px',
-                      fontSize: '0.82rem',
-                      color: '#cbd5e1',
-                      overflowX: 'auto',
-                      whiteSpace: 'pre-wrap',
-                      wordBreak: 'break-word',
-                      maxHeight: 320,
-                      overflow: 'auto',
-                    }}>
-                      {d.content_markdown}
-                    </pre>
-                  </div>
-
-                  {/* Metadata */}
-                  <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', marginBottom: 18, fontSize: '0.82rem', color: '#94a3b8' }}>
-                    {d.generated_by && <span>Généré par : <strong style={{ color: '#f8fafc' }}>{d.generated_by}</strong></span>}
-                    {d.reviewed_by && <span>Révisé par : <strong style={{ color: '#93c5fd' }}>{d.reviewed_by}</strong></span>}
-                    {d.approved_by && <span>Approuvé par : <strong style={{ color: '#86efac' }}>{d.approved_by}</strong></span>}
-                  </div>
-
-                  {/* Workflow actions */}
-                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                    {d.status === 'draft' && (
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <input
-                          value={reviewName}
-                          onChange={(e) => setReviewName(e.target.value)}
-                          placeholder="Reviewer"
-                          style={{ minHeight: 36, width: 180, borderRadius: 12, border: '1px solid rgba(148,163,184,0.3)', background: 'rgba(2,6,23,0.72)', color: '#f8fafc', padding: '0 12px', fontSize: '0.85rem' }}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleReview(d.id)}
-                          disabled={loading}
-                          style={{ background: 'rgba(59,130,246,0.2)', color: '#93c5fd', border: '1px solid rgba(59,130,246,0.4)', borderRadius: 999, padding: '6px 16px', fontWeight: 700 }}
-                        >
-                          <Eye size={15} /> Soumettre en révision
-                        </button>
-                      </div>
-                    )}
-                    {d.status === 'in_review' && (
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <input
-                          value={approveName}
-                          onChange={(e) => setApproveName(e.target.value)}
-                          placeholder="Approbateur"
-                          style={{ minHeight: 36, width: 180, borderRadius: 12, border: '1px solid rgba(148,163,184,0.3)', background: 'rgba(2,6,23,0.72)', color: '#f8fafc', padding: '0 12px', fontSize: '0.85rem' }}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleApprove(d.id)}
-                          disabled={loading}
-                          style={{ background: 'rgba(34,197,94,0.2)', color: '#86efac', border: '1px solid rgba(34,197,94,0.4)', borderRadius: 999, padding: '6px 16px', fontWeight: 700 }}
-                        >
-                          <CheckCircle2 size={15} /> Approuver
-                        </button>
-                      </div>
-                    )}
-                    {d.status === 'approved' && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#86efac', fontSize: '0.88rem' }}>
-                        <ClipboardCheck size={18} />
-                        <span>Livrable approuvé — prêt pour transmission client.</span>
-                      </div>
-                    )}
-                    {/* Export buttons — always visible */}
-                    <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
-                      <a
-                        href={`${API_BASE}/deliverables/${d.id}/export/markdown`}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 5,
-                          background: 'rgba(148,163,184,0.1)', color: '#94a3b8',
-                          border: '1px solid rgba(148,163,184,0.2)', borderRadius: 999,
-                          padding: '6px 14px', fontWeight: 600, fontSize: '0.8rem',
-                          textDecoration: 'none',
-                        }}
-                        title="Télécharger en Markdown"
-                      >
-                        <FileDown size={13} /> .md
-                      </a>
-                      <a
-                        href={`${API_BASE}/deliverables/${d.id}/export/html`}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 5,
-                          background: 'rgba(59,130,246,0.12)', color: '#93c5fd',
-                          border: '1px solid rgba(59,130,246,0.25)', borderRadius: 999,
-                          padding: '6px 14px', fontWeight: 600, fontSize: '0.8rem',
-                          textDecoration: 'none',
-                        }}
-                        title="Ouvrir en HTML (imprimable PDF)"
-                      >
-                        <Download size={13} /> PDF
-                      </a>
-                      {d.status === 'approved' && (
-                        <button
-                          type="button"
-                          onClick={() => setEmailPreviewId(d.id)}
-                          style={{
-                            display: 'inline-flex', alignItems: 'center', gap: 5,
-                            background: 'rgba(250,204,21,0.1)', color: '#facc15',
-                            border: '1px solid rgba(250,204,21,0.25)', borderRadius: 999,
-                            padding: '6px 14px', fontWeight: 600, fontSize: '0.8rem',
-                            cursor: 'pointer',
-                          }}
-                          title="Générer l'email client"
-                        >
-                          <Mail size={13} /> Email
-                        </button>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(d.id)}
-                      disabled={loading}
-                      style={{ background: 'rgba(239,68,68,0.12)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 999, padding: '6px 16px', fontWeight: 700, marginLeft: 'auto' }}
-                    >
-                      <Trash2 size={15} /> Supprimer
-                    </button>
-                  </div>
-                  {/* Version history panel */}
-                  <div style={{ marginTop: 16 }}>
-                    <DeliverableVersionsPanel
-                      deliverableId={d.id}
-                      currentVersion={d.version}
-                      onRestored={refresh}
-                    />
-                  </div>
-                  {/* File attachments */}
-                  <div style={{ marginTop: 12 }}>
-                    <FileAttachments resourceType="deliverable" resourceId={d.id} />
-                  </div>
-                </div>
-              )}
-            </article>
-          );
-        })}
+        <button className="team-primary-button" onClick={() => setShowGenerateForm((v) => !v)} disabled={loading} type="button">
+          <WandSparkles size={14} /> Générer un brouillon
+        </button>
       </div>
 
-      {/* Email preview modal */}
-      {emailPreviewId !== null && (
-        <EmailPreviewModal
-          deliverableId={emailPreviewId}
-          deliverableTitle={deliverables.find(d => d.id === emailPreviewId)?.title ?? 'Livrable'}
-          onClose={() => setEmailPreviewId(null)}
-        />
+      {message && <div className="team-alert success"><CheckCircle2 size={16} /> {message}</div>}
+      {error && <div className="team-alert error">{error}</div>}
+
+      {showGenerateForm && (
+        <form className="compact-form" onSubmit={handleGenerateDraft}>
+          <label>Type
+            <select value={genType} onChange={(e) => setGenType(e.target.value)}>
+              {Object.entries(DELIVERABLE_TYPES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </select>
+          </label>
+          <label>Périmètre
+            <select value={genScopeKind} onChange={(e) => setGenScopeKind(e.target.value as 'opportunity' | 'tender')}>
+              <option value="opportunity">Opportunité</option>
+              <option value="tender">Appel d'offres</option>
+            </select>
+          </label>
+          <label>{genScopeKind === 'opportunity' ? 'Opportunité' : 'Appel d offres'}
+            <select value={genScopeId} onChange={(e) => setGenScopeId(e.target.value)}>
+              <option value="">Sélectionner…</option>
+              {(genScopeKind === 'opportunity' ? opportunities : tenders).map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
+            </select>
+          </label>
+          <label>Audience
+            <input value={genAudience} onChange={(e) => setGenAudience(e.target.value)} />
+          </label>
+          <button type="submit" disabled={loading}>Générer</button>
+        </form>
       )}
-    </section>
+
+      <div className="workspace-stack">
+        {deliverables.map((deliverable) => (
+          <article key={deliverable.id} className="row-card">
+            <div className="tender-selected-header">
+              <div>
+                <strong>{deliverable.title}</strong>
+                <p className="tender-meta">
+                  {DELIVERABLE_TYPES[deliverable.deliverable_type] ?? deliverable.deliverable_type} · v{deliverable.version} · {deliverable.audience ?? 'Audience non précisée'}
+                </p>
+              </div>
+              <span style={{ color: STATUS_COLORS[deliverable.status] ?? '#94a3b8', fontWeight: 800 }}>
+                {STATUS_LABELS[deliverable.status] ?? deliverable.status}
+              </span>
+            </div>
+            <div className="automation-actions">
+              <button className="icon-button" onClick={() => setExpandedId((current) => current === deliverable.id ? null : deliverable.id)} title="Voir le détail" type="button">
+                <Eye size={13} /> {expandedId === deliverable.id ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+              </button>
+              <a className="tender-report-link" href={downloadHref(deliverable.id, 'markdown')} download><Download size={13} /> .md</a>
+              <a className="tender-report-link" href={downloadHref(deliverable.id, 'html')} download><FileDown size={13} /> HTML</a>
+              <a className="tender-report-link" href={downloadHref(deliverable.id, 'pdf')} download><FileDown size={13} /> PDF</a>
+              <button className="icon-button" onClick={() => setEmailPreviewId(deliverable.id)} type="button"><Mail size={13} /> Email</button>
+              <button className="icon-button" onClick={() => updateStatus(deliverable.id, 'review', reviewName || 'Reviewer')} disabled={loading || deliverable.status !== 'draft'} type="button"><ClipboardCheck size={13} /> Soumettre en révision</button>
+              <button className="icon-button" onClick={() => updateStatus(deliverable.id, 'approve', approveName || 'Approver')} disabled={loading || deliverable.status === 'approved'} type="button"><Sparkles size={13} /> Approuver</button>
+              <button className="icon-button" onClick={() => deleteDeliverable(deliverable.id)} disabled={loading} type="button"><Trash2 size={13} /> Supprimer</button>
+            </div>
+
+            {expandedId === deliverable.id && (
+              <div className="workspace-stack">
+                <div className="compact-form">
+                  <label>Reviewer
+                    <input value={reviewName} onChange={(e) => setReviewName(e.target.value)} placeholder="Nom reviewer" />
+                  </label>
+                  <label>Approver
+                    <input value={approveName} onChange={(e) => setApproveName(e.target.value)} placeholder="Nom approbateur" />
+                  </label>
+                </div>
+                <pre>{deliverable.content_markdown}</pre>
+                <DeliverableVersionsPanel deliverableId={deliverable.id} token={token} />
+                <FileAttachments entityType="deliverable" entityId={deliverable.id} token={token} />
+              </div>
+            )}
+          </article>
+        ))}
+        {deliverables.length === 0 && !error && <p className="dashboard-empty-state"><FilePlus2 size={18} /> Aucun livrable pour le moment.</p>}
+      </div>
+      {emailPreviewId && <EmailPreviewModal deliverableId={emailPreviewId} token={token} onClose={() => setEmailPreviewId(null)} />}
+      {loading && <p className="dashboard-empty-state"><RefreshCw size={16} /> Traitement en cours…</p>}
+    </div>
   );
 }
+
+export default DeliverablePanel;
