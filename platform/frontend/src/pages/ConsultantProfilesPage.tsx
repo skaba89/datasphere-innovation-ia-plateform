@@ -7,27 +7,29 @@ export default function ConsultantProfilesPage() {
 
   if (!token) {
     return (
-      <main className="app-shell">
+      <main className="app-shell profiles-page">
         <section className="panel">
-          <p className="eyebrow">Consultants augmentes</p>
+          <p className="eyebrow">Consultants augmentés</p>
           <h1>Profils consultants</h1>
-          <p>Connecte-toi depuis la console pour acceder au catalogue.</p>
+          <p>Connecte-toi depuis la console pour accéder au catalogue.</p>
         </section>
       </main>
     );
   }
 
   return (
-    <main className="app-shell">
+    <main className="app-shell profiles-page">
       <section className="panel">
-        <p className="eyebrow">Consultants augmentes</p>
+        <p className="eyebrow">Consultants augmentés</p>
         <h1>Profils consultants</h1>
         <p className="subtitle">
-          Installe les profils standards, affecte-les aux opportunites ou appels d offres, puis genere les actions gouvernees.
+          Installe les profils standards, affecte-les aux opportunités ou appels d'offres, puis génère les actions gouvernées.
         </p>
       </section>
-      <AgentManagementPanel token={token} />
-      <AgentOperationsPanel token={token} />
+      <section className="profiles-panels">
+        <AgentManagementPanel token={token} />
+        <AgentOperationsPanel token={token} />
+      </section>
     </main>
   );
 }
