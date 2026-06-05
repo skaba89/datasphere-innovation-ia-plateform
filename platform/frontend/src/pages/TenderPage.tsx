@@ -35,7 +35,7 @@ export default function TenderPage() {
         <p className="subtitle">Qualification, exigences, Go / No-Go et matrice de conformité.</p>
       </section>
       <TenderAutomationPanel token={accessKey} role={user?.role} />
-      <TenderWorkspace token={accessKey} role={user?.role} />
+      <TenderWorkspace token={accessKey} />
     </main>
   );
 }
