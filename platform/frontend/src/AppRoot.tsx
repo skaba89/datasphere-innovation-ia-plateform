@@ -9,6 +9,7 @@ import AuditLogPage from './pages/AuditLogPage';
 import CommercialPage from './pages/CommercialPage';
 import ConsultantProfilesPage from './pages/ConsultantProfilesPage';
 import DashboardPage from './pages/DashboardPage';
+import DataExportPage from './pages/DataExportPage';
 import DeliverablePage from './pages/DeliverablePage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import OperationsPage from './pages/OperationsPage';
@@ -28,6 +29,7 @@ import './root.css';
 type AuthView = 'login' | 'forgot' | 'reset';
 type RootView =
   | 'dashboard'
+  | 'dataExport'
   | 'organizations'
   | 'opportunities'
   | 'tenders'
@@ -192,6 +194,7 @@ export default function AppRoot() {
   // ── Navigation tabs ─────────────────────────────────────────────────────────
   const tabs: { key: RootView; label: string }[] = [
     { key: 'dashboard',     label: 'Dashboard' },
+    { key: 'dataExport',    label: 'Export des données' },
     { key: 'tenders',       label: 'Appels d\'offres' },
     { key: 'profiles',      label: 'Profils consultants' },
     { key: 'deliverables',  label: 'Livrables' },
@@ -363,6 +366,7 @@ export default function AppRoot() {
 
       {/* ── Page content ──────────────────────────────────────────── */}
       {view === 'dashboard'     && <DashboardPage />}
+      {view === 'dataExport'    && <DataExportPage />}
       {view === 'tenders'       && <TenderPage />}
       {view === 'profiles'      && <ConsultantProfilesPage />}
       {view === 'deliverables'  && <DeliverablePage />}
