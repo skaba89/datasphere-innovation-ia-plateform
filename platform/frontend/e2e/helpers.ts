@@ -14,7 +14,7 @@ import { type Page, type BrowserContext, expect } from '@playwright/test';
 // ─── Configuration ────────────────────────────────────────────────────────────
 export const API      = process.env.E2E_API_URL   || 'http://localhost:8000/api/v1';
 export const BASE_URL = process.env.E2E_BASE_URL  || 'http://localhost:5173';
-export const ADMIN_EMAIL    = process.env.E2E_ADMIN_EMAIL    || 'admin@datasphere.test';
+export const ADMIN_EMAIL    = process.env.E2E_ADMIN_EMAIL    || 'admin@datasphere.io';
 export const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD || 'Admin123456!';
 export const E2E_TAG = `E2E-${Date.now().toString(36).toUpperCase()}`;
 
