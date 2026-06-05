@@ -2,16 +2,19 @@ import { useState } from 'react';
 
 import { apiRequest } from '../api/client';
 import type { ComplianceMatrixItem, GoNoGoCriterion } from '../api/domainTypes';
+import { can } from '../auth/rbac';
 
 type Props = {
   token: string;
+  role?: string | null;
 };
 
-export function TenderAutomationPanel({ token }: Props) {
+export function TenderAutomationPanel({ token, role }: Props) {
   const [tenderId, setTenderId] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const canWriteTenders = can(role, 'tenders:write');
 
   function getValidatedTenderId(): string | null {
     const cleaned = tenderId.trim();
@@ -29,6 +32,11 @@ export function TenderAutomationPanel({ token }: Props) {
   async function runAction(action: 'goNoGo' | 'compliance') {
     setMessage(null);
     setError(null);
+
+    if (!canWriteTenders) {
+      setError("Ton rôle ne permet pas d'exécuter les automatisations d'appels d'offres.");
+      return;
+    }
 
     const validTenderId = getValidatedTenderId();
     if (!validTenderId) return;
@@ -67,6 +75,10 @@ export function TenderAutomationPanel({ token }: Props) {
         </p>
       </div>
 
+      {!canWriteTenders && (
+        <p className="error">Ton rôle permet de consulter ce module, mais pas d'exécuter les automatisations.</p>
+      )}
+
       <div className="automation-actions">
         <label>
           ID appel d'offres
@@ -77,12 +89,13 @@ export function TenderAutomationPanel({ token }: Props) {
             inputMode="numeric"
             pattern="[0-9]*"
             aria-invalid={Boolean(error)}
+            disabled={!canWriteTenders || loading}
           />
         </label>
-        <button disabled={loading} onClick={() => runAction('goNoGo')} type="button">
+        <button disabled={!canWriteTenders || loading} onClick={() => runAction('goNoGo')} type="button">
           {loading ? 'Traitement…' : 'Appliquer Go / No-Go'}
         </button>
-        <button disabled={loading} onClick={() => runAction('compliance')} type="button">
+        <button disabled={!canWriteTenders || loading} onClick={() => runAction('compliance')} type="button">
           {loading ? 'Traitement…' : 'Générer conformité'}
         </button>
       </div>
