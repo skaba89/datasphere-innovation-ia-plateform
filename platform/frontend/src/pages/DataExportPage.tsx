@@ -95,13 +95,8 @@ function toRecord<T extends object>(item: T): Record<string, unknown> {
   return { ...item } as Record<string, unknown>;
 }
 
-function countUnreadNotifications(notifications: PipelineAnalytics['notifications']): number {
-  if (Array.isArray(notifications)) {
-    return notifications.filter(item => !item.is_read).length;
-  }
-
-  const legacyNotifications = notifications as unknown as { unread?: number } | null | undefined;
-  return legacyNotifications?.unread ?? 0;
+function countPipelineNotifications(notifications: PipelineAnalytics['notifications']): number {
+  return Array.isArray(notifications) ? notifications.length : 0;
 }
 
 function flattenAnalytics(data: PipelineAnalytics): Record<string, unknown>[] {
@@ -130,7 +125,7 @@ function flattenAnalytics(data: PipelineAnalytics): Record<string, unknown>[] {
       deliverables_total: data.deliverables.total,
       deliverables_approved: data.deliverables.approved,
       deliverables_in_review: data.deliverables.in_review,
-      notifications_unread: countUnreadNotifications(data.notifications),
+      notifications_count: countPipelineNotifications(data.notifications),
     },
   ];
 }
