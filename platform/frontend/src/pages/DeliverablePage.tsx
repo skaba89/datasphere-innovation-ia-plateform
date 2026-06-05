@@ -1,19 +1,8 @@
-import { useEffect, useState } from 'react';
-
-import { apiRequest, tokenStorage } from '../api/client';
-import type { CurrentUser } from '../api/authTypes';
+import { tokenStorage } from '../api/client';
 import { DeliverablePanel } from '../components/DeliverablePanel';
 
 export default function DeliverablePage() {
   const token = tokenStorage.get();
-  const [user, setUser] = useState<CurrentUser | null>(null);
-
-  useEffect(() => {
-    if (!token) return;
-    apiRequest<CurrentUser>('/auth/me', {}, token)
-      .then(setUser)
-      .catch(() => setUser(null));
-  }, [token]);
 
   if (!token) {
     return (
@@ -38,7 +27,7 @@ export default function DeliverablePage() {
           transmission client. Validation humaine obligatoire.
         </p>
       </section>
-      <DeliverablePanel token={token} role={user?.role} />
+      <DeliverablePanel token={token} />
     </main>
   );
 }
