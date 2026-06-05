@@ -15,15 +15,12 @@ import {
   WandSparkles,
 } from 'lucide-react';
 
-import { apiRequest, tokenStorage } from '../api/client';
+import { apiRequest } from '../api/client';
 import type { Deliverable, Opportunity, Tender } from '../api/domainTypes';
+import { can } from '../auth/rbac';
 import DeliverableVersionsPanel from './DeliverableVersionsPanel';
 import EmailPreviewModal from './EmailPreviewModal';
 import FileAttachments from './FileAttachments';
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
 
 const DELIVERABLE_TYPES: Record<string, string> = {
   note_cadrage: 'Note de cadrage',
@@ -47,19 +44,12 @@ const STATUS_STYLES: Record<string, React.CSSProperties> = {
   approved: { background: 'rgba(34, 197, 94, 0.15)', color: '#86efac', border: '1px solid rgba(34,197,94,0.3)' },
 };
 
-// ---------------------------------------------------------------------------
-// Props
-// ---------------------------------------------------------------------------
-
 type Props = {
   token: string;
+  role?: string | null;
 };
 
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
-
-export function DeliverablePanel({ token }: Props) {
+export function DeliverablePanel({ token, role }: Props) {
   const [deliverables, setDeliverables] = useState<Deliverable[]>([]);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [tenders, setTenders] = useState<Tender[]>([]);
@@ -67,19 +57,15 @@ export function DeliverablePanel({ token }: Props) {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  // Draft generation form
   const [showGenerateForm, setShowGenerateForm] = useState(false);
   const [genType, setGenType] = useState('note_cadrage');
   const [genScopeKind, setGenScopeKind] = useState<'opportunity' | 'tender'>('opportunity');
-  // Email preview modal
   const [emailPreviewId, setEmailPreviewId] = useState<number | null>(null);
   const [genScopeId, setGenScopeId] = useState('');
   const [genAudience, setGenAudience] = useState('Direction');
-
-  // Review/approve inline
   const [reviewName, setReviewName] = useState('Sekouna');
   const [approveName, setApproveName] = useState('Cheickna KABA');
+  const canWriteDeliverables = can(role, 'deliverables:write');
 
   async function refresh() {
     setError(null);
@@ -97,10 +83,16 @@ export function DeliverablePanel({ token }: Props) {
     refresh().catch((err: Error) => setError(err.message));
   }, [token]);
 
+  function denyWrite() {
+    setError('Ton rôle permet de consulter les livrables, mais pas de modifier ce module.');
+  }
+
   async function handleGenerateDraft(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!canWriteDeliverables) return denyWrite();
+    if (loading) return;
     if (!genScopeId) {
-      setError('Sélectionne une opportunité ou un appel d offres.');
+      setError("Sélectionne une opportunité ou un appel d'offres.");
       return;
     }
     setLoading(true);
@@ -110,17 +102,13 @@ export function DeliverablePanel({ token }: Props) {
       const payload: Record<string, unknown> = {
         deliverable_type: genType,
         language: 'fr',
-        audience: genAudience,
+        audience: genAudience.trim() || 'Direction',
         generated_by: 'agent',
       };
       if (genScopeKind === 'opportunity') payload.opportunity_id = Number(genScopeId);
       else payload.tender_id = Number(genScopeId);
 
-      const created = await apiRequest<Deliverable>(
-        '/deliverables/generate-draft',
-        { method: 'POST', body: JSON.stringify(payload) },
-        token,
-      );
+      const created = await apiRequest<Deliverable>('/deliverables/generate-draft', { method: 'POST', body: JSON.stringify(payload) }, token);
       setMessage(`Brouillon "${created.title}" généré avec succès (v${created.version}).`);
       setShowGenerateForm(false);
       await refresh();
@@ -132,16 +120,13 @@ export function DeliverablePanel({ token }: Props) {
   }
 
   async function handleReview(id: number) {
-    if (!reviewName.trim()) return;
+    if (!canWriteDeliverables) return denyWrite();
+    if (loading || !reviewName.trim()) return;
     setLoading(true);
     setError(null);
     try {
-      await apiRequest<Deliverable>(
-        `/deliverables/${id}/review`,
-        { method: 'POST', body: JSON.stringify({ reviewer_name: reviewName }) },
-        token,
-      );
-      setMessage(`Livrable ${id} soumis en révision par ${reviewName}.`);
+      await apiRequest<Deliverable>(`/deliverables/${id}/review`, { method: 'POST', body: JSON.stringify({ reviewer_name: reviewName.trim() }) }, token);
+      setMessage(`Livrable ${id} soumis en révision par ${reviewName.trim()}.`);
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur lors de la révision.');
@@ -151,25 +136,24 @@ export function DeliverablePanel({ token }: Props) {
   }
 
   async function handleApprove(id: number) {
-    if (!approveName.trim()) return;
+    if (!canWriteDeliverables) return denyWrite();
+    if (loading || !approveName.trim()) return;
     setLoading(true);
     setError(null);
     try {
-      await apiRequest<Deliverable>(
-        `/deliverables/${id}/approve`,
-        { method: 'POST', body: JSON.stringify({ approver_name: approveName }) },
-        token,
-      );
-      setMessage(`Livrable ${id} approuvé par ${approveName}.`);
+      await apiRequest<Deliverable>(`/deliverables/${id}/approve`, { method: 'POST', body: JSON.stringify({ approver_name: approveName.trim() }) }, token);
+      setMessage(`Livrable ${id} approuvé par ${approveName.trim()}.`);
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur lors de l approbation.');
+      setError(err instanceof Error ? err.message : "Erreur lors de l'approbation.");
     } finally {
       setLoading(false);
     }
   }
 
   async function handleDelete(id: number) {
+    if (!canWriteDeliverables) return denyWrite();
+    if (loading) return;
     setLoading(true);
     setError(null);
     try {
@@ -194,99 +178,43 @@ export function DeliverablePanel({ token }: Props) {
 
   return (
     <section className="panel workspace-stack" style={{ marginTop: 24 }}>
-      {/* Header */}
       <div>
         <p className="eyebrow">Livrables gouvernés</p>
         <h2>Bibliothèque de livrables</h2>
-        <p className="subtitle compact-subtitle">
-          Génère des brouillons structurés par type, soumets-les en révision et approuve-les
-          avant toute transmission client.
-        </p>
+        <p className="subtitle compact-subtitle">Génère des brouillons structurés, soumets-les en révision et approuve-les avant transmission client.</p>
       </div>
 
-      {/* KPIs */}
       <div className="stats">
-        <article>
-          <strong>{draftCount}</strong>
-          <span>Brouillons</span>
-        </article>
-        <article>
-          <strong>{reviewCount}</strong>
-          <span>En révision</span>
-        </article>
-        <article>
-          <strong>{approvedCount}</strong>
-          <span>Approuvés</span>
-        </article>
+        <article><strong>{draftCount}</strong><span>Brouillons</span></article>
+        <article><strong>{reviewCount}</strong><span>En révision</span></article>
+        <article><strong>{approvedCount}</strong><span>Approuvés</span></article>
       </div>
 
-      {/* Actions */}
+      {!canWriteDeliverables && <p className="error">Lecture seule : ton rôle ne permet pas de modifier les livrables.</p>}
+
       <div className="automation-actions" style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        <button
-          type="button"
-          onClick={() => { setShowGenerateForm((v) => !v); setMessage(null); setError(null); }}
-          disabled={loading}
-        >
-          <WandSparkles size={18} /> Générer un brouillon
-        </button>
-        <button
-          type="button"
-          onClick={() => refresh().catch((err: Error) => setError(err.message))}
-          disabled={loading}
-        >
+        {canWriteDeliverables && (
+          <button type="button" onClick={() => { setShowGenerateForm((v) => !v); setMessage(null); setError(null); }} disabled={loading}>
+            <WandSparkles size={18} /> Générer un brouillon
+          </button>
+        )}
+        <button type="button" onClick={() => refresh().catch((err: Error) => setError(err.message))} disabled={loading}>
           <RefreshCw size={18} /> Actualiser
         </button>
       </div>
 
-      {/* Generate form */}
-      {showGenerateForm && (
+      {showGenerateForm && canWriteDeliverables && (
         <div className="panel" style={{ marginTop: 0 }}>
           <p className="eyebrow">Nouveau brouillon</p>
           <h3 style={{ margin: '0 0 16px' }}>Paramètres de génération</h3>
-          <form className="form compact-form" onSubmit={handleGenerateDraft}>
-            <label>
-              Type de livrable
-              <select value={genType} onChange={(e) => setGenType(e.target.value)}>
-                {Object.entries(DELIVERABLE_TYPES).map(([key, label]) => (
-                  <option key={key} value={key}>{label}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Contexte
-              <select value={genScopeKind} onChange={(e) => setGenScopeKind(e.target.value as 'opportunity' | 'tender')}>
-                <option value="opportunity">Opportunité CRM</option>
-                <option value="tender">Appel d offres</option>
-              </select>
-            </label>
-            <label>
-              {genScopeKind === 'opportunity' ? 'Opportunité' : 'Appel d offres'}
-              <select value={genScopeId} onChange={(e) => setGenScopeId(e.target.value)} required>
-                <option value="">-- Sélectionner --</option>
-                {scopeOptions.map((opt) => (
-                  <option key={opt.id} value={opt.id}>{opt.label}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Audience cible
-              <input
-                value={genAudience}
-                onChange={(e) => setGenAudience(e.target.value)}
-                placeholder="ex. Direction, DSI, Comité de pilotage…"
-              />
-            </label>
-            <div style={{ display: 'flex', gap: 12 }}>
-              <button type="submit" disabled={loading}>
-                <Sparkles size={16} /> Générer
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowGenerateForm(false)}
-                style={{ background: 'rgba(255,255,255,0.08)', color: '#f8fafc', border: '1px solid rgba(255,255,255,0.12)' }}
-              >
-                Annuler
-              </button>
+          <form className="form compact-form" onSubmit={handleGenerateDraft} aria-busy={loading}>
+            <label>Type de livrable<select value={genType} onChange={(e) => setGenType(e.target.value)} disabled={loading}>{Object.entries(DELIVERABLE_TYPES).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
+            <label>Contexte<select value={genScopeKind} onChange={(e) => setGenScopeKind(e.target.value as 'opportunity' | 'tender')} disabled={loading}><option value="opportunity">Opportunité CRM</option><option value="tender">Appel d'offres</option></select></label>
+            <label>{genScopeKind === 'opportunity' ? 'Opportunité' : "Appel d'offres"}<select value={genScopeId} onChange={(e) => setGenScopeId(e.target.value)} required disabled={loading}><option value="">-- Sélectionner --</option>{scopeOptions.map((opt) => <option key={opt.id} value={opt.id}>{opt.label}</option>)}</select></label>
+            <label>Audience cible<input value={genAudience} onChange={(e) => setGenAudience(e.target.value)} placeholder="ex. Direction, DSI, Comité de pilotage…" disabled={loading} /></label>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <button type="submit" disabled={loading}><Sparkles size={16} /> {loading ? 'Génération…' : 'Générer'}</button>
+              <button type="button" onClick={() => setShowGenerateForm(false)} disabled={loading} style={{ background: 'rgba(255,255,255,0.08)', color: '#f8fafc', border: '1px solid rgba(255,255,255,0.12)' }}>Annuler</button>
             </div>
           </form>
         </div>
@@ -295,189 +223,62 @@ export function DeliverablePanel({ token }: Props) {
       {message && <p className="success">{message}</p>}
       {error && <p className="error">{error}</p>}
 
-      {/* Deliverable list */}
       <div className="table">
-        {deliverables.length === 0 && (
-          <p style={{ color: '#94a3b8' }}>
-            Aucun livrable pour le moment. Utilise «&nbsp;Générer un brouillon&nbsp;» pour démarrer.
-          </p>
-        )}
+        {deliverables.length === 0 && <p style={{ color: '#94a3b8' }}>Aucun livrable pour le moment.</p>}
         {deliverables.map((d) => {
           const isExpanded = expandedId === d.id;
           const statusStyle = STATUS_STYLES[d.status] ?? STATUS_STYLES.draft;
           const typeLabel = DELIVERABLE_TYPES[d.deliverable_type] ?? d.deliverable_type;
-
           return (
             <article key={d.id} className="row-card" style={{ gap: 0, padding: 0, overflow: 'hidden' }}>
-              {/* Row header */}
-              <div
-                style={{ padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}
-              >
+              <div style={{ padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
                 <FilePlus2 size={20} style={{ color: '#facc15', flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <strong style={{ display: 'block', fontSize: '0.95rem' }}>{d.title}</strong>
-                  <span style={{ fontSize: '0.82rem' }}>
-                    {typeLabel} · v{d.version}
-                    {d.audience && ` · ${d.audience}`}
-                  </span>
+                  <span style={{ fontSize: '0.82rem' }}>{typeLabel} · v{d.version}{d.audience && ` · ${d.audience}`}</span>
                 </div>
-                <span style={{ ...statusStyle, padding: '4px 12px', borderRadius: 999, fontSize: '0.78rem', fontWeight: 700, flexShrink: 0 }}>
-                  {STATUS_LABELS[d.status] ?? d.status}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setExpandedId(isExpanded ? null : d.id)}
-                  style={{ background: 'transparent', border: 'none', color: '#94a3b8', padding: '4px 8px' }}
-                  title={isExpanded ? 'Réduire' : 'Voir le détail'}
-                >
-                  {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                </button>
+                <span style={{ ...statusStyle, padding: '4px 12px', borderRadius: 999, fontSize: '0.78rem', fontWeight: 700, flexShrink: 0 }}>{STATUS_LABELS[d.status] ?? d.status}</span>
+                <button type="button" onClick={() => setExpandedId(isExpanded ? null : d.id)} style={{ background: 'transparent', border: 'none', color: '#94a3b8', padding: '4px 8px' }} title={isExpanded ? 'Réduire' : 'Voir le détail'}>{isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}</button>
               </div>
 
-              {/* Expanded detail */}
               {isExpanded && (
                 <div style={{ borderTop: '1px solid rgba(148,163,184,0.18)', padding: '18px' }}>
-                  {/* Markdown preview */}
                   <div style={{ marginBottom: 18 }}>
                     <p className="eyebrow" style={{ marginBottom: 8 }}>Contenu</p>
-                    <pre style={{
-                      background: 'rgba(2,6,23,0.72)',
-                      border: '1px solid rgba(148,163,184,0.2)',
-                      borderRadius: 12,
-                      padding: '14px 16px',
-                      fontSize: '0.82rem',
-                      color: '#cbd5e1',
-                      overflowX: 'auto',
-                      whiteSpace: 'pre-wrap',
-                      wordBreak: 'break-word',
-                      maxHeight: 320,
-                      overflow: 'auto',
-                    }}>
-                      {d.content_markdown}
-                    </pre>
+                    <pre style={{ background: 'rgba(2,6,23,0.72)', border: '1px solid rgba(148,163,184,0.2)', borderRadius: 12, padding: '14px 16px', fontSize: '0.82rem', color: '#cbd5e1', whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: 320, overflow: 'auto' }}>{d.content_markdown}</pre>
                   </div>
 
-                  {/* Metadata */}
                   <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', marginBottom: 18, fontSize: '0.82rem', color: '#94a3b8' }}>
                     {d.generated_by && <span>Généré par : <strong style={{ color: '#f8fafc' }}>{d.generated_by}</strong></span>}
                     {d.reviewed_by && <span>Révisé par : <strong style={{ color: '#93c5fd' }}>{d.reviewed_by}</strong></span>}
                     {d.approved_by && <span>Approuvé par : <strong style={{ color: '#86efac' }}>{d.approved_by}</strong></span>}
                   </div>
 
-                  {/* Workflow actions */}
                   <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                    {d.status === 'draft' && (
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <input
-                          value={reviewName}
-                          onChange={(e) => setReviewName(e.target.value)}
-                          placeholder="Reviewer"
-                          style={{ minHeight: 36, width: 180, borderRadius: 12, border: '1px solid rgba(148,163,184,0.3)', background: 'rgba(2,6,23,0.72)', color: '#f8fafc', padding: '0 12px', fontSize: '0.85rem' }}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleReview(d.id)}
-                          disabled={loading}
-                          style={{ background: 'rgba(59,130,246,0.2)', color: '#93c5fd', border: '1px solid rgba(59,130,246,0.4)', borderRadius: 999, padding: '6px 16px', fontWeight: 700 }}
-                        >
-                          <Eye size={15} /> Soumettre en révision
-                        </button>
+                    {canWriteDeliverables && d.status === 'draft' && (
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <input value={reviewName} onChange={(e) => setReviewName(e.target.value)} placeholder="Reviewer" disabled={loading} style={{ minHeight: 36, width: 180, borderRadius: 12, border: '1px solid rgba(148,163,184,0.3)', background: 'rgba(2,6,23,0.72)', color: '#f8fafc', padding: '0 12px', fontSize: '0.85rem' }} />
+                        <button type="button" onClick={() => handleReview(d.id)} disabled={loading} style={{ background: 'rgba(59,130,246,0.2)', color: '#93c5fd', border: '1px solid rgba(59,130,246,0.4)', borderRadius: 999, padding: '6px 16px', fontWeight: 700 }}><Eye size={15} /> Soumettre en révision</button>
                       </div>
                     )}
-                    {d.status === 'in_review' && (
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <input
-                          value={approveName}
-                          onChange={(e) => setApproveName(e.target.value)}
-                          placeholder="Approbateur"
-                          style={{ minHeight: 36, width: 180, borderRadius: 12, border: '1px solid rgba(148,163,184,0.3)', background: 'rgba(2,6,23,0.72)', color: '#f8fafc', padding: '0 12px', fontSize: '0.85rem' }}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleApprove(d.id)}
-                          disabled={loading}
-                          style={{ background: 'rgba(34,197,94,0.2)', color: '#86efac', border: '1px solid rgba(34,197,94,0.4)', borderRadius: 999, padding: '6px 16px', fontWeight: 700 }}
-                        >
-                          <CheckCircle2 size={15} /> Approuver
-                        </button>
+                    {canWriteDeliverables && d.status === 'in_review' && (
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <input value={approveName} onChange={(e) => setApproveName(e.target.value)} placeholder="Approbateur" disabled={loading} style={{ minHeight: 36, width: 180, borderRadius: 12, border: '1px solid rgba(148,163,184,0.3)', background: 'rgba(2,6,23,0.72)', color: '#f8fafc', padding: '0 12px', fontSize: '0.85rem' }} />
+                        <button type="button" onClick={() => handleApprove(d.id)} disabled={loading} style={{ background: 'rgba(34,197,94,0.2)', color: '#86efac', border: '1px solid rgba(34,197,94,0.4)', borderRadius: 999, padding: '6px 16px', fontWeight: 700 }}><CheckCircle2 size={15} /> Approuver</button>
                       </div>
                     )}
-                    {d.status === 'approved' && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#86efac', fontSize: '0.88rem' }}>
-                        <ClipboardCheck size={18} />
-                        <span>Livrable approuvé — prêt pour transmission client.</span>
-                      </div>
-                    )}
-                    {/* Export buttons — always visible */}
-                    <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
-                      <a
-                        href={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'}/deliverables/${d.id}/export/markdown`}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 5,
-                          background: 'rgba(148,163,184,0.1)', color: '#94a3b8',
-                          border: '1px solid rgba(148,163,184,0.2)', borderRadius: 999,
-                          padding: '6px 14px', fontWeight: 600, fontSize: '0.8rem',
-                          textDecoration: 'none',
-                        }}
-                        title="Télécharger en Markdown"
-                      >
-                        <FileDown size={13} /> .md
-                      </a>
-                      <a
-                        href={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'}/deliverables/${d.id}/export/html`}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 5,
-                          background: 'rgba(59,130,246,0.12)', color: '#93c5fd',
-                          border: '1px solid rgba(59,130,246,0.25)', borderRadius: 999,
-                          padding: '6px 14px', fontWeight: 600, fontSize: '0.8rem',
-                          textDecoration: 'none',
-                        }}
-                        title="Ouvrir en HTML (imprimable PDF)"
-                      >
-                        <Download size={13} /> PDF
-                      </a>
-                      {d.status === 'approved' && (
-                        <button
-                          type="button"
-                          onClick={() => setEmailPreviewId(d.id)}
-                          style={{
-                            display: 'inline-flex', alignItems: 'center', gap: 5,
-                            background: 'rgba(250,204,21,0.1)', color: '#facc15',
-                            border: '1px solid rgba(250,204,21,0.25)', borderRadius: 999,
-                            padding: '6px 14px', fontWeight: 600, fontSize: '0.8rem',
-                            cursor: 'pointer',
-                          }}
-                          title="Générer l'email client"
-                        >
-                          <Mail size={13} /> Email
-                        </button>
-                      )}
+                    {d.status === 'approved' && <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#86efac', fontSize: '0.88rem' }}><ClipboardCheck size={18} /><span>Livrable approuvé — prêt pour transmission client.</span></div>}
+
+                    <div style={{ display: 'flex', gap: 8, marginLeft: 'auto', flexWrap: 'wrap' }}>
+                      <a href={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'}/deliverables/${d.id}/export/markdown`} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(148,163,184,0.1)', color: '#94a3b8', border: '1px solid rgba(148,163,184,0.2)', borderRadius: 999, padding: '6px 14px', fontWeight: 600, fontSize: '0.8rem', textDecoration: 'none' }} title="Télécharger en Markdown"><FileDown size={13} /> .md</a>
+                      <a href={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'}/deliverables/${d.id}/export/html`} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(59,130,246,0.12)', color: '#93c5fd', border: '1px solid rgba(59,130,246,0.25)', borderRadius: 999, padding: '6px 14px', fontWeight: 600, fontSize: '0.8rem', textDecoration: 'none' }} title="Ouvrir en HTML"><Download size={13} /> PDF</a>
+                      {d.status === 'approved' && <button type="button" onClick={() => setEmailPreviewId(d.id)} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(250,204,21,0.1)', color: '#facc15', border: '1px solid rgba(250,204,21,0.25)', borderRadius: 999, padding: '6px 14px', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }} title="Générer l'email client"><Mail size={13} /> Email</button>}
+                      {canWriteDeliverables && <button type="button" onClick={() => handleDelete(d.id)} disabled={loading} style={{ background: 'rgba(239,68,68,0.12)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 999, padding: '6px 16px', fontWeight: 700 }}><Trash2 size={15} /> Supprimer</button>}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(d.id)}
-                      disabled={loading}
-                      style={{ background: 'rgba(239,68,68,0.12)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 999, padding: '6px 16px', fontWeight: 700, marginLeft: 'auto' }}
-                    >
-                      <Trash2 size={15} /> Supprimer
-                    </button>
                   </div>
-                  {/* Version history panel */}
-                  <div style={{ marginTop: 16 }}>
-                    <DeliverableVersionsPanel
-                      deliverableId={d.id}
-                      currentVersion={d.version}
-                      onRestored={refresh}
-                    />
-                  </div>
-                  {/* File attachments */}
-                  <div style={{ marginTop: 12 }}>
-                    <FileAttachments resourceType="deliverable" resourceId={d.id} />
-                  </div>
+
+                  <div style={{ marginTop: 16 }}><DeliverableVersionsPanel deliverableId={d.id} currentVersion={d.version} onRestored={refresh} /></div>
+                  <div style={{ marginTop: 12 }}><FileAttachments resourceType="deliverable" resourceId={d.id} /></div>
                 </div>
               )}
             </article>
@@ -485,14 +286,7 @@ export function DeliverablePanel({ token }: Props) {
         })}
       </div>
 
-      {/* Email preview modal */}
-      {emailPreviewId !== null && (
-        <EmailPreviewModal
-          deliverableId={emailPreviewId}
-          deliverableTitle={deliverables.find(d => d.id === emailPreviewId)?.title ?? 'Livrable'}
-          onClose={() => setEmailPreviewId(null)}
-        />
-      )}
+      {emailPreviewId !== null && <EmailPreviewModal deliverableId={emailPreviewId} deliverableTitle={deliverables.find(d => d.id === emailPreviewId)?.title ?? 'Livrable'} onClose={() => setEmailPreviewId(null)} />}
     </section>
   );
 }
