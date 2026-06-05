@@ -84,7 +84,7 @@ const DATASETS: ExportDataset[] = [
     key: 'auditLogs',
     label: "Journal d'audit",
     description: 'Derniers événements de sécurité et de traçabilité exportables.',
-    endpoint: '/audit-logs?skip=0&limit=1000',
+    endpoint: '/audit-logs?skip=0&limit=100',
     icon: ShieldCheck,
     filename: 'datasphere-journal-audit',
     normalize: payload => (payload as AuditLog[]).map(toRecord),
@@ -118,52 +118,40 @@ function flattenAnalytics(data: PipelineAnalytics): Record<string, unknown>[] {
       agents_actions_done: data.agents.actions_done,
       agents_actions_pending: data.agents.actions_pending,
       agents_actions_failed: data.agents.actions_failed,
-      agents_actions_pending_approval: data.agents.actions_pending_approval,
-      agents_completion_rate: data.agents.completion_rate,
       deliverables_total: data.deliverables.total,
-      deliverables_draft: data.deliverables.draft,
-      deliverables_in_review: data.deliverables.in_review,
       deliverables_approved: data.deliverables.approved,
-      deliverables_approval_rate: data.deliverables.approval_rate,
-      scheduler_running: data.scheduler.running,
-      scheduler_jobs_count: data.scheduler.jobs_count,
-      scheduler_last_execution: data.scheduler.last_execution,
-      scheduler_executions_today: data.scheduler.executions_today,
-      scheduler_errors_today: data.scheduler.errors_today,
-      notifications_count: data.notifications.length,
+      deliverables_in_review: data.deliverables.in_review,
+      notifications_unread: data.notifications.unread,
     },
   ];
 }
 
 function csvEscape(value: unknown): string {
-  const normalized = value === null || value === undefined
-    ? ''
-    : typeof value === 'object'
-      ? JSON.stringify(value)
-      : String(value);
-
-  if (/[";\n\r]/.test(normalized)) {
-    return `"${normalized.replace(/"/g, '""')}"`;
-  }
-  return normalized;
+  if (value === null || value === undefined) return '';
+  const str = String(value);
+  if (/[",\n;]/.test(str)) return `"${str.replace(/"/g, '""')}"`;
+  return str;
 }
 
 function toCsv(rows: Record<string, unknown>[]): string {
-  const columns = Array.from(new Set(rows.flatMap(row => Object.keys(row))));
-  const header = columns.join(';');
-  const body = rows.map(row => columns.map(column => csvEscape(row[column])).join(';')).join('\n');
-  return `\uFEFF${[header, body].filter(Boolean).join('\n')}`;
+  if (rows.length === 0) return '';
+  const headers = Array.from(new Set(rows.flatMap(row => Object.keys(row))));
+  const lines = [
+    headers.join(';'),
+    ...rows.map(row => headers.map(header => csvEscape(row[header])).join(';')),
+  ];
+  return lines.join('\n');
 }
 
-function downloadBlob(filename: string, content: string, mimeType: string) {
-  const blob = new Blob([content], { type: mimeType });
+function downloadBlob(filename: string, content: string, type: string) {
+  const blob = new Blob([content], { type });
   const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = filename;
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
   URL.revokeObjectURL(url);
 }
 
@@ -217,140 +205,92 @@ export default function DataExportPage() {
       );
       return;
     }
-
-    downloadBlob(
-      buildFilename(dataset.filename, 'csv'),
-      toCsv(rows),
-      'text/csv;charset=utf-8',
-    );
+    downloadBlob(buildFilename(dataset.filename, 'csv'), toCsv(rows), 'text/csv;charset=utf-8');
   }
 
   function exportAll(format: ExportFormat) {
-    const payload = Object.fromEntries(
-      DATASETS.map(dataset => [dataset.key, data[dataset.key] ?? []]),
-    );
-
     if (format === 'json') {
       downloadBlob(
         buildFilename('datasphere-export-complet', 'json'),
-        JSON.stringify(payload, null, 2),
+        JSON.stringify(data, null, 2),
         'application/json;charset=utf-8',
       );
       return;
     }
 
-    const sections = DATASETS.map(dataset => {
+    const content = DATASETS.map(dataset => {
       const rows = data[dataset.key] ?? [];
-      return [`# ${dataset.label}`, toCsv(rows).replace(/^\uFEFF/, '')].join('\n');
-    });
+      return `# ${dataset.label}\n${toCsv(rows)}`;
+    }).join('\n\n');
+    downloadBlob(buildFilename('datasphere-export-complet', 'csv'), content, 'text/csv;charset=utf-8');
+  }
 
-    downloadBlob(
-      buildFilename('datasphere-export-complet', 'csv'),
-      `\uFEFF${sections.join('\n\n')}`,
-      'text/csv;charset=utf-8',
+  if (!token) {
+    return (
+      <main className="app-shell">
+        <section className="panel">
+          <p className="eyebrow">Exports</p>
+          <h1>Exports de données</h1>
+          <p>Connecte-toi pour exporter les données de la plateforme.</p>
+        </section>
+      </main>
     );
   }
 
   return (
-    <main className="app-shell">
-      <section className="panel" style={{ marginBottom: 24 }}>
-        <p className="eyebrow">Export des données</p>
-        <div style={{ display: 'flex', gap: 16, justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-          <div>
-            <h1 style={{ fontSize: 'clamp(1.8rem, 4vw, 3rem)' }}>Exports Dashboard</h1>
-            <p className="subtitle">
-              Télécharge les données clés du dashboard en CSV compatible Excel ou en JSON pour les traitements techniques.
-            </p>
-            <p style={{ color: '#64748b', fontSize: '.86rem', marginTop: 12 }}>
-              {lastUpdated
-                ? `Dernière préparation : ${new Date(lastUpdated).toLocaleString('fr-FR')}`
-                : 'Préparation des données exportables…'}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={loadExports}
-            disabled={loading}
-            className="icon-button"
-            style={{ minHeight: 44 }}
-          >
-            <RefreshCw size={16} style={loading ? { animation: 'spin 1s linear infinite' } : {}} />
-            Actualiser
+    <main className="app-shell data-export-page">
+      <section className="panel page-hero">
+        <p className="eyebrow">Gouvernance data</p>
+        <h1>Exports de données</h1>
+        <p className="subtitle">
+          Télécharge les principales données de la plateforme en CSV ou JSON pour audit,
+          sauvegarde, reporting ou reprise externe.
+        </p>
+        <div className="hero-actions">
+          <button className="team-primary-button" type="button" onClick={loadExports} disabled={loading}>
+            <RefreshCw size={15} /> {loading ? 'Chargement…' : 'Rafraîchir'}
+          </button>
+          <button className="team-secondary-button" type="button" onClick={() => exportAll('csv')} disabled={totalRows === 0}>
+            <Download size={15} /> Export complet CSV
+          </button>
+          <button className="team-secondary-button" type="button" onClick={() => exportAll('json')} disabled={totalRows === 0}>
+            <FileJson size={15} /> Export complet JSON
           </button>
         </div>
       </section>
 
-      {error && (
-        <p className="error" role="alert" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <AlertTriangle size={16} /> {error}
-        </p>
-      )}
+      {error && <div className="team-alert error"><AlertTriangle size={16} /> {error}</div>}
+      {lastUpdated && <p className="compact-subtitle">Dernière actualisation : {new Date(lastUpdated).toLocaleString('fr-FR')}</p>}
 
-      <section className="stats">
-        <article>
-          <strong>{DATASETS.length}</strong>
-          <span>Jeux de données</span>
-        </article>
-        <article>
-          <strong>{totalRows}</strong>
-          <span>Lignes prêtes</span>
-        </article>
-        <article>
-          <strong>{loading ? '…' : 'CSV'}</strong>
-          <span>Format métier</span>
-        </article>
-        <article>
-          <strong>JSON</strong>
-          <span>Format technique</span>
-        </article>
-      </section>
-
-      <section className="panel" style={{ marginBottom: 24 }}>
-        <h2>Export global</h2>
-        <p style={{ color: '#cbd5e1', lineHeight: 1.7, marginTop: 0 }}>
-          Utilise ces boutons pour exporter en une fois toutes les données préparées pour le dashboard.
-        </p>
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <button type="button" className="icon-button" onClick={() => exportAll('csv')} disabled={loading || totalRows === 0}>
-            <Download size={16} /> Export complet CSV
-          </button>
-          <button type="button" className="icon-button" onClick={() => exportAll('json')} disabled={loading || totalRows === 0}>
-            <FileJson size={16} /> Export complet JSON
-          </button>
-        </div>
-      </section>
-
-      <section className="grid">
+      <section className="data-export-grid">
         {DATASETS.map(dataset => {
           const Icon = dataset.icon;
           const rows = data[dataset.key] ?? [];
           return (
-            <article key={dataset.key} className="card" style={{ display: 'grid', gap: 14 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <Icon size={24} />
+            <article className="panel data-export-card" key={dataset.key}>
+              <div className="data-export-card-header">
+                <span className="data-export-icon"><Icon size={18} /></span>
                 <div>
-                  <h2 style={{ margin: 0 }}>{dataset.label}</h2>
-                  <p style={{ marginTop: 4, fontSize: '.84rem' }}>{rows.length} ligne{rows.length > 1 ? 's' : ''}</p>
+                  <h2>{dataset.label}</h2>
+                  <p>{dataset.description}</p>
                 </div>
               </div>
-              <p>{dataset.description}</p>
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                <button type="button" className="icon-button" onClick={() => exportDataset(dataset, 'csv')} disabled={loading || rows.length === 0}>
-                  <Download size={15} /> CSV
+              <div className="data-export-meta">
+                <strong>{rows.length}</strong>
+                <span>lignes chargées</span>
+              </div>
+              <div className="automation-actions">
+                <button type="button" className="icon-button" onClick={() => exportDataset(dataset, 'csv')} disabled={rows.length === 0}>
+                  <Download size={13} /> CSV
                 </button>
-                <button type="button" className="icon-button" onClick={() => exportDataset(dataset, 'json')} disabled={loading || rows.length === 0}>
-                  <FileJson size={15} /> JSON
+                <button type="button" className="icon-button" onClick={() => exportDataset(dataset, 'json')} disabled={rows.length === 0}>
+                  <FileJson size={13} /> JSON
                 </button>
               </div>
             </article>
           );
         })}
       </section>
-
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .icon-button:disabled { opacity: .55; cursor: not-allowed; }
-      `}</style>
     </main>
   );
 }
