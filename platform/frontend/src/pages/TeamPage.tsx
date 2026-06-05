@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { CheckCircle2, Crown, Plus, RefreshCw, Shield, UserCheck, UserX, Users, X } from 'lucide-react';
 import { apiRequest, tokenStorage } from '../api/client';
 import type { User } from '../api/domainTypes';
+import './admin-responsive.css';
 
 const ROLE_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
   admin: { label: 'Admin', color: '#facc15', icon: Crown },
