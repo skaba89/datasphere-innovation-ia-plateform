@@ -49,7 +49,9 @@ code {
 
 .dashboard-page,
 .crm-workspace,
-.tender-workspace {
+.tender-workspace,
+.commercial-page,
+.operations-page {
   display: grid;
   gap: clamp(18px, 3vw, 28px);
 }
@@ -69,7 +71,11 @@ code {
 .topbar,
 .user-box,
 .root-switcher,
-.automation-actions {
+.automation-actions,
+.commercial-tabs,
+.operations-tabs,
+.operations-panel-body,
+.commercial-panel-body {
   min-width: 0;
 }
 
@@ -132,7 +138,10 @@ code {
 .dashboard-scheduler-row p,
 .dashboard-alert-item p,
 .tender-meta,
-.crm-card-meta {
+.crm-card-meta,
+.operations-export-card p,
+.commercial-stat-card,
+.operations-stat-card {
   overflow-wrap: anywhere;
 }
 
@@ -194,13 +203,17 @@ code {
 .dashboard-card-grid,
 .dashboard-mini-grid,
 .crm-feature-grid,
-.tender-mini-grid {
+.tender-mini-grid,
+.commercial-stats-grid,
+.operations-stats-grid {
   display: grid;
   gap: 16px;
   min-width: 0;
 }
 
-.dashboard-kpi-grid {
+.dashboard-kpi-grid,
+.commercial-stats-grid,
+.operations-stats-grid {
   grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr));
 }
 
@@ -221,6 +234,152 @@ code {
   flex-direction: column;
   gap: 12px;
   min-width: 0;
+}
+
+.commercial-stat-card,
+.operations-stat-card {
+  background: rgba(15, 30, 54, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.commercial-stat-card-yellow { border-color: rgba(250,204,21,0.15); }
+.commercial-stat-card-blue { border-color: rgba(59,130,246,0.15); }
+.commercial-stat-card span,
+.operations-stat-card span {
+  display: block;
+  font-size: 0.72rem;
+  color: #64748b;
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.commercial-stat-card strong,
+.operations-stat-card strong {
+  display: block;
+  font-weight: 800;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+.operations-stat-icon {
+  width: 36px;
+  height: 36px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+.commercial-workspace,
+.operations-workspace { overflow: hidden; }
+.commercial-tabs,
+.operations-tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  border-bottom: 1px solid rgba(148,163,184,0.1);
+  margin-bottom: 24px;
+  padding-bottom: 2px;
+}
+.commercial-tabs::-webkit-scrollbar,
+.operations-tabs::-webkit-scrollbar { display: none; }
+.commercial-panel-body,
+.operations-panel-body { min-width: 0; overflow-x: auto; }
+
+.operations-notice {
+  padding: 14px 20px;
+  background: rgba(34,197,94,0.06);
+  border: 1px solid rgba(34,197,94,0.2);
+  border-radius: 12px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  color: #86efac;
+  line-height: 1.6;
+  font-size: 0.84rem;
+}
+.operations-notice svg { flex: 0 0 auto; margin-top: 2px; }
+.operations-notice code {
+  background: rgba(34,197,94,0.12);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+.operations-notice .warning-code {
+  background: rgba(249,115,22,0.12);
+  color: #fb923c;
+}
+.operations-badge {
+  padding: 2px 7px;
+  border-radius: 99px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: rgba(249,115,22,0.2);
+  color: #fb923c;
+}
+.operations-exports { display: grid; gap: 16px; }
+.operations-export-header strong { display: block; font-size: 1rem; margin-bottom: 6px; }
+.operations-export-header p { color: #64748b; font-size: 0.84rem; margin: 0; }
+.operations-export-list { display: grid; gap: 14px; }
+.operations-export-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  background: rgba(15,30,54,0.85);
+  border: 1px solid rgba(148,163,184,0.12);
+  border-radius: 14px;
+  min-width: 0;
+}
+.operations-export-icon {
+  width: 44px;
+  height: 44px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  font-size: 1.2rem;
+}
+.operations-export-copy { flex: 1; min-width: 0; }
+.operations-export-copy strong { display: block; font-size: 0.92rem; margin-bottom: 4px; }
+.operations-export-copy strong span {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+.operations-export-copy p { margin: 0; font-size: 0.8rem; color: #64748b; }
+.operations-export-card a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 18px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.07);
+  color: #94a3b8;
+  font-weight: 700;
+  font-size: 0.82rem;
+  text-decoration: none;
+  flex: 0 0 auto;
+}
+.operations-export-tip {
+  margin-top: 4px;
+  padding: 14px 18px;
+  background: rgba(34,197,94,0.06);
+  border: 1px solid rgba(34,197,94,0.15);
+  border-radius: 10px;
+  font-size: 0.82rem;
+  color: #86efac;
 }
 
 .dashboard-kpi-topline,
@@ -434,6 +593,15 @@ code {
     margin-left: -2px;
     margin-right: -2px;
   }
+
+  .operations-export-card {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .operations-export-card a {
+    width: 100%;
+  }
 }
 
 @media (max-width: 520px) {
@@ -473,5 +641,12 @@ code {
   .tender-report-link {
     width: 100%;
     justify-content: center;
+  }
+
+  .commercial-stat-card,
+  .operations-stat-card,
+  .operations-notice,
+  .operations-export-card {
+    padding: 14px !important;
   }
 }
