@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Building2, Kanban, Target, Users } from 'lucide-react';
+import { Kanban, Target, Users } from 'lucide-react';
 import ContactsPanel from '../components/ContactsPanel';
 import KanbanPipeline from '../components/KanbanPipeline';
 
@@ -15,77 +15,53 @@ export default function CommercialPage() {
     background: tab === t ? 'rgba(250,204,21,0.12)' : 'none',
     color: tab === t ? '#facc15' : '#94a3b8',
     borderBottom: `2px solid ${tab === t ? '#facc15' : 'transparent'}`,
-    transition: 'all 0.18s',
+    transition: 'all 0.18s', whiteSpace: 'nowrap', flex: '0 0 auto',
   });
 
   return (
-    <div style={{
-      padding: '32px 40px',
-      maxWidth: 1400,
-      minHeight: '100vh',
-      display: 'grid',
-      gap: 28,
-      alignContent: 'start',
-    }}>
-      {/* Page header */}
-      <div>
-        <div style={{
-          fontFamily: 'var(--font-head, Syne, sans-serif)',
-          fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.18em',
-          textTransform: 'uppercase', color: '#facc15', marginBottom: 8,
-        }}>
-          Commercial
-        </div>
-        <h1 style={{
-          fontFamily: 'var(--font-head, Syne, sans-serif)',
-          fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 8,
-        }}>
-          Pipeline & CRM
-        </h1>
-        <p style={{ color: '#94a3b8', fontSize: '0.9rem', maxWidth: 560, lineHeight: 1.7 }}>
-          Visualisez votre pipeline commercial sur le kanban, déplacez les opportunités
-          d'une étape à l'autre et gérez vos contacts clients.
+    <main className="app-shell commercial-page">
+      <section className="panel">
+        <p className="eyebrow">Commercial</p>
+        <h1>Pipeline & CRM</h1>
+        <p className="subtitle">
+          Visualisez votre pipeline commercial sur le kanban, déplacez les opportunités d'une étape à l'autre et gérez vos contacts clients.
         </p>
-      </div>
+      </section>
 
-      {/* Quick stats */}
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-        <div style={{ background: 'rgba(15,30,54,0.85)', border: '1px solid rgba(250,204,21,0.15)', borderRadius: 14, padding: '16px 22px', display: 'flex', alignItems: 'center', gap: 12 }}>
+      <section className="commercial-stats-grid" aria-label="Indicateurs commerciaux">
+        <article className="commercial-stat-card commercial-stat-card-yellow">
           <Target size={20} color="#facc15" />
           <div>
-            <div style={{ fontSize: '0.72rem', color: '#64748b', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Kanban pipeline</div>
-            <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>Déplacer les opportunités par clic</div>
+            <span>Kanban pipeline</span>
+            <strong>Déplacer les opportunités par clic</strong>
           </div>
-        </div>
-        <div style={{ background: 'rgba(15,30,54,0.85)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: 14, padding: '16px 22px', display: 'flex', alignItems: 'center', gap: 12 }}>
+        </article>
+        <article className="commercial-stat-card commercial-stat-card-blue">
           <Users size={20} color="#93c5fd" />
           <div>
-            <div style={{ fontSize: '0.72rem', color: '#64748b', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.06em' }}>CRM Contacts</div>
-            <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>Annuaire qualifié par organisation</div>
+            <span>CRM Contacts</span>
+            <strong>Annuaire qualifié par organisation</strong>
           </div>
-        </div>
-      </div>
+        </article>
+      </section>
 
-      {/* Tabs */}
-      <div>
-        <div style={{
-          display: 'flex', gap: 4,
-          borderBottom: '1px solid rgba(148,163,184,0.1)',
-          marginBottom: 28,
-        }}>
-          <button style={tabBtn('pipeline')} onClick={() => setTab('pipeline')}>
+      <section className="panel commercial-workspace">
+        <div className="commercial-tabs">
+          <button style={tabBtn('pipeline')} onClick={() => setTab('pipeline')} type="button">
             <Kanban size={15} />
             Pipeline commercial
           </button>
-          <button style={tabBtn('contacts')} onClick={() => setTab('contacts')}>
+          <button style={tabBtn('contacts')} onClick={() => setTab('contacts')} type="button">
             <Users size={15} />
             Contacts CRM
           </button>
         </div>
 
-        {tab === 'pipeline' && <KanbanPipeline />}
-        {tab === 'contacts' && <ContactsPanel />}
-      </div>
-    </div>
+        <div className="commercial-panel-body">
+          {tab === 'pipeline' && <KanbanPipeline />}
+          {tab === 'contacts' && <ContactsPanel />}
+        </div>
+      </section>
+    </main>
   );
 }
