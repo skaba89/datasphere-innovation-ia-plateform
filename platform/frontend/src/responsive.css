@@ -1,18 +1,109 @@
-/* Responsive component layer for Dashboard, CRM and Tender workspaces. */
+/* Responsive component layer for Dashboard, CRM, Tender, Deliverables and Audit workspaces. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  max-width: 100%;
+}
+
+pre,
+code {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.app-shell,
+.dashboard-page,
+.crm-workspace,
+.tender-workspace,
+.workspace-stack {
+  width: 100%;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  min-width: 0;
+}
 
 .dashboard-page,
 .crm-workspace,
 .tender-workspace {
   display: grid;
   gap: clamp(18px, 3vw, 28px);
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  min-width: 0;
 }
 
 .dashboard-page {
   padding: clamp(16px, 3vw, 32px) clamp(12px, 4vw, 40px);
+}
+
+.panel,
+.card,
+.row-card,
+.table,
+.form,
+.stats,
+.split-layout,
+.grid,
+.topbar,
+.user-box,
+.root-switcher,
+.automation-actions {
+  min-width: 0;
+}
+
+.table {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table table {
+  min-width: 720px;
+}
+
+.row-card {
+  overflow-wrap: anywhere;
+}
+
+.form,
+.compact-form {
+  width: 100%;
+}
+
+.form label,
+.compact-form label {
+  min-width: 0;
+}
+
+.form input,
+.form select,
+.form textarea,
+.compact-form input,
+.compact-form select,
+.compact-form textarea {
+  width: 100%;
 }
 
 .dashboard-header,
@@ -255,6 +346,36 @@
 .tender-attachments-wrap { padding: 0 0 16px; min-width: 0; }
 .tender-mini-grid { grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)); }
 
+@media (max-width: 900px) {
+  .app-shell {
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+  }
+
+  .topbar,
+  .user-box,
+  .automation-actions,
+  .stats,
+  .split-layout {
+    flex-wrap: wrap;
+  }
+
+  .split-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  .automation-actions {
+    grid-template-columns: 1fr !important;
+    align-items: stretch !important;
+  }
+
+  .automation-actions button,
+  .automation-actions label,
+  .automation-actions input {
+    width: 100%;
+  }
+}
+
 @media (max-width: 760px) {
   .dashboard-page { padding: 16px 0; }
   .dashboard-header,
@@ -263,4 +384,94 @@
   .tender-report-link { width: 100%; }
   .dashboard-scheduler-count { text-align: left; }
   .dashboard-card-grid-two { grid-template-columns: 1fr; }
+
+  .panel,
+  .card,
+  .row-card {
+    border-radius: 14px !important;
+  }
+
+  .stats {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .topbar {
+    align-items: stretch !important;
+  }
+
+  .user-box,
+  .topbar > div {
+    width: 100%;
+  }
+
+  .user-box {
+    justify-content: flex-start !important;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .tabs,
+  .root-switcher {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .tabs::-webkit-scrollbar,
+  .root-switcher::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tabs button,
+  .root-switcher button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .table {
+    margin-left: -2px;
+    margin-right: -2px;
+  }
+}
+
+@media (max-width: 520px) {
+  .app-shell {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+
+  .panel,
+  .card,
+  .row-card {
+    padding: 14px !important;
+  }
+
+  .row-card[style] {
+    padding: 0 !important;
+  }
+
+  h1 {
+    font-size: clamp(1.35rem, 8vw, 1.85rem) !important;
+    overflow-wrap: anywhere;
+  }
+
+  h2 {
+    font-size: clamp(1.05rem, 6vw, 1.35rem) !important;
+    overflow-wrap: anywhere;
+  }
+
+  .subtitle,
+  .compact-subtitle {
+    font-size: 0.9rem !important;
+  }
+
+  .form button,
+  .automation-actions button,
+  .icon-button,
+  .tender-report-link {
+    width: 100%;
+    justify-content: center;
+  }
 }
