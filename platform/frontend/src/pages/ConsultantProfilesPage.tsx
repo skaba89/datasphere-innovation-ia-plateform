@@ -1,6 +1,7 @@
 import { tokenStorage } from '../api/client';
 import { AgentManagementPanel } from '../components/AgentManagementPanel';
 import { AgentOperationsPanel } from '../components/AgentOperationsPanel';
+import './admin-responsive.css';
 
 export default function ConsultantProfilesPage() {
   const token = tokenStorage.get();
