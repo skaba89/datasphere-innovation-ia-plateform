@@ -4,6 +4,7 @@ import { LogOut, UserCircle, ChevronDown, Menu, X } from 'lucide-react';
 import { apiRequest, tokenStorage } from './api/client';
 import { getUserName } from './api/userContext';
 import type { CurrentUser, LoginResult } from './api/authTypes';
+import { can, type AppPermission } from './auth/rbac';
 
 import AuditLogPage from './pages/AuditLogPage';
 import CommercialPage from './pages/CommercialPage';
@@ -40,7 +41,12 @@ type RootView =
   | 'profile'
   | 'workspaces';
 
-// ── Login form ────────────────────────────────────────────────────────────────
+type NavTab = {
+  key: RootView;
+  label: string;
+  permission: AppPermission;
+};
+
 function LoginPage({
   onLogin,
   onForgot,
@@ -121,7 +127,6 @@ function LoginPage({
   );
 }
 
-// ── Main app ──────────────────────────────────────────────────────────────────
 export default function AppRoot() {
   const [token, setToken] = useState<string | null>(() => tokenStorage.get());
   const [user, setUser] = useState<CurrentUser | null>(null);
@@ -133,7 +138,6 @@ export default function AppRoot() {
   const [navOpen, setNavOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(() => shouldShowOnboarding());
 
-  // Validate token on mount
   useEffect(() => {
     if (!token) return;
     apiRequest<CurrentUser>('/auth/me', {}, token)
@@ -168,7 +172,6 @@ export default function AppRoot() {
     setView('dashboard');
   }
 
-  // ── Auth wall ───────────────────────────────────────────────────────────────
   if (!token) {
     if (authView === 'forgot')
       return <ForgotPasswordPage onBack={() => setAuthView('login')} />;
@@ -189,27 +192,35 @@ export default function AppRoot() {
     );
   }
 
-  // ── Navigation tabs ─────────────────────────────────────────────────────────
-  const tabs: { key: RootView; label: string }[] = [
-    { key: 'dashboard',     label: 'Dashboard' },
-    { key: 'tenders',       label: 'Appels d\'offres' },
-    { key: 'profiles',      label: 'Profils consultants' },
-    { key: 'deliverables',  label: 'Livrables' },
-    { key: 'commercial',    label: 'Commercial' },
-    { key: 'organizations', label: 'Organisations' },
-    { key: 'opportunities', label: 'Opportunités' },
-    { key: 'operations',    label: 'Opérations' },
-    { key: 'team',          label: 'Équipe' },
-    { key: 'audit',         label: 'Audit' },
-    { key: 'workspaces',    label: 'Workspaces' },
-    { key: 'profile',       label: 'Mon profil' },
+  const tabs: NavTab[] = [
+    { key: 'dashboard',     label: 'Dashboard',            permission: 'dashboard:read' },
+    { key: 'tenders',       label: 'Appels d\'offres',     permission: 'tenders:read' },
+    { key: 'profiles',      label: 'Profils consultants',  permission: 'profiles:read' },
+    { key: 'deliverables',  label: 'Livrables',            permission: 'deliverables:read' },
+    { key: 'commercial',    label: 'Commercial',           permission: 'commercial:read' },
+    { key: 'organizations', label: 'Organisations',        permission: 'crm:read' },
+    { key: 'opportunities', label: 'Opportunités',         permission: 'crm:read' },
+    { key: 'operations',    label: 'Opérations',           permission: 'operations:read' },
+    { key: 'team',          label: 'Équipe',               permission: 'team:read' },
+    { key: 'audit',         label: 'Audit',                permission: 'audit:read' },
+    { key: 'workspaces',    label: 'Workspaces',           permission: 'workspaces:read' },
+    { key: 'profile',       label: 'Mon profil',           permission: 'profile:read' },
   ];
 
+  const userRole = user?.role;
+  const visibleTabs = tabs.filter(tab => can(userRole, tab.permission));
+  const selectedTab = visibleTabs.find(t => t.key === view) ?? visibleTabs[0];
+  const activeView = selectedTab?.key ?? 'dashboard';
   const userName = getUserName();
+
+  function openView(nextView: RootView) {
+    if (!visibleTabs.some(tab => tab.key === nextView)) return;
+    setView(nextView);
+    setNavOpen(false);
+  }
 
   return (
     <>
-      {/* ── Global topbar ─────────────────────────────────────────── */}
       <header
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -220,7 +231,6 @@ export default function AppRoot() {
           backdropFilter: 'blur(12px)',
         }}
       >
-        {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{
             fontFamily: 'Syne, sans-serif', fontWeight: 900,
@@ -235,13 +245,11 @@ export default function AppRoot() {
           </span>
         </div>
 
-        {/* Actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <GlobalSearchBar />
           <NotificationsPanel />
           <NotificationBell />
 
-          {/* User menu */}
           <div style={{ position: 'relative' }}>
             <button
               onClick={() => setUserMenuOpen(o => !o)}
@@ -288,7 +296,7 @@ export default function AppRoot() {
                   )}
                 </div>
                 <button
-                  onClick={() => { setView('profile'); setUserMenuOpen(false); }}
+                  onClick={() => { openView('profile'); setUserMenuOpen(false); }}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 8,
                     width: '100%', padding: '7px 12px', borderRadius: 7,
@@ -315,7 +323,6 @@ export default function AppRoot() {
         </div>
       </header>
 
-      {/* Close user menu on outside click */}
       {userMenuOpen && (
         <div
           style={{ position: 'fixed', inset: 0, zIndex: 199 }}
@@ -323,14 +330,11 @@ export default function AppRoot() {
         />
       )}
 
-      {/* ── Onboarding wizard (first login) ──────────────────────── */}
       {showOnboarding && (
         <OnboardingWizard onComplete={() => { markOnboardingDone(); setShowOnboarding(false); }} />
       )}
 
-      {/* ── Navigation tabs ───────────────────────────────────────── */}
       <nav className="root-switcher" aria-label="Navigation principale">
-        {/* Mobile toggle */}
         <button
           className="root-switcher-toggle"
           onClick={() => setNavOpen(o => !o)}
@@ -339,20 +343,19 @@ export default function AppRoot() {
         >
           <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
             {navOpen ? <X size={14} /> : <Menu size={14} />}
-            {tabs.find(t => t.key === view)?.label ?? 'Navigation'}
+            {selectedTab?.label ?? 'Navigation'}
           </span>
           <ChevronDown size={13} style={{ transform: navOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
         </button>
 
-        {/* Tab list */}
         <div className={`root-switcher-inner${navOpen ? ' open' : ''}`} role="tablist">
-          {tabs.map(t => (
+          {visibleTabs.map(t => (
             <button
               key={t.key}
               role="tab"
-              aria-selected={view === t.key}
-              className={view === t.key ? 'active' : ''}
-              onClick={() => { setView(t.key); setNavOpen(false); }}
+              aria-selected={activeView === t.key}
+              className={activeView === t.key ? 'active' : ''}
+              onClick={() => openView(t.key)}
               type="button"
             >
               {t.label}
@@ -361,19 +364,18 @@ export default function AppRoot() {
         </div>
       </nav>
 
-      {/* ── Page content ──────────────────────────────────────────── */}
-      {view === 'dashboard'     && <DashboardPage />}
-      {view === 'tenders'       && <TenderPage />}
-      {view === 'profiles'      && <ConsultantProfilesPage />}
-      {view === 'deliverables'  && <DeliverablePage />}
-      {view === 'commercial'    && <CommercialPage />}
-      {view === 'organizations' && <CrmWorkspace token={token} view="organizations" />}
-      {view === 'opportunities' && <CrmWorkspace token={token} view="opportunities" />}
-      {view === 'operations'    && <OperationsPage />}
-      {view === 'team'          && <TeamPage />}
-      {view === 'audit'         && <AuditLogPage />}
-      {view === 'workspaces'    && <WorkspacesPage />}
-      {view === 'profile'       && <UserProfilePage />}
+      {activeView === 'dashboard'     && <DashboardPage />}
+      {activeView === 'tenders'       && <TenderPage />}
+      {activeView === 'profiles'      && <ConsultantProfilesPage />}
+      {activeView === 'deliverables'  && <DeliverablePage />}
+      {activeView === 'commercial'    && <CommercialPage />}
+      {activeView === 'organizations' && <CrmWorkspace token={token} view="organizations" />}
+      {activeView === 'opportunities' && <CrmWorkspace token={token} view="opportunities" />}
+      {activeView === 'operations'    && <OperationsPage />}
+      {activeView === 'team'          && <TeamPage />}
+      {activeView === 'audit'         && <AuditLogPage />}
+      {activeView === 'workspaces'    && <WorkspacesPage />}
+      {activeView === 'profile'       && <UserProfilePage />}
     </>
   );
 }
