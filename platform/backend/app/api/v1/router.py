@@ -6,7 +6,7 @@ from app.api.v1.endpoints import (
     health_monitor, notifications, opportunities, organizations,
     providers, scheduler, search, sector_templates, sse,
     suggestions, team, tender_governance, tender_templates,
-    tenders, uploads, workspaces,
+    tender_watch, tenders, uploads, workspaces,
 )
 
 router = APIRouter()
@@ -20,6 +20,7 @@ router.include_router(opportunities.router)
 router.include_router(tenders.router)
 router.include_router(tender_governance.router)
 router.include_router(tender_templates.router)
+router.include_router(tender_watch.router)
 router.include_router(agents.router)
 router.include_router(agent_actions.router)
 router.include_router(deliverables.router)
@@ -47,4 +48,4 @@ def health_check() -> dict[str, str]:
 
 @router.get("/version", tags=["health"])
 def version() -> dict[str, str]:
-    return {"version": "1.6.0", "stage": "notifications-reporting-health"}
+    return {"version": "1.6.0", "stage": "tender-watch"}
