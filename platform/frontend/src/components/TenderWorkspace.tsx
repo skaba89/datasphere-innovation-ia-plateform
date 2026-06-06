@@ -3,6 +3,7 @@ import { API_BASE } from '../api/config';
 
 import { apiRequest } from '../api/client';
 import FileAttachments from './FileAttachments';
+import TenderAutoImportPanel from './TenderAutoImportPanel';
 import type {
   ComplianceMatrixItem,
   ComplianceSummary,
@@ -85,7 +86,7 @@ export function TenderWorkspace({ token }: Props) {
     [selectedTenderId, tenders],
   );
 
-  const refreshTenders = useCallback(async () => {
+  const refreshTenders = useCallback(async (preferredTenderId?: number) => {
     setLoadingTenders(true);
     try {
       const [opps, tenderList] = await Promise.all([
@@ -94,7 +95,9 @@ export function TenderWorkspace({ token }: Props) {
       ]);
       setOpportunities(opps);
       setTenders(tenderList);
-      if (!selectedTenderId && tenderList.length > 0) {
+      if (preferredTenderId) {
+        setSelectedTenderId(preferredTenderId);
+      } else if (!selectedTenderId && tenderList.length > 0) {
         setSelectedTenderId(tenderList[0].id);
       }
     } catch (err) {
@@ -135,6 +138,14 @@ export function TenderWorkspace({ token }: Props) {
     refreshGovernance();
   }, [refreshGovernance]);
 
+  async function handleAutoImportDone(tenderId?: number) {
+    await refreshTenders(tenderId);
+    if (tenderId) {
+      setSelectedTenderId(tenderId);
+      setSuccess('Veille AO importée et dernier appel d’offres sélectionné.');
+    }
+  }
+
   async function createTender(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
@@ -155,7 +166,7 @@ export function TenderWorkspace({ token }: Props) {
         }),
       }, token);
       setTenderForm(initialTenderForm);
-      await refreshTenders();
+      await refreshTenders(tender.id);
       setSelectedTenderId(tender.id);
       setSuccess('Appel d offres cree avec succes.');
     } catch (err) {
@@ -243,6 +254,8 @@ export function TenderWorkspace({ token }: Props) {
       {error && <p className="error">{error}</p>}
       {success && <p className="success">{success}</p>}
 
+      <TenderAutoImportPanel token={token} onImported={handleAutoImportDone} />
+
       <section className="split-layout">
         <form className="panel form compact-form" onSubmit={createTender}>
           <h2>Nouvel appel d offres</h2>
@@ -303,7 +316,6 @@ export function TenderWorkspace({ token }: Props) {
               📄 Rapport de mission complet
             </a>
           </section>
-          {/* File attachments for this AO */}
           <section style={{ padding: '0 0 16px' }}>
             <FileAttachments resourceType="tender" resourceId={selectedTender.id} />
           </section>
