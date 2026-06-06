@@ -1,4 +1,14 @@
-export type UserRole = 'admin' | 'manager' | 'consultant' | 'auditor' | 'client' | string;
+export type UserRole =
+  | 'superadmin'
+  | 'admin'
+  | 'director'
+  | 'manager'
+  | 'commercial'
+  | 'consultant'
+  | 'auditor'
+  | 'reader'
+  | 'client'
+  | string;
 
 export type AppPermission =
   | 'dashboard:read'
@@ -6,26 +16,63 @@ export type AppPermission =
   | 'crm:write'
   | 'tenders:read'
   | 'tenders:write'
+  | 'profiles:read'
+  | 'profiles:write'
   | 'deliverables:read'
   | 'deliverables:write'
   | 'commercial:read'
+  | 'commercial:write'
   | 'operations:read'
+  | 'operations:write'
   | 'team:read'
-  | 'audit:read';
+  | 'team:write'
+  | 'audit:read'
+  | 'workspaces:read'
+  | 'workspaces:write'
+  | 'profile:read';
+
+const allPermissions: AppPermission[] = [
+  'dashboard:read',
+  'crm:read',
+  'crm:write',
+  'tenders:read',
+  'tenders:write',
+  'profiles:read',
+  'profiles:write',
+  'deliverables:read',
+  'deliverables:write',
+  'commercial:read',
+  'commercial:write',
+  'operations:read',
+  'operations:write',
+  'team:read',
+  'team:write',
+  'audit:read',
+  'workspaces:read',
+  'workspaces:write',
+  'profile:read',
+];
 
 const rolePermissions: Record<string, AppPermission[]> = {
-  admin: [
+  superadmin: allPermissions,
+  admin: allPermissions,
+  director: [
     'dashboard:read',
     'crm:read',
     'crm:write',
     'tenders:read',
     'tenders:write',
+    'profiles:read',
     'deliverables:read',
     'deliverables:write',
     'commercial:read',
+    'commercial:write',
     'operations:read',
+    'operations:write',
     'team:read',
     'audit:read',
+    'workspaces:read',
+    'profile:read',
   ],
   manager: [
     'dashboard:read',
@@ -33,31 +80,66 @@ const rolePermissions: Record<string, AppPermission[]> = {
     'crm:write',
     'tenders:read',
     'tenders:write',
+    'profiles:read',
     'deliverables:read',
     'deliverables:write',
     'commercial:read',
     'operations:read',
+    'operations:write',
     'team:read',
     'audit:read',
+    'workspaces:read',
+    'profile:read',
+  ],
+  commercial: [
+    'dashboard:read',
+    'crm:read',
+    'crm:write',
+    'tenders:read',
+    'tenders:write',
+    'profiles:read',
+    'deliverables:read',
+    'commercial:read',
+    'commercial:write',
+    'workspaces:read',
+    'profile:read',
   ],
   consultant: [
     'dashboard:read',
     'crm:read',
     'tenders:read',
+    'profiles:read',
     'deliverables:read',
     'deliverables:write',
     'operations:read',
+    'workspaces:read',
+    'profile:read',
   ],
   auditor: [
     'dashboard:read',
     'crm:read',
     'tenders:read',
+    'profiles:read',
     'deliverables:read',
+    'operations:read',
     'audit:read',
+    'profile:read',
+  ],
+  reader: [
+    'dashboard:read',
+    'crm:read',
+    'tenders:read',
+    'profiles:read',
+    'deliverables:read',
+    'commercial:read',
+    'operations:read',
+    'workspaces:read',
+    'profile:read',
   ],
   client: [
     'dashboard:read',
     'deliverables:read',
+    'profile:read',
   ],
 };
 
@@ -75,4 +157,8 @@ export function can(role: string | null | undefined, permission: AppPermission):
 
 export function canAny(role: string | null | undefined, permissions: AppPermission[]): boolean {
   return permissions.some((permission) => can(role, permission));
+}
+
+export function isAdminRole(role?: string | null): boolean {
+  return ['superadmin', 'admin'].includes(normalizeRole(role));
 }
