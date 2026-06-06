@@ -15,11 +15,14 @@ type AutoTenderCandidate = {
   buyer_name: string;
   country: string;
   sector: string;
+  source_name?: string;
   source_url: string;
   summary: string;
   estimated_value: number;
-  deadline?: string;
+  deadline?: string | null;
   requirements: string[];
+  qualification_score?: number;
+  recommendation?: string;
 };
 
 const DEFAULT_CANDIDATES: AutoTenderCandidate[] = [
@@ -29,8 +32,11 @@ const DEFAULT_CANDIDATES: AutoTenderCandidate[] = [
     buyer_name: 'Banque Centrale de Guinée',
     country: 'Guinée',
     sector: 'Banque / Institution publique',
+    source_name: 'Fallback local',
     source_url: 'https://example.local/ao/bcrg-data-platform',
     estimated_value: 850000,
+    qualification_score: 82,
+    recommendation: 'GO',
     summary:
       'Projet de modernisation data : ingestion multi-sources, entrepôt de données, tableaux de bord, gouvernance et assistance IA.',
     requirements: [
@@ -46,8 +52,11 @@ const DEFAULT_CANDIDATES: AutoTenderCandidate[] = [
     buyer_name: 'Ministère de la Transformation Digitale',
     country: 'Guinée',
     sector: 'Administration publique',
+    source_name: 'Fallback local',
     source_url: 'https://example.local/ao/portail-services-publics',
     estimated_value: 620000,
+    qualification_score: 74,
+    recommendation: 'GO',
     summary:
       'Plateforme web et mobile pour digitaliser les démarches administratives, avec back-office, authentification et reporting.',
     requirements: [
@@ -63,8 +72,11 @@ const DEFAULT_CANDIDATES: AutoTenderCandidate[] = [
     buyer_name: 'Agence Nationale de Digitalisation',
     country: 'Guinée',
     sector: 'IA / Transformation digitale',
+    source_name: 'Fallback local',
     source_url: 'https://example.local/ao/analyse-documentaire-ia',
     estimated_value: 430000,
+    qualification_score: 79,
+    recommendation: 'GO',
     summary:
       'Solution d’analyse automatique de documents, extraction d’informations, recherche sémantique et génération de synthèses.',
     requirements: [
@@ -80,6 +92,12 @@ function normalize(value: string): string {
   return value.trim().toLowerCase();
 }
 
+function recommendationLabel(candidate: AutoTenderCandidate): string {
+  const score = candidate.qualification_score;
+  const recommendation = candidate.recommendation || 'TO_QUALIFY';
+  return score === undefined ? recommendation : `${recommendation} · ${score}/100`;
+}
+
 export default function TenderAutoImportPanel({ token, onImported }: Props) {
   const [query, setQuery] = useState('data IA digitalisation Guinée');
   const [candidates, setCandidates] = useState<AutoTenderCandidate[]>(DEFAULT_CANDIDATES);
@@ -93,18 +111,29 @@ export default function TenderAutoImportPanel({ token, onImported }: Props) {
     [candidates, selectedRefs],
   );
 
-  function simulateSearch() {
-    const suffix = Date.now().toString(36).toUpperCase();
-    setCandidates(
-      DEFAULT_CANDIDATES.map((candidate, index) => ({
+  async function searchTenderWatch() {
+    setLoading(true);
+    setMessage(null);
+    setError(null);
+    try {
+      const searchParams = new URLSearchParams({ q: query, limit: '20' });
+      const results = await apiRequest<AutoTenderCandidate[]>(`/tender-watch/search?${searchParams.toString()}`, {}, token);
+      setCandidates(results);
+      setSelectedRefs(results.map(item => item.reference));
+      setMessage(`${results.length} AO détecté(s) par la veille backend.`);
+    } catch (err) {
+      const suffix = Date.now().toString(36).toUpperCase();
+      const fallback = DEFAULT_CANDIDATES.map((candidate, index) => ({
         ...candidate,
         reference: `${candidate.reference}-${suffix}-${index + 1}`,
-        summary: `${candidate.summary} Recherche simulée : ${query}.`,
-      })),
-    );
-    setSelectedRefs(DEFAULT_CANDIDATES.map((candidate, index) => `${candidate.reference}-${suffix}-${index + 1}`));
-    setMessage('Recherche automatique simulée terminée. Les AO sont prêts à être importés.');
-    setError(null);
+        summary: `${candidate.summary} Fallback local après indisponibilité de l’API : ${query}.`,
+      }));
+      setCandidates(fallback);
+      setSelectedRefs(fallback.map(item => item.reference));
+      setError(err instanceof Error ? `${err.message} — fallback local utilisé.` : 'API veille indisponible — fallback local utilisé.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function createOrFindOrganization(candidate: AutoTenderCandidate): Promise<Organization> {
@@ -126,6 +155,7 @@ export default function TenderAutoImportPanel({ token, onImported }: Props) {
   }
 
   async function createOpportunity(candidate: AutoTenderCandidate, organizationId: number): Promise<Opportunity> {
+    const probability = candidate.qualification_score ?? 45;
     return apiRequest<Opportunity>('/opportunities', {
       method: 'POST',
       body: JSON.stringify({
@@ -135,10 +165,10 @@ export default function TenderAutoImportPanel({ token, onImported }: Props) {
         country: candidate.country,
         sector: candidate.sector,
         status: 'Qualification',
-        priority: 'Haute',
-        probability: 45,
+        priority: probability >= 70 ? 'Haute' : 'Moyenne',
+        probability,
         owner_name: 'Agent AO',
-        notes: `Créée automatiquement depuis la veille AO. Valeur estimée : ${candidate.estimated_value} EUR.`,
+        notes: `Créée automatiquement depuis la veille AO. Source : ${candidate.source_name || 'N/A'}. Valeur estimée : ${candidate.estimated_value} EUR. Recommandation : ${recommendationLabel(candidate)}.`,
       }),
     }, token);
   }
@@ -152,10 +182,10 @@ export default function TenderAutoImportPanel({ token, onImported }: Props) {
         title: candidate.title,
         buyer_name: candidate.buyer_name,
         source_url: candidate.source_url,
-        summary: candidate.summary,
+        summary: `${candidate.summary}\n\nSource: ${candidate.source_name || 'N/A'}\nRecommandation: ${recommendationLabel(candidate)}`,
         submission_deadline: candidate.deadline ?? null,
-        go_no_go_score: 0,
-        go_no_go_decision: 'TO_QUALIFY',
+        go_no_go_score: candidate.qualification_score ?? 0,
+        go_no_go_decision: candidate.recommendation || 'TO_QUALIFY',
         status: 'analysis',
       }),
     }, token);
@@ -176,7 +206,7 @@ export default function TenderAutoImportPanel({ token, onImported }: Props) {
             proof_or_deliverable: 'Mémoire technique / matrice de conformité',
             owner_name: 'Agent AO',
             status: 'to_analyze',
-            comments: 'Créée automatiquement depuis la veille AO.',
+            comments: `Créée automatiquement depuis la veille AO. ${recommendationLabel(candidate)}.`,
           }),
         }, token),
       ),
@@ -201,7 +231,7 @@ export default function TenderAutoImportPanel({ token, onImported }: Props) {
         await createDefaultRequirements(candidate, tender.id);
         lastTenderId = tender.id;
       }
-      setMessage(`${selectedCandidates.length} AO importé(s) avec organisation, opportunité et exigences.`);
+      setMessage(`${selectedCandidates.length} AO importé(s) avec organisation, opportunité, score et exigences.`);
       await onImported(lastTenderId);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur pendant l’import automatique des AO.');
@@ -225,7 +255,7 @@ export default function TenderAutoImportPanel({ token, onImported }: Props) {
           <p className="eyebrow">Veille AO automatisée</p>
           <h2>Recherche et création automatique</h2>
           <p className="compact-subtitle">
-            Simule une veille AO, puis crée automatiquement l’organisation, l’opportunité, l’AO et les premières exigences.
+            Interroge la veille backend, qualifie les AO, puis crée automatiquement l’organisation, l’opportunité, l’AO et les premières exigences.
           </p>
         </div>
         <button className="team-primary-button" type="button" onClick={importSelected} disabled={loading}>
@@ -241,10 +271,10 @@ export default function TenderAutoImportPanel({ token, onImported }: Props) {
           Mots-clés de veille
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="data, IA, digitalisation, Guinée…" />
         </label>
-        <button type="button" onClick={simulateSearch} disabled={loading}>
+        <button type="button" onClick={searchTenderWatch} disabled={loading}>
           <Search size={14} /> Chercher les AO
         </button>
-        <button type="button" onClick={() => setCandidates(DEFAULT_CANDIDATES)} disabled={loading}>
+        <button type="button" onClick={() => { setCandidates(DEFAULT_CANDIDATES); setSelectedRefs(DEFAULT_CANDIDATES.map(item => item.reference)); }} disabled={loading}>
           <RefreshCw size={14} /> Réinitialiser
         </button>
       </div>
@@ -262,7 +292,10 @@ export default function TenderAutoImportPanel({ token, onImported }: Props) {
               <span>
                 <strong>{candidate.title}</strong>
                 <span className="crm-card-meta">
-                  {candidate.reference} · {candidate.buyer_name} · {candidate.sector} · {candidate.country}
+                  {candidate.reference} · {candidate.buyer_name} · {candidate.sector} · {candidate.country} · {recommendationLabel(candidate)}
+                </span>
+                <span className="crm-card-meta">
+                  Source : {candidate.source_name || 'N/A'} · Valeur estimée : {candidate.estimated_value.toLocaleString('fr-FR')} EUR
                 </span>
                 <span style={{ display: 'block', marginTop: 6, color: '#64748b', fontSize: '.82rem' }}>{candidate.summary}</span>
               </span>
