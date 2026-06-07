@@ -16,6 +16,36 @@ import type {
 
 type Props = { token: string };
 
+type ConsultantProfile = {
+  id: number;
+  full_name: string;
+  role: string;
+  seniority: string;
+  daily_rate: number;
+  availability_percent: number;
+  location: string;
+  skills: string[];
+  certifications: string[];
+  languages: string[];
+  references: string[];
+};
+
+type ConsultantMatch = {
+  consultant: ConsultantProfile;
+  match_score: number;
+  matched_terms: string[];
+  recommendation: string;
+  rationale: string[];
+};
+
+type StaffingRecommendation = {
+  tender_id: number;
+  tender_title: string;
+  recommended_team: ConsultantMatch[];
+  global_team_score: number;
+  summary: string;
+};
+
 const initialTenderForm = {
   opportunity_id: '',
   reference: '',
@@ -72,6 +102,8 @@ export function TenderWorkspace({ token }: Props) {
   const [complianceItems, setComplianceItems] = useState<ComplianceMatrixItem[]>([]);
   const [goNoGoSummary, setGoNoGoSummary] = useState<GoNoGoSummary | null>(null);
   const [complianceSummary, setComplianceSummary] = useState<ComplianceSummary | null>(null);
+  const [staffingRecommendation, setStaffingRecommendation] = useState<StaffingRecommendation | null>(null);
+  const [loadingStaffing, setLoadingStaffing] = useState(false);
   const [tenderForm, setTenderForm] = useState(initialTenderForm);
   const [requirementForm, setRequirementForm] = useState(initialRequirementForm);
   const [criterionForm, setCriterionForm] = useState(initialCriterionForm);
@@ -130,6 +162,23 @@ export function TenderWorkspace({ token }: Props) {
     }
   }, [selectedTenderId, token]);
 
+  const refreshStaffing = useCallback(async () => {
+    if (!selectedTenderId) {
+      setStaffingRecommendation(null);
+      return;
+    }
+    setLoadingStaffing(true);
+    try {
+      const recommendation = await apiRequest<StaffingRecommendation>(`/staffing/tenders/${selectedTenderId}/match`, {}, token);
+      setStaffingRecommendation(recommendation);
+    } catch (err) {
+      setStaffingRecommendation(null);
+      setError(err instanceof Error ? err.message : 'Erreur chargement equipe IA');
+    } finally {
+      setLoadingStaffing(false);
+    }
+  }, [selectedTenderId, token]);
+
   useEffect(() => {
     refreshTenders();
   }, [refreshTenders]);
@@ -137,6 +186,10 @@ export function TenderWorkspace({ token }: Props) {
   useEffect(() => {
     refreshGovernance();
   }, [refreshGovernance]);
+
+  useEffect(() => {
+    refreshStaffing();
+  }, [refreshStaffing]);
 
   async function handleAutoImportDone(tenderId?: number) {
     await refreshTenders(tenderId);
@@ -186,6 +239,7 @@ export function TenderWorkspace({ token }: Props) {
       }, token);
       setRequirementForm(initialRequirementForm);
       await refreshGovernance();
+      await refreshStaffing();
       setSuccess('Exigence ajoutee.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur creation exigence');
@@ -289,6 +343,7 @@ export function TenderWorkspace({ token }: Props) {
             <article><strong>{goNoGoSummary?.percentage ?? 0}%</strong><span>Score Go / No-Go</span></article>
             <article><strong>{goNoGoSummary?.recommendation ?? 'N/A'}</strong><span>Decision recommandee</span></article>
             <article><strong>{complianceSummary?.compliance_rate ?? 0}%</strong><span>Taux de conformite</span></article>
+            <article><strong>{staffingRecommendation?.global_team_score ?? 0}%</strong><span>Score equipe IA</span></article>
           </section>
 
           <section className="panel" style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
@@ -298,6 +353,20 @@ export function TenderWorkspace({ token }: Props) {
                 {selectedTender.reference || 'N/A'} · {selectedTender.buyer_name || 'Acheteur inconnu'}
               </div>
             </div>
+            <button
+              type="button"
+              onClick={refreshStaffing}
+              disabled={loadingStaffing}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 7,
+                padding: '9px 18px', borderRadius: 10, cursor: 'pointer',
+                background: 'rgba(59,130,246,.12)',
+                border: '1px solid rgba(59,130,246,.25)',
+                color: '#93c5fd', fontWeight: 700, fontSize: '.82rem',
+              }}
+            >
+              🤖 {loadingStaffing ? 'Matching…' : 'Actualiser staffing IA'}
+            </button>
             <a
               href={`${API_BASE}/deliverables/tenders/${selectedTender.id}/mission-report`}
               target="_blank"
@@ -318,6 +387,41 @@ export function TenderWorkspace({ token }: Props) {
           </section>
           <section style={{ padding: '0 0 16px' }}>
             <FileAttachments resourceType="tender" resourceId={selectedTender.id} />
+          </section>
+
+          <section className="panel">
+            <div className="dashboard-header">
+              <div>
+                <p className="eyebrow">Staffing IA</p>
+                <h2>Equipe recommandee</h2>
+                <p className="compact-subtitle">
+                  {loadingStaffing ? 'Calcul de compatibilite en cours…' : staffingRecommendation?.summary || 'Aucune recommandation disponible pour cet AO.'}
+                </p>
+              </div>
+            </div>
+            <div className="table">
+              {staffingRecommendation?.recommended_team.map((match) => (
+                <article key={match.consultant.id} className="row-card">
+                  <strong>{match.consultant.full_name} · {match.consultant.role}</strong>
+                  <span>
+                    Score {match.match_score}/100 · {match.recommendation} · Disponibilite {match.consultant.availability_percent}% · TJM {match.consultant.daily_rate.toLocaleString('fr-FR')} EUR
+                  </span>
+                  <span className="crm-card-meta">
+                    {match.consultant.seniority} · {match.consultant.location} · {match.consultant.languages.join(', ')}
+                  </span>
+                  <span className="crm-card-meta">
+                    Competences : {match.consultant.skills.slice(0, 8).join(', ')}
+                  </span>
+                  {match.matched_terms.length > 0 && (
+                    <span className="crm-card-meta">Mots-cles matches : {match.matched_terms.slice(0, 10).join(', ')}</span>
+                  )}
+                  <ul style={{ margin: '6px 0 0', paddingLeft: 18, color: '#64748b', fontSize: '.8rem' }}>
+                    {match.rationale.map((item) => <li key={item}>{item}</li>)}
+                  </ul>
+                </article>
+              ))}
+              {!loadingStaffing && (!staffingRecommendation || staffingRecommendation.recommended_team.length === 0) && <p>Aucune equipe recommandee.</p>}
+            </div>
           </section>
 
           <section className="split-layout">
