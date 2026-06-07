@@ -86,9 +86,16 @@ CONSULTANT_POOL: list[ConsultantProfile] = [
     ),
 ]
 
+STRATEGIC_SKILLS = {
+    "airflow", "analytics", "api", "architecture", "azure", "bi", "cloud", "cybersécurité",
+    "dashboard", "data", "databricks", "dbt", "digital", "gouvernance", "ia", "iam",
+    "kpi", "pipeline", "postgresql", "power", "python", "reporting", "sécurité",
+    "snowflake", "sql", "superset", "workflow",
+}
+
 
 def _normalize_terms(*values: str) -> set[str]:
-    text = " ".join(values).lower().replace("/", " ").replace(",", " ")
+    text = " ".join(values).lower().replace("/", " ").replace(",", " ").replace(";", " ")
     return {term.strip() for term in text.split() if len(term.strip()) > 2}
 
 
@@ -102,6 +109,42 @@ def _candidate_terms(profile: ConsultantProfile) -> set[str]:
         " ".join(profile.languages),
         " ".join(profile.references),
     )
+
+
+def _required_skills(title: str, sector: str, summary: str, requirements: list[str] | None) -> set[str]:
+    tender_terms = _normalize_terms(title, sector, summary, " ".join(requirements or []))
+    strategic_matches = tender_terms.intersection(STRATEGIC_SKILLS)
+    if strategic_matches:
+        return strategic_matches
+    return {term for term in tender_terms if term in {"data", "digital", "architecture", "sécurité", "cloud", "dashboard"}}
+
+
+def analyze_staffing_gaps(required_skills: set[str], matches: list[dict]) -> dict:
+    covered_skills = set()
+    for item in matches:
+      covered_skills.update(item["consultant"]["skills"])
+      covered_skills.update(item.get("matched_terms", []))
+
+    covered_required_skills = sorted(required_skills.intersection(covered_skills))
+    missing_skills = sorted(required_skills.difference(covered_skills))
+    coverage_rate = round((len(covered_required_skills) / len(required_skills)) * 100) if required_skills else 100
+
+    if not missing_skills:
+        actions = ["Aucune compétence critique manquante détectée."]
+    else:
+        actions = [
+            f"Prévoir sous-traitance ou renfort ponctuel sur : {', '.join(missing_skills)}.",
+            "Vérifier les CV et références avant engagement commercial.",
+            "Ajouter une action de recrutement si le besoin est récurrent.",
+        ]
+
+    return {
+        "required_skills": sorted(required_skills),
+        "covered_skills": covered_required_skills,
+        "missing_skills": missing_skills,
+        "coverage_rate": coverage_rate,
+        "recommended_actions": actions,
+    }
 
 
 def match_consultants_for_tender(
@@ -140,3 +183,34 @@ def match_consultants_for_tender(
             )
 
     return sorted(matches, key=lambda item: item["match_score"], reverse=True)[:max_results]
+
+
+def build_staffing_recommendation(
+    *,
+    title: str,
+    sector: str,
+    summary: str,
+    requirements: list[str] | None = None,
+    max_results: int = 5,
+) -> dict:
+    matches = match_consultants_for_tender(
+        title=title,
+        sector=sector,
+        summary=summary,
+        requirements=requirements,
+        max_results=max_results,
+    )
+    required_skills = _required_skills(title, sector, summary, requirements)
+    gap_analysis = analyze_staffing_gaps(required_skills, matches)
+    global_team_score = round(sum(item["match_score"] for item in matches) / len(matches)) if matches else 0
+    primary_count = sum(1 for item in matches if item["recommendation"] == "PRIMARY")
+    summary_text = (
+        f"{len(matches)} consultant(s) recommandé(s), dont {primary_count} profil(s) principal(aux). "
+        f"Score équipe moyen : {global_team_score}/100. Couverture compétences : {gap_analysis['coverage_rate']}/100."
+    )
+    return {
+        "recommended_team": matches,
+        "global_team_score": global_team_score,
+        "summary": summary_text,
+        "gap_analysis": gap_analysis,
+    }
