@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from datetime import date
 from hashlib import sha1
 
+from app.services.tender_watch.scoring import score_tender_candidate
+
 
 @dataclass(frozen=True)
 class TenderWatchCandidate:
@@ -118,19 +120,8 @@ def _matches(candidate: TenderWatchCandidate, query: str) -> bool:
     return any(term in haystack for term in terms)
 
 
-def _score(candidate: TenderWatchCandidate, query: str) -> int:
-    score = 50
-    text = " ".join([candidate.title, candidate.sector, candidate.summary]).lower()
-    strategic_terms = ["data", "ia", "digital", "bi", "gouvernance", "plateforme", "analytics"]
-    score += sum(6 for term in strategic_terms if term in text)
-    score += min(int(candidate.estimated_value / 100000), 15)
-    if query:
-        score += 10 if _matches(candidate, query) else 0
-    return max(0, min(score, 100))
-
-
 def discover_tenders(query: str = "", limit: int = 20) -> list[dict]:
-    """Return normalized tender candidates.
+    """Return normalized tender candidates enriched with Go/No-Go scoring.
 
     This deterministic implementation is safe for local demos and CI.
     Real source connectors can later enrich BASE_SOURCES without changing the API contract.
@@ -141,7 +132,14 @@ def discover_tenders(query: str = "", limit: int = 20) -> list[dict]:
 
     for candidate in selected:
         fingerprint = sha1(f"{candidate.reference}:{query}:{today}".encode("utf-8")).hexdigest()[:8].upper()
-        score = _score(candidate, query)
+        scoring = score_tender_candidate(
+            title=candidate.title,
+            sector=candidate.sector,
+            summary=candidate.summary,
+            buyer_name=candidate.buyer_name,
+            country=candidate.country,
+            estimated_value=candidate.estimated_value,
+        )
         results.append(
             {
                 "title": candidate.title,
@@ -155,8 +153,10 @@ def discover_tenders(query: str = "", limit: int = 20) -> list[dict]:
                 "estimated_value": candidate.estimated_value,
                 "deadline": candidate.deadline,
                 "requirements": candidate.requirements,
-                "qualification_score": score,
-                "recommendation": "GO" if score >= 70 else "TO_QUALIFY" if score >= 50 else "NO_GO",
+                "qualification_score": scoring["global_score"],
+                "recommendation": scoring["recommendation"],
+                "score_breakdown": scoring,
+                "rationale": scoring["rationale"],
             }
         )
 
