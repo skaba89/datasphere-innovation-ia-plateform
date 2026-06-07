@@ -5,7 +5,7 @@ from app.api.v1.endpoints import (
     auth, contact, contacts, deliverables, excel_export, export,
     health_monitor, notifications, opportunities, organizations,
     providers, scheduler, search, sector_templates, sse,
-    suggestions, team, tender_governance, tender_templates,
+    staffing, suggestions, team, tender_governance, tender_templates,
     tender_watch, tenders, uploads, workspaces,
 )
 
@@ -21,6 +21,7 @@ router.include_router(tenders.router)
 router.include_router(tender_governance.router)
 router.include_router(tender_templates.router)
 router.include_router(tender_watch.router)
+router.include_router(staffing.router)
 router.include_router(agents.router)
 router.include_router(agent_actions.router)
 router.include_router(deliverables.router)
@@ -48,4 +49,4 @@ def health_check() -> dict[str, str]:
 
 @router.get("/version", tags=["health"])
 def version() -> dict[str, str]:
-    return {"version": "1.6.0", "stage": "tender-watch"}
+    return {"version": "1.7.0", "stage": "staffing-ai"}
