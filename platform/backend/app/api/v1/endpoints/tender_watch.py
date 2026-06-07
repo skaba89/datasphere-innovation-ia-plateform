@@ -7,6 +7,17 @@ from app.api.dependencies import get_current_user
 from app.services.tender_watch import discover_tenders
 
 
+class TenderScoreBreakdownRead(BaseModel):
+    technical_fit: int = Field(ge=0, le=100)
+    strategic_fit: int = Field(ge=0, le=100)
+    commercial_fit: int = Field(ge=0, le=100)
+    delivery_risk: int = Field(ge=0, le=100)
+    reference_fit: int = Field(ge=0, le=100)
+    global_score: int = Field(ge=0, le=100)
+    recommendation: str
+    rationale: list[str]
+
+
 class TenderWatchCandidateRead(BaseModel):
     title: str
     reference: str
@@ -21,6 +32,8 @@ class TenderWatchCandidateRead(BaseModel):
     requirements: list[str]
     qualification_score: int = Field(ge=0, le=100)
     recommendation: str
+    score_breakdown: TenderScoreBreakdownRead
+    rationale: list[str]
 
 
 router = APIRouter(
