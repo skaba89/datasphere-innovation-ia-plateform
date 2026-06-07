@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.api.dependencies import get_current_user
 from app.crud.tender import get_tender, list_tender_requirements
 from app.db.session import get_db
-from app.services.staffing_matching_service import match_consultants_for_tender
+from app.services.staffing_matching_service import build_staffing_recommendation
 
 
 class ConsultantProfileRead(BaseModel):
@@ -32,12 +32,21 @@ class ConsultantMatchRead(BaseModel):
     rationale: list[str]
 
 
+class StaffingGapAnalysisRead(BaseModel):
+    required_skills: list[str]
+    covered_skills: list[str]
+    missing_skills: list[str]
+    coverage_rate: int = Field(ge=0, le=100)
+    recommended_actions: list[str]
+
+
 class TenderStaffingRecommendationRead(BaseModel):
     tender_id: int
     tender_title: str
     recommended_team: list[ConsultantMatchRead]
     global_team_score: int = Field(ge=0, le=100)
     summary: str
+    gap_analysis: StaffingGapAnalysisRead
 
 
 router = APIRouter(
@@ -59,7 +68,7 @@ def match_tender_staffing(
 
     requirements = list_tender_requirements(db, tender_id=tender_id, skip=0, limit=500)
     requirement_texts = [requirement.description for requirement in requirements]
-    matches = match_consultants_for_tender(
+    recommendation = build_staffing_recommendation(
         title=tender.title,
         sector=getattr(tender, "buyer_name", "") or "",
         summary=getattr(tender, "summary", "") or "",
@@ -67,17 +76,8 @@ def match_tender_staffing(
         max_results=max_results,
     )
 
-    global_team_score = round(sum(item["match_score"] for item in matches) / len(matches)) if matches else 0
-    primary_count = sum(1 for item in matches if item["recommendation"] == "PRIMARY")
-    summary = (
-        f"{len(matches)} consultant(s) recommandé(s), dont {primary_count} profil(s) principal(aux). "
-        f"Score équipe moyen : {global_team_score}/100."
-    )
-
     return {
         "tender_id": tender.id,
         "tender_title": tender.title,
-        "recommended_team": matches,
-        "global_team_score": global_team_score,
-        "summary": summary,
+        **recommendation,
     }
