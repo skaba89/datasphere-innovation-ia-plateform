@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 from app.api.v1.endpoints import (
     activity, agent_actions, agents, analytics, audit_logs,
-    auth, contact, contacts, deliverables, excel_export, export,
+    auth, contact, contacts, data_mission, deliverables, excel_export, export,
     health_monitor, notifications, opportunities, organizations,
     providers, scheduler, search, sector_templates, sse,
     staffing, suggestions, team, tender_governance, tender_templates,
@@ -22,6 +22,7 @@ router.include_router(tender_governance.router)
 router.include_router(tender_templates.router)
 router.include_router(tender_watch.router)
 router.include_router(staffing.router)
+router.include_router(data_mission.router)
 router.include_router(agents.router)
 router.include_router(agent_actions.router)
 router.include_router(deliverables.router)
@@ -49,4 +50,4 @@ def health_check() -> dict[str, str]:
 
 @router.get("/version", tags=["health"])
 def version() -> dict[str, str]:
-    return {"version": "1.7.0", "stage": "staffing-ai"}
+    return {"version": "1.8.0", "stage": "data-mission-studio"}
