@@ -20,7 +20,27 @@ limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: use create_all in dev, alembic in prod
+    import time as _time
+
+    # ── Wait for DB to be ready (Docker startup race condition) ──────────────
+    max_retries = 15
+    for attempt in range(1, max_retries + 1):
+        try:
+            from app.db.session import engine as _engine
+            with _engine.connect() as _conn:
+                _conn.execute(__import__('sqlalchemy').text("SELECT 1"))
+            break  # DB ready
+        except Exception as e:
+            if attempt == max_retries:
+                raise RuntimeError(f"Database not reachable after {max_retries} attempts: {e}") from e
+            wait = min(2 ** attempt, 30)  # exponential backoff, max 30s
+            import logging as _log
+            _log.getLogger("datasphere").warning(
+                "DB not ready (attempt %d/%d), retrying in %ds: %s", attempt, max_retries, wait, e
+            )
+            _time.sleep(wait)
+
+    # ── Schema init ───────────────────────────────────────────────────────────
     if settings.app_env == "production":
         from alembic.config import Config
         from alembic import command

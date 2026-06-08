@@ -22,6 +22,11 @@ services:
     container_name: datasphere-backend
     env_file:
       - .env
+    environment:
+      # Override DATABASE_URL so Docker always uses the service name "postgres",
+      # never "localhost" (which would point to the container itself).
+      # Credentials come from .env via POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB.
+      - DATABASE_URL=postgresql+psycopg2://${POSTGRES_USER:-datasphere}:${POSTGRES_PASSWORD:-change-me}@postgres:5432/${POSTGRES_DB:-datasphere_platform}
     ports:
       - "8000:8000"
     depends_on:

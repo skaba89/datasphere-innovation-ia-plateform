@@ -32,32 +32,19 @@ export class ErrorBoundary extends React.Component<Props, State> {
   render() {
     if (this.state.hasError) {
       if (this.props.fallback) return this.props.fallback;
+      const msg = this.state.error?.message;
       return (
-        <div style={{
-          padding: '32px', margin: '24px', maxWidth: 560,
-          background: 'rgba(239,68,68,.06)', border: '1px solid rgba(239,68,68,.2)',
-          borderRadius: 14, display: 'flex', flexDirection: 'column', gap: 16,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <AlertTriangle size={20} color="#fca5a5" />
-            <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, color: '#fca5a5', fontSize: '1rem' }}>
-              Une erreur s'est produite
-            </span>
-          </div>
-          <p style={{ color: '#94a3b8', fontSize: '.85rem', lineHeight: 1.6 }}>
-            {this.state.error?.message || 'Erreur inconnue'}
+        <div style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 40, textAlign: 'center' }}>
+          <div style={{ fontFamily: 'Syne, sans-serif', fontSize: '5rem', fontWeight: 900, color: '#facc15', lineHeight: 1 }}>500</div>
+          <h1 style={{ fontSize: '1.3rem', fontWeight: 800, margin: '12px 0' }}>Erreur inattendue</h1>
+          <p style={{ color: '#64748b', fontSize: '.88rem', maxWidth: 400, lineHeight: 1.6, marginBottom: 24 }}>
+            {msg || "Une erreur s'est produite. Nos équipes ont été notifiées."}
           </p>
           <button
             onClick={() => this.setState({ hasError: false, error: null })}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 8,
-              padding: '9px 16px', borderRadius: 9,
-              border: '1px solid rgba(239,68,68,.3)',
-              background: 'rgba(239,68,68,.1)', color: '#fca5a5',
-              cursor: 'pointer', fontSize: '.82rem', fontWeight: 700,
-            }}
+            style={{ padding: '10px 22px', borderRadius: 10, border: 'none', background: '#facc15', color: '#060e18', cursor: 'pointer', fontWeight: 800, fontSize: '.88rem' }}
           >
-            <RefreshCw size={13} /> Réessayer
+            Réessayer
           </button>
         </div>
       );
