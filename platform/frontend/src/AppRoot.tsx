@@ -39,7 +39,10 @@ type RootView =
   | 'team'
   | 'audit'
   | 'profile'
-  | 'workspaces';
+  | 'workspaces'
+  | 'data-export'
+  | 'calculator'
+  | 'pricing';
 
 type NavTab = {
   key: RootView;

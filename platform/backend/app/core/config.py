@@ -69,6 +69,20 @@ class Settings(BaseSettings):
     scheduler_max_actions_per_run: int = 10
     boamp_scan_enabled: bool = True         # Daily BOAMP public tender scan
 
+    # ── Stripe Billing ────────────────────────────────────────────────────────
+    stripe_secret_key: str = ""             # sk_live_... or sk_test_...
+    stripe_webhook_secret: str = ""         # whsec_...
+    stripe_starter_price_id: str = ""       # price_... for Starter monthly
+    stripe_starter_yearly_price_id: str = ""
+    stripe_pro_price_id: str = ""           # price_... for Pro monthly
+    stripe_pro_yearly_price_id: str = ""
+    stripe_success_url: str = "http://localhost:5173/subscription/success"
+    stripe_cancel_url: str = "http://localhost:5173/subscription/cancel"
+
+    @property
+    def stripe_enabled(self) -> bool:
+        return bool(self.stripe_secret_key and self.stripe_secret_key.startswith("sk_"))
+
     # ── SMTP ──────────────────────────────────────────────────────────────────
     smtp_host: str = ""
     smtp_port: int = 587

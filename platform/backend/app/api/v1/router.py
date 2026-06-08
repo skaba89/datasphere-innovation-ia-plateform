@@ -2,8 +2,9 @@ from fastapi import APIRouter
 
 from app.api.v1.endpoints import (
     activity, agent_actions, agents, analytics, audit_logs,
-    auth, contact, contacts, data_mission, deliverables, excel_export, export,
-    health_monitor, notifications, opportunities, organizations,
+    auth, billing, calculator, contact, contacts, data_mission, deliverables,
+    email_api, excel_export, export,
+    health_monitor, notifications, opportunities, organizations, pdf_ao,
     providers, scheduler, search, sector_templates, sse,
     staffing, suggestions, team, tender_governance, tender_templates,
     tender_watch, tenders, uploads, workspaces,
@@ -12,6 +13,10 @@ from app.api.v1.endpoints import (
 router = APIRouter()
 
 router.include_router(auth.router)
+router.include_router(billing.router)
+router.include_router(calculator.router)
+router.include_router(email_api.router)
+router.include_router(pdf_ao.router)
 router.include_router(contact.router)
 router.include_router(team.router)
 router.include_router(organizations.router)

@@ -23,3 +23,4 @@ __all__ = [
     "DeliverableVersion", "SchedulerLog", "AuditLog", "SectorTemplate",
     "Notification", "UploadedFile", "Workspace", "WorkspaceMember",
 ]
+from app.models.subscription import Subscription, BillingEvent
