@@ -1,47 +1,52 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-/**
- * Vite configuration — DataSphere Innovation IA Platform
- *
- * Key feature: proxy /api → backend in dev mode.
- * This is an ALTERNATIVE to setting CORS_ORIGINS on the backend.
- *
- * With this proxy active, the frontend calls /api/v1/... (relative URL)
- * and Vite forwards them to the backend — no cross-origin request, no CORS issue.
- *
- * To use the proxy, set in .env.local:
- *   VITE_USE_PROXY=true
- *   # VITE_API_BASE_URL stays unset (or empty) — proxy handles it
- *
- * To NOT use the proxy (call backend directly), set:
- *   VITE_API_BASE_URL=http://localhost:8000/api/v1
- */
-
-const BACKEND_URL = process.env.VITE_BACKEND_URL || 'http://localhost:8000';
-const USE_PROXY   = process.env.VITE_USE_PROXY === 'true';
-
 export default defineConfig({
   plugins: [react()],
 
   server: {
     port: 5173,
-    host: true, // Allow access from all interfaces (useful in Docker)
-
-    // Dev proxy: optional but eliminates CORS issues entirely
-    ...(USE_PROXY && {
-      proxy: {
-        '/api': {
-          target:      BACKEND_URL,
-          changeOrigin: true,
-          secure:      false,
-        },
+    host: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false,
       },
-    }),
+    },
   },
 
   build: {
-    outDir:  'dist',
+    outDir: 'dist',
     sourcemap: false,
+    chunkSizeWarningLimit: 600,
+
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          if (id.includes('node_modules/react/') ||
+              id.includes('node_modules/react-dom/') ||
+              id.includes('node_modules/scheduler/')) {
+            return 'vendor-react';
+          }
+          if (id.includes('node_modules/lucide-react')) {
+            return 'vendor-icons';
+          }
+          if (id.includes('/src/pages/CalculatorPage') ||
+              id.includes('/src/pages/PricingPage')    ||
+              id.includes('/src/pages/SettingsPage')   ||
+              id.includes('/src/pages/AuditLogPage')   ||
+              id.includes('/src/pages/DataExportPage') ||
+              id.includes('/src/pages/WorkspacesPage') ||
+              id.includes('/src/pages/TeamPage')       ||
+              id.includes('/src/pages/UserProfilePage')) {
+            return 'pages-secondary';
+          }
+          if (id.includes('/src/i18n')) {
+            return 'i18n';
+          }
+        },
+      },
+    },
   },
 });

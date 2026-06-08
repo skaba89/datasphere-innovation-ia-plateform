@@ -39,13 +39,73 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title=settings.app_name,
-    description="Cabinet de conseil augmenté par IA — DataSphere Innovation",
-    version="1.6.0",
+    title="DataSphere Innovation IA Platform",
+    description="""
+## Cabinet de conseil augmenté par IA — France & Afrique
+
+DataSphere est une plateforme SaaS pour consultants **Data / IA / Tech** qui automatise :
+- La gestion CRM des missions et clients
+- La veille et réponse aux **appels d'offres** (BOAMP + sources africaines)
+- La génération de **livrables** (mémoires techniques, propales, CV)
+- L'orchestration d'**agents IA** pour l'automatisation des tâches
+
+### Authentification
+
+Toutes les routes protégées requièrent un **JWT Bearer token** :
+```
+Authorization: Bearer <access_token>
+```
+Obtenir un token : `POST /api/v1/auth/login`
+
+Pour les intégrations tierces (Zapier, Make, scripts), utiliser une **clé API** :
+```
+Authorization: Bearer ds_live_xxxx_<secret>
+```
+Créer une clé : `POST /api/v1/api-keys`
+
+### Workspaces (multi-tenant)
+
+Optionnellement, spécifier un workspace pour isoler les données :
+```
+X-Workspace-ID: 42
+```
+ou paramètre `?workspace_id=42`.
+
+### Limites
+
+- Rate limit : **60 req/min** par IP
+- Upload PDF : **25 MB** max
+- Tokens JWT : **60 min** (access) / **30 jours** (refresh)
+""",
+    version="1.9.0",
     debug=settings.app_debug,
     lifespan=lifespan,
     docs_url="/docs" if settings.app_env != "production" else None,
     redoc_url="/redoc" if settings.app_env != "production" else None,
+    openapi_tags=[
+        {"name": "auth",          "description": "Authentification, inscription, tokens JWT"},
+        {"name": "organizations", "description": "Gestion des organisations clientes"},
+        {"name": "contacts",      "description": "Contacts et interlocuteurs CRM"},
+        {"name": "opportunities", "description": "Pipeline commercial — opportunités de mission"},
+        {"name": "tenders",       "description": "Appels d'offres — qualification, exigences, Go/No-Go"},
+        {"name": "tender-watch",  "description": "Veille AO — BOAMP + sources africaines"},
+        {"name": "pdf-ao",        "description": "Import AO depuis PDF — extraction intelligente"},
+        {"name": "deliverables",  "description": "Livrables — génération, révision, approbation, versioning"},
+        {"name": "agents",        "description": "Agents IA — profils consultants, automatisation"},
+        {"name": "billing",       "description": "Abonnements Stripe — plans, checkout, quotas"},
+        {"name": "calculator",    "description": "Calculateur de rentabilité freelance"},
+        {"name": "api-keys",      "description": "Clés API publique pour intégrations tierces"},
+        {"name": "email",         "description": "Email — envoi, preview, séquences de relance"},
+        {"name": "export",        "description": "Export livrables — PDF, HTML, Markdown, Excel"},
+        {"name": "analytics",     "description": "Métriques pipeline, performance, dashboard"},
+        {"name": "workspaces",    "description": "Gestion workspaces — membres, plans, isolation"},
+        {"name": "team",          "description": "Équipe — invitations, rôles, profils"},
+        {"name": "audit-logs",    "description": "Journal d'audit des actions utilisateurs"},
+        {"name": "health",        "description": "Santé système — base de données, SMTP, scheduler"},
+        {"name": "notifications", "description": "Notifications — SSE temps réel, compteurs"},
+        {"name": "search",        "description": "Recherche globale — organisations, AO, livrables"},
+        {"name": "scheduler",     "description": "Scheduler — jobs récurrents BOAMP, diagnostics"},
+    ],
 )
 
 # ── Middleware ────────────────────────────────────────────────────────────────
@@ -88,7 +148,7 @@ app.include_router(api_v1_router, prefix=settings.api_v1_prefix)
 def root() -> dict[str, str]:
     return {
         "message": "Welcome to DataSphere Innovation IA Platform API",
-        "docs": "/docs",
-        "version": "1.6.0",
-        "health": f"{settings.api_v1_prefix}/health",
+        "docs":    "/docs",
+        "version": "1.9.0",
+        "health":  f"{settings.api_v1_prefix}/health",
     }
