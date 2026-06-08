@@ -2,6 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user
+from app.api.workspace_scope import get_workspace_scope, WorkspaceContext
+from app.models.user import User
+from typing import Optional
 from app.crud.opportunity import (
     create_opportunity,
     delete_opportunity,
@@ -21,8 +24,10 @@ router = APIRouter(
 
 
 @router.get("", response_model=list[OpportunityRead])
-def read_opportunities(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return list_opportunities(db, skip=skip, limit=limit)
+def read_opportunities(skip: int = 0, limit: int = 100, db: Session = Depends(get_db),
+    ws: Optional[WorkspaceContext] = Depends(get_workspace_scope),
+):
+    items = list_opportunities(db, skip=skip, limit=limit)
 
 
 @router.post("", response_model=OpportunityRead, status_code=status.HTTP_201_CREATED)

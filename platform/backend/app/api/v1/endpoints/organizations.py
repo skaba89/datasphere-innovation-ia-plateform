@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from typing import Optional
 
 from app.api.dependencies import get_current_user
+from app.api.workspace_scope import get_workspace_scope, WorkspaceContext
 from app.crud.organization import (
     create_organization,
     delete_organization,
@@ -10,6 +12,7 @@ from app.crud.organization import (
     update_organization,
 )
 from app.db.session import get_db
+from app.models.user import User
 from app.schemas.organization import OrganizationCreate, OrganizationRead, OrganizationUpdate
 
 router = APIRouter(
@@ -20,13 +23,34 @@ router = APIRouter(
 
 
 @router.get("", response_model=list[OrganizationRead])
-def read_organizations(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return list_organizations(db, skip=skip, limit=limit)
+def read_organizations(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    ws: Optional[WorkspaceContext] = Depends(get_workspace_scope),
+):
+    orgs = list_organizations(db, skip=skip, limit=limit)
+    # Filter by workspace if context is provided
+    if ws is not None:
+        orgs = [o for o in orgs if o.workspace_id is None or o.workspace_id == ws.id]
+    return orgs
 
 
 @router.post("", response_model=OrganizationRead, status_code=status.HTTP_201_CREATED)
-def create_new_organization(payload: OrganizationCreate, db: Session = Depends(get_db)):
-    return create_organization(db, payload)
+def create_new_organization(
+    payload: OrganizationCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    ws: Optional[WorkspaceContext] = Depends(get_workspace_scope),
+):
+    org = create_organization(db, payload)
+    # Tag with workspace and creator
+    if ws is not None:
+        org.workspace_id = ws.id
+    org.created_by_email = current_user.email
+    db.commit()
+    db.refresh(org)
+    return org
 
 
 @router.get("/{organization_id}", response_model=OrganizationRead)
