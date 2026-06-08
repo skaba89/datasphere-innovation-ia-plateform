@@ -43,7 +43,8 @@ type RootView =
   | 'workspaces'
   | 'data-export'
   | 'calculator'
-  | 'pricing';
+  | 'pricing'
+  | 'settings';
 
 type NavTab = {
   key: RootView;
@@ -251,7 +252,7 @@ export default function AppRoot() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <GlobalSearchBar />
+          <GlobalSearchBar onNavigate={(tab) => setView(tab as RootView)} />
           <NotificationsPanel />
           <NotificationBell />
 
