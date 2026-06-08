@@ -14,7 +14,7 @@ import type {
   TenderRequirement,
 } from '../api/domainTypes';
 
-type Props = { token: string };
+type Props = { token: string; role?: string };
 
 type ConsultantProfile = {
   id: number;
