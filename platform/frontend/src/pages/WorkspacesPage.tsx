@@ -2,6 +2,7 @@ import React from "react";
 import { useEffect, useState } from 'react';
 import { Building2, Plus, Users, Crown, Shield, Eye, Trash2, RefreshCw, CheckCircle, AlertCircle, Settings } from 'lucide-react';
 import { apiRequest, tokenStorage } from '../api/client';
+import ConfirmModal from '../components/ConfirmModal';
 
 interface Workspace { id: number; name: string; slug: string; description: string | null; plan: string; is_active: boolean; member_count: number; created_at: string; }
 interface Member { id: number; user_id: number; workspace_id: number; role: string; joined_at: string; invited_by: string | null; }
@@ -15,6 +16,7 @@ export default function WorkspacesPage() {
   const [selected, setSelected] = useState<Workspace | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [planUsage, setPlanUsage] = useState<Record<string, unknown> | null>(null);
+  const [confirmRemove, setConfirmRemove] = useState<{ wsId: number; userId: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -74,12 +76,16 @@ export default function WorkspacesPage() {
     finally { setInviting(false); }
   }
 
-  async function handleRemove(wsId: number, userId: number) {
-    if (!confirm('Retirer ce membre ?')) return;
+  function handleRemove(wsId: number, userId: number) {
+    setConfirmRemove({ wsId, userId });
+  }
+
+  async function doRemoveMember(wsId: number, userId: number) {
     try {
       await apiRequest(`/workspaces/${wsId}/members/${userId}`, { method: 'DELETE' }, token);
       await loadMembers(wsId);
     } catch (err) { setMsg({ ok: false, text: err instanceof Error ? err.message : 'Erreur' }); }
+    finally { setConfirmRemove(null); }
   }
 
   const s = {
@@ -89,6 +95,16 @@ export default function WorkspacesPage() {
   };
 
   return (
+    <>
+      <ConfirmModal
+        open={confirmRemove !== null}
+        title="Retirer ce membre ?"
+        description="Le membre perdra l'accès à ce workspace immédiatement."
+        confirmLabel="Retirer"
+        variant="warning"
+        onConfirm={() => confirmRemove && doRemoveMember(confirmRemove.wsId, confirmRemove.userId)}
+        onCancel={() => setConfirmRemove(null)}
+      />
     <div style={{ padding: 'clamp(16px,3vw,28px) clamp(12px,3vw,32px)', maxWidth: 1100, margin: '0 auto' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
@@ -266,5 +282,6 @@ export default function WorkspacesPage() {
       </div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
+    </>
   );
 }

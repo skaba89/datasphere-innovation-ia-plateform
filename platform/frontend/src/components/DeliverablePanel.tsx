@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import ConfirmModal from './ConfirmModal';
 import { API_BASE } from '../api/config';
 import {
   CheckCircle2,
@@ -148,9 +149,13 @@ export function DeliverablePanel({ token }: Props) {
     }
   }
 
+  const [confirmDelId, setConfirmDelId] = useState<number | null>(null);
+
   async function deleteDeliverable(id: number) {
-    if (!confirm('Supprimer ce livrable ?')) return;
-    setLoading(true);
+    setConfirmDelId(id);
+  }
+
+  async function doDeleteDeliverable(id: number) {    setLoading(true);
     setError(null);
     try {
       await apiRequest(`/deliverables/${id}`, { method: 'DELETE' }, token);
