@@ -50,15 +50,24 @@ async def lifespan(app: FastAPI):
             _time.sleep(_wait)
 
     # ── Schema init ───────────────────────────────────────────────────────────
-    if settings.app_env == "production":
+    # Always run Alembic migrations (create_all doesn't ALTER existing tables).
+    # This ensures workspace_id and other new columns are added to existing DBs.
+    try:
         from alembic.config import Config
-        from alembic import command
-        import os
+        from alembic import command as alembic_command
+        import os as _os
         alembic_cfg = Config(
-            os.path.join(os.path.dirname(os.path.dirname(__file__)), "alembic.ini")
+            _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), "alembic.ini")
         )
-        command.upgrade(alembic_cfg, "head")
-    else:
+        alembic_command.upgrade(alembic_cfg, "head")
+        _logger.info("✓ Alembic migrations applied (head)")
+    except Exception as _migration_err:
+        _logger.warning(
+            "Alembic migration failed (%s) — falling back to create_all. "
+            "This may cause 500 errors if columns are missing. "
+            "Fix: docker compose down -v && docker compose up -d",
+            _migration_err,
+        )
         Base.metadata.create_all(bind=engine)
 
     from app.services import scheduler_service
@@ -155,6 +164,49 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(500)
+@app.exception_handler(Exception)
+async def _global_exception_handler(request: Request, exc: Exception):
+    """
+    Global 500 handler that always includes CORS headers.
+
+    Without this, when SQLAlchemy or any unhandled exception crashes a route,
+    FastAPI returns 500 without CORS headers — the browser then shows a
+    misleading 'CORS policy' error instead of the real 500.
+
+    Root cause of 500 is often: DB schema mismatch (column exists in ORM
+    but not in DB because migrations were not run → run: alembic upgrade head
+    or reset the DB volume: docker compose down -v && docker compose up -d).
+    """
+    import traceback
+    from fastapi.responses import JSONResponse
+
+    origin = request.headers.get("origin", "")
+    allowed = _cors_origins
+
+    _log.getLogger("datasphere").error(
+        "Unhandled exception on %s %s: %s",
+        request.method, request.url.path, exc,
+        exc_info=True,
+    )
+
+    headers = {
+        "Access-Control-Allow-Credentials": "true",
+        "Access-Control-Allow-Origin": origin if (origin in allowed or "*" in allowed) else "",
+    }
+
+    detail = str(exc)
+    if settings.app_env == "production":
+        detail = "Internal server error"
+
+    return JSONResponse(
+        status_code=500,
+        content={"detail": detail, "type": type(exc).__name__},
+        headers=headers,
+    )
+
 
 
 @app.middleware("http")
