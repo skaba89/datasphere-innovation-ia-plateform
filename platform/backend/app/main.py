@@ -21,24 +21,33 @@ limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     import time as _time
+    import logging as _log
+    import sqlalchemy as _sa
 
-    # ── Wait for DB to be ready (Docker startup race condition) ──────────────
+    _logger = _log.getLogger("datasphere.startup")
+
+    # ── Wait for DB to be reachable (handles Docker startup race conditions) ──
+    # PostgreSQL can pass pg_isready but not yet accept full connections.
     max_retries = 15
     for attempt in range(1, max_retries + 1):
         try:
-            from app.db.session import engine as _engine
-            with _engine.connect() as _conn:
-                _conn.execute(__import__('sqlalchemy').text("SELECT 1"))
-            break  # DB ready
-        except Exception as e:
+            with engine.connect() as _conn:
+                _conn.execute(_sa.text("SELECT 1"))
+            _logger.info("✓ Database connection established (attempt %d)", attempt)
+            break
+        except Exception as _e:
             if attempt == max_retries:
-                raise RuntimeError(f"Database not reachable after {max_retries} attempts: {e}") from e
-            wait = min(2 ** attempt, 30)  # exponential backoff, max 30s
-            import logging as _log
-            _log.getLogger("datasphere").warning(
-                "DB not ready (attempt %d/%d), retrying in %ds: %s", attempt, max_retries, wait, e
+                raise RuntimeError(
+                    f"Database unreachable after {max_retries} attempts. "
+                    f"Check DATABASE_URL — use service name 'postgres' (not 'localhost') in Docker. "
+                    f"Last error: {_e}"
+                ) from _e
+            _wait = min(2 ** attempt, 30)   # 2s, 4s, 8s … capped at 30s
+            _logger.warning(
+                "Database not ready (attempt %d/%d), retrying in %ds — %s",
+                attempt, max_retries, _wait, _e
             )
-            _time.sleep(wait)
+            _time.sleep(_wait)
 
     # ── Schema init ───────────────────────────────────────────────────────────
     if settings.app_env == "production":

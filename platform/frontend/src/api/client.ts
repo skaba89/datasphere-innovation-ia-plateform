@@ -132,6 +132,8 @@ export async function apiRequest<T>(
       const data = (await response.json()) as ApiError;
       if (data.detail) message = data.detail;
     } catch { /* keep default */ }
+    // Note: browser always logs failed HTTP responses — this is cosmetic, not a bug.
+    // 401 on /auth/login = wrong credentials (expected behavior, not an error).
     throw new Error(message);
   }
 
