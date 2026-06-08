@@ -100,6 +100,7 @@ function recommendationLabel(candidate: AutoTenderCandidate): string {
 
 export default function TenderAutoImportPanel({ token, onImported }: Props) {
   const [query, setQuery] = useState('data IA digitalisation Guinée');
+  const [source, setSource] = useState<'all' | 'boamp' | 'local'>('all');
   const [candidates, setCandidates] = useState<AutoTenderCandidate[]>(DEFAULT_CANDIDATES);
   const [selectedRefs, setSelectedRefs] = useState<string[]>(DEFAULT_CANDIDATES.map(item => item.reference));
   const [loading, setLoading] = useState(false);
@@ -116,7 +117,7 @@ export default function TenderAutoImportPanel({ token, onImported }: Props) {
     setMessage(null);
     setError(null);
     try {
-      const searchParams = new URLSearchParams({ q: query, limit: '20' });
+      const searchParams = new URLSearchParams({ q: query, limit: '20', source });
       const results = await apiRequest<AutoTenderCandidate[]>(`/tender-watch/search?${searchParams.toString()}`, {}, token);
       setCandidates(results);
       setSelectedRefs(results.map(item => item.reference));
