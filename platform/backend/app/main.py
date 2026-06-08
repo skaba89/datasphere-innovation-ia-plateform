@@ -157,61 +157,54 @@ _log.getLogger("datasphere").info(
     "CORS allowed origins (%d): %s", len(_cors_origins), ", ".join(_cors_origins)
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=_cors_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# ── CORS doit être le middleware LE PLUS EXTÉRIEUR ────────────────────────────
+# En FastAPI, add_middleware() est LIFO : le DERNIER ajouté = le plus extérieur.
+# security_headers est ajouté via @app.middleware("http") APRÈS add_middleware(),
+# donc il est plus extérieur que CORSMiddleware — ce qui fait que les crashes
+# de route ne passent jamais par CORS pour ajouter les headers.
+#
+# Solution : add_middleware(CORS) EN DERNIER → CORS devient le plus extérieur.
+# security_headers sera ajouté plus tard via @app.middleware = plus intérieur.
+#
+# Stack finale (extérieur → intérieur) :
+#   ServerErrorMiddleware → CORSMiddleware → security_headers → route
+#
+# Ainsi : crash dans route → security_headers propage → CORSMiddleware ajoute headers ✓
 
 
-@app.exception_handler(500)
 @app.exception_handler(Exception)
 async def _global_exception_handler(request: Request, exc: Exception):
     """
-    Global 500 handler that always includes CORS headers.
-
-    Without this, when SQLAlchemy or any unhandled exception crashes a route,
-    FastAPI returns 500 without CORS headers — the browser then shows a
-    misleading 'CORS policy' error instead of the real 500.
-
-    Root cause of 500 is often: DB schema mismatch (column exists in ORM
-    but not in DB because migrations were not run → run: alembic upgrade head
-    or reset the DB volume: docker compose down -v && docker compose up -d).
+    Catch-all : loggue les exceptions non gérées avec contexte.
+    CORS headers sont gérés par CORSMiddleware (maintenant extérieur).
     """
-    import traceback
     from fastapi.responses import JSONResponse
-
-    origin = request.headers.get("origin", "")
-    allowed = _cors_origins
-
     _log.getLogger("datasphere").error(
-        "Unhandled exception on %s %s: %s",
-        request.method, request.url.path, exc,
+        "Unhandled exception [%s %s]: %s — %s",
+        request.method, request.url.path,
+        type(exc).__name__, exc,
         exc_info=True,
     )
-
-    headers = {
-        "Access-Control-Allow-Credentials": "true",
-        "Access-Control-Allow-Origin": origin if (origin in allowed or "*" in allowed) else "",
-    }
-
-    detail = str(exc)
-    if settings.app_env == "production":
-        detail = "Internal server error"
-
-    return JSONResponse(
-        status_code=500,
-        content={"detail": detail, "type": type(exc).__name__},
-        headers=headers,
-    )
-
+    detail = str(exc) if settings.app_env != "production" else "Internal server error"
+    return JSONResponse(status_code=500, content={"detail": detail, "type": type(exc).__name__})
 
 
 @app.middleware("http")
 async def security_headers(request: Request, call_next):
-    response = await call_next(request)
+    """Ajoute les headers de sécurité HTTP. Robuste aux crashs de route."""
+    from fastapi.responses import JSONResponse
+    try:
+        response = await call_next(request)
+    except Exception as exc:
+        # Si la route crash, on retourne quand même une réponse propre.
+        # CORSMiddleware (extérieur) ajoutera les headers CORS.
+        _log.getLogger("datasphere").error(
+            "Route exception caught in security_headers [%s %s]: %s",
+            request.method, request.url.path, exc, exc_info=True,
+        )
+        detail = str(exc) if settings.app_env != "production" else "Internal server error"
+        return JSONResponse(status_code=500, content={"detail": detail})
+
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
@@ -219,6 +212,16 @@ async def security_headers(request: Request, call_next):
     if settings.app_env == "production":
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     return response
+
+
+# CORSMiddleware ajouté EN DERNIER = plus extérieur = headers CORS sur TOUT
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
