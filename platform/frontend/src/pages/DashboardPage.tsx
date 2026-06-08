@@ -100,6 +100,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [kpis, setKpis] = useState<any>(null);
+  const [perf, setPerf] = useState<any>(null);
   const [pendingSuggestions, setPendingSuggestions] = useState<{ total: number; tenders: number; opportunities: number; organizations: number } | null>(null);
   const token = tokenStorage.get();
 
@@ -107,14 +108,16 @@ export default function DashboardPage() {
     setLoading(true);
     setError(null);
     try {
-      const [analytics, dashKpis, suggestions] = await Promise.all([
+      const [analytics, dashKpis, suggestions, perf] = await Promise.all([
         apiRequest<PipelineAnalytics>('/analytics/pipeline', {}, token),
         apiRequest<any>('/analytics/dashboard', {}, token).catch(() => null),
         apiRequest<any>('/suggestions/count', {}, token).catch(() => null),
+        apiRequest<any>('/analytics/performance', {}, token).catch(() => null),
       ]);
       setData(analytics);
       if (dashKpis) setKpis(dashKpis);
       if (suggestions) setPendingSuggestions(suggestions);
+      if (perf) setPerf(perf);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erreur de chargement');
     } finally {
@@ -230,6 +233,24 @@ export default function DashboardPage() {
             value={(kpis?.agents?.pending_approvals ?? data?.agents?.actions_pending_approval ?? 0) + (pendingSuggestions?.total ?? 0)}
             sub={`${pendingSuggestions?.tenders ?? 0} AO · ${pendingSuggestions?.opportunities ?? 0} opps · ${kpis?.notifications?.unread ?? 0} notifs`}
           />
+        </div>
+      )}
+
+      {/* Performance metrics strip */}
+      {perf && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(160px,100%), 1fr))', gap: 12 }}>
+          {[
+            { label: 'Taux approbation livrables', value: `${perf.growth?.approval_rate_pct ?? 0} %`, color: '#86efac' },
+            { label: 'Taux exécution IA',           value: `${perf.agents?.execution_rate_pct ?? 0} %`, color: '#93c5fd' },
+            { label: 'AO → décision Go',            value: `${perf.funnel?.go_rate_pct ?? 0} %`,  color: '#fde68a' },
+            { label: 'Actions IA (30j)',             value: perf.agents?.actions_last_30d ?? 0,      color: '#a5b4fc' },
+            { label: 'Livrables approuvés (30j)',   value: perf.funnel?.deliverables_approved_30d ?? 0, color: '#86efac' },
+          ].map(k => (
+            <div key={k.label} style={{ padding: '12px 14px', background: 'rgba(12,20,37,.85)', border: '1px solid rgba(148,163,184,.08)', borderRadius: 12 }}>
+              <div style={{ fontFamily: 'Syne, sans-serif', fontWeight: 900, fontSize: '1.15rem', color: k.color }}>{k.value}</div>
+              <div style={{ fontSize: '.7rem', color: '#475569', marginTop: 3 }}>{k.label}</div>
+            </div>
+          ))}
         </div>
       )}
 

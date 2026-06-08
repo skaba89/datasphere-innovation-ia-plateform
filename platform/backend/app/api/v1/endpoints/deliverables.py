@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user
+from app.models.user import User
 from app.crud.deliverable import (
     approve_deliverable,
     create_deliverable,
@@ -155,11 +156,29 @@ def approve_deliverable_action(
     deliverable_id: int,
     payload: DeliverableApproveRequest,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     deliverable = get_deliverable(db, deliverable_id)
     if deliverable is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Deliverable not found")
-    return approve_deliverable(db, deliverable, payload.approver_name)
+    result = approve_deliverable(db, deliverable, payload.approver_name)
+
+    # Fire-and-forget email to approver
+    import threading
+    from app.services.email_service import EmailType, send_typed_email
+    def _notify():
+        send_typed_email(
+            to=current_user.email,
+            email_type=EmailType.DELIVERABLE_APPROVED,
+            params={
+                "first_name": current_user.first_name or current_user.email,
+                "deliverable_title": result.title,
+                "approver": payload.approver_name,
+            },
+        )
+    threading.Thread(target=_notify, daemon=True).start()
+
+    return result
 
 
 # ---------------------------------------------------------------------------
