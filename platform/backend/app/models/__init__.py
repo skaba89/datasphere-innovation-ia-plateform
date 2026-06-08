@@ -24,3 +24,4 @@ __all__ = [
     "Notification", "UploadedFile", "Workspace", "WorkspaceMember",
 ]
 from app.models.subscription import Subscription, BillingEvent
+from app.models.api_key import ApiKey

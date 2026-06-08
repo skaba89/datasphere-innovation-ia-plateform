@@ -21,6 +21,7 @@ import WorkspacesPage from './pages/WorkspacesPage';
 import DataExportPage from './pages/DataExportPage';
 import OnboardingWizard, { shouldShowOnboarding, markOnboardingDone } from './components/OnboardingWizard';
 import ToastContainer from './components/ToastContainer';
+import { LangToggle } from './i18n';
 import { useRealtimeToasts } from './hooks/useRealtimeToasts';
 import type { ToastEvent } from './hooks/useRealtimeToasts';
 import { CrmWorkspace } from './components/CrmWorkspace';
@@ -262,6 +263,7 @@ export default function AppRoot() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <GlobalSearchBar onNavigate={(tab) => setView(tab as RootView)} />
+          <LangToggle />
           <NotificationsPanel />
           <NotificationBell />
 
