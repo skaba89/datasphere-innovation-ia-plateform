@@ -143,8 +143,28 @@ const rolePermissions: Record<string, AppPermission[]> = {
   ],
 };
 
+// Mapping backend roles → frontend permission groups
+// Backend emits: admin, manager, consultant, viewer
+// Frontend extends: director, commercial, auditor, reader, client, superadmin
+const ROLE_ALIASES: Record<string, string> = {
+  // Backend → Frontend equivalences
+  viewer:    'reader',    // backend "viewer" = frontend "reader"
+  // identical roles (pass through)
+  admin:     'admin',
+  manager:   'manager',
+  consultant: 'consultant',
+  // Extended frontend roles (used when set directly)
+  superadmin: 'superadmin',
+  director:   'director',
+  commercial: 'commercial',
+  auditor:    'auditor',
+  reader:     'reader',
+  client:     'client',
+};
+
 export function normalizeRole(role?: string | null): string {
-  return (role || 'client').trim().toLowerCase();
+  const lower = (role || 'client').trim().toLowerCase();
+  return ROLE_ALIASES[lower] ?? 'client';
 }
 
 export function getRolePermissions(role?: string | null): AppPermission[] {
