@@ -20,6 +20,9 @@ import UserProfilePage from './pages/UserProfilePage';
 import WorkspacesPage from './pages/WorkspacesPage';
 import DataExportPage from './pages/DataExportPage';
 import OnboardingWizard, { shouldShowOnboarding, markOnboardingDone } from './components/OnboardingWizard';
+import ToastContainer from './components/ToastContainer';
+import { useRealtimeToasts } from './hooks/useRealtimeToasts';
+import type { ToastEvent } from './hooks/useRealtimeToasts';
 import { CrmWorkspace } from './components/CrmWorkspace';
 import GlobalSearchBar from './components/GlobalSearchBar';
 import NotificationBell from './components/NotificationBell';
@@ -142,6 +145,12 @@ export default function AppRoot() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(() => shouldShowOnboarding());
+  const [toasts, setToasts] = useState<ToastEvent[]>([]);
+  const addToast = (t: ToastEvent) => setToasts(prev => [...prev.slice(-3), t]);
+  const dismissToast = (id: string) => setToasts(prev => prev.filter(t => t.id !== id));
+
+  // Real-time SSE toasts
+  useRealtimeToasts(token, addToast);
 
   useEffect(() => {
     if (!token) return;
@@ -383,6 +392,7 @@ export default function AppRoot() {
       {activeView === 'audit'         && <AuditLogPage />}
       {activeView === 'workspaces'    && <WorkspacesPage />}
       {activeView === 'profile'       && <UserProfilePage />}
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </>
   );
 }

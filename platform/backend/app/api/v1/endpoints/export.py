@@ -1,12 +1,12 @@
 """
-Export endpoint — Download deliverables as Markdown or print-ready HTML.
-No extra dependencies required (no PDF library).
-The HTML export uses @media print CSS so the browser can save as PDF directly.
+Export endpoint — Download deliverables as Markdown, HTML, or PDF.
+PDF generation uses WeasyPrint (professional print quality).
+HTML export also works with @media print for browser-based PDF.
 """
 
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import HTMLResponse, PlainTextResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse, Response
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user
@@ -139,6 +139,43 @@ def export_markdown(deliverable_id: int, db: Session = Depends(get_db)):
         content=content,
         media_type="text/markdown; charset=utf-8",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/{deliverable_id}/export/pdf", dependencies=[Depends(get_current_user)])
+def export_pdf(deliverable_id: int, db: Session = Depends(get_db)):
+    """
+    Generate a professional PDF for a deliverable using WeasyPrint.
+
+    Returns a downloadable PDF file with:
+    - DataSphere branded header
+    - Full content with Markdown rendered to styled HTML
+    - All sections included
+    - Approval stamp if approved
+    - Page numbers in footer
+    """
+    d = get_deliverable(db, deliverable_id)
+    if d is None:
+        raise HTTPException(status_code=404, detail="Deliverable not found")
+
+    try:
+        from app.services.pdf_generator import deliverable_to_pdf
+        pdf_bytes = deliverable_to_pdf(d, db=db)
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur génération PDF : {e}")
+
+    safe_title = "".join(c if c.isalnum() or c in "-_" else "_" for c in (d.title or "livrable"))[:60]
+    filename = f"{safe_title}.pdf"
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Length": str(len(pdf_bytes)),
+        },
     )
 
 

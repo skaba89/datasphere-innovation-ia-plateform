@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
-import { ChevronDown, ChevronUp, Clock, GitBranch, RefreshCw, RotateCcw } from 'lucide-react';
+import { ChevronDown, ChevronUp, Clock, Download, GitBranch, RefreshCw, RotateCcw } from 'lucide-react';
 import { apiRequest, tokenStorage } from '../api/client';
 import type { DeliverableVersionItem } from '../api/domainTypes';
+
+const API_BASE = (import.meta as { env: { VITE_API_BASE_URL?: string } }).env.VITE_API_BASE_URL
+  || 'http://localhost:8000/api/v1';
 
 interface DiffLine {
   type: 'add' | 'remove' | 'equal';
@@ -103,6 +106,25 @@ export default function DeliverableVersionsPanel({ deliverableId, currentVersion
             <button onClick={load} style={{ display: 'flex', gap: 5, alignItems: 'center', padding: '5px 10px', borderRadius: 7, border: '1px solid rgba(148,163,184,.15)', background: 'none', color: '#64748b', cursor: 'pointer', fontSize: '.76rem' }}>
               <RefreshCw size={11} style={loading ? { animation: 'spin 1s linear infinite' } : {}} />
             </button>
+            {/* Export buttons */}
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
+              {[
+                { type: 'pdf',      label: 'PDF',  color: '#facc15', bg: 'rgba(250,204,21,.1)' },
+                { type: 'html',     label: 'HTML', color: '#93c5fd', bg: 'rgba(59,130,246,.08)' },
+                { type: 'markdown', label: 'MD',   color: '#86efac', bg: 'rgba(34,197,94,.08)' },
+              ].map(({ type, label, color, bg }) => (
+                <a
+                  key={type}
+                  href={`${API_BASE}/deliverables/${deliverableId}/export/${type}`}
+                  download
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 9px', borderRadius: 7, fontSize: '.7rem', fontWeight: 700, color, background: bg, textDecoration: 'none' }}
+                >
+                  <Download size={10} /> {label}
+                </a>
+              ))}
+            </div>
           </div>
 
           {restoreMsg && (
