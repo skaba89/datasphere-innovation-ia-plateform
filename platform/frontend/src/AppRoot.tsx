@@ -18,6 +18,7 @@ import TeamPage from './pages/TeamPage';
 import TenderPage from './pages/TenderPage';
 import UserProfilePage from './pages/UserProfilePage';
 import WorkspacesPage from './pages/WorkspacesPage';
+import DataExportPage from './pages/DataExportPage';
 import OnboardingWizard, { shouldShowOnboarding, markOnboardingDone } from './components/OnboardingWizard';
 import { CrmWorkspace } from './components/CrmWorkspace';
 import GlobalSearchBar from './components/GlobalSearchBar';
@@ -204,6 +205,7 @@ export default function AppRoot() {
     { key: 'organizations', label: 'Organisations',        permission: 'crm:read' },
     { key: 'opportunities', label: 'Opportunités',         permission: 'crm:read' },
     { key: 'operations',    label: 'Opérations',           permission: 'operations:read' },
+    { key: 'data-export',   label: 'Export données',       permission: 'audit:read' },
     { key: 'team',          label: 'Équipe',               permission: 'team:read' },
     { key: 'audit',         label: 'Audit',                permission: 'audit:read' },
     { key: 'workspaces',    label: 'Workspaces',           permission: 'workspaces:read' },
@@ -375,6 +377,7 @@ export default function AppRoot() {
       {activeView === 'organizations' && <CrmWorkspace token={token} view="organizations" />}
       {activeView === 'opportunities' && <CrmWorkspace token={token} view="opportunities" />}
       {activeView === 'operations'    && <OperationsPage />}
+      {activeView === 'data-export'   && <DataExportPage />}
       {activeView === 'team'          && <TeamPage />}
       {activeView === 'audit'         && <AuditLogPage />}
       {activeView === 'workspaces'    && <WorkspacesPage />}

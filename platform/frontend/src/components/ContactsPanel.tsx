@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ExternalLink, Mail, Plus, RefreshCw, Search, Trash2, UserCheck, Users, X } from 'lucide-react';
 import { apiRequest, tokenStorage } from '../api/client';
 import type { Contact, Organization } from '../api/domainTypes';
-
+import ConfirmModal from './ConfirmModal';
 // ── Form component ────────────────────────────────────────────────────────────
 
 function ContactForm({
@@ -115,6 +115,7 @@ export default function ContactsPanel() {
   const [showForm, setShowForm] = useState(false);
   const [editContact, setEditContact] = useState<Contact | null>(null);
   const [selectedOrgId, setSelectedOrgId] = useState<number | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const token = tokenStorage.get();
 
   async function loadAll() {
@@ -132,9 +133,13 @@ export default function ContactsPanel() {
   useEffect(() => { loadAll(); }, [filterOrgId, search]);
 
   async function deleteContact(id: number) {
-    if (!confirm('Supprimer ce contact ?')) return;
+    setConfirmDeleteId(id);
+  }
+
+  async function doDeleteContact(id: number) {
     await apiRequest(`/contacts/${id}`, { method: 'DELETE' }, token);
     setContacts(cs => cs.filter(c => c.id !== id));
+    setConfirmDeleteId(null);
   }
 
   function getOrgName(id: number): string {
@@ -146,6 +151,15 @@ export default function ContactsPanel() {
 
   return (
     <div>
+      <ConfirmModal
+        open={confirmDeleteId !== null}
+        title="Supprimer ce contact ?"
+        description="Cette action est irréversible. Le contact sera définitivement supprimé."
+        confirmLabel="Supprimer"
+        variant="danger"
+        onConfirm={() => confirmDeleteId !== null && doDeleteContact(confirmDeleteId)}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
       {/* Toolbar */}
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 20, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
