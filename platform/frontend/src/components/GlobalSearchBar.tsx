@@ -34,7 +34,21 @@ function fmtTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 }
 
-export default function GlobalSearchBar() {
+// Map result type to AppRoot tab key
+const TYPE_TO_TAB: Record<string, string> = {
+  organization:  'organizations',
+  opportunity:   'opportunities',
+  tender:        'tenders',
+  deliverable:   'deliverables',
+  contact:       'commercial',
+  agent_action:  'profiles',
+};
+
+interface Props {
+  onNavigate?: (tab: string) => void;
+}
+
+export default function GlobalSearchBar({ onNavigate }: Props) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResults | null>(null);
@@ -43,6 +57,14 @@ export default function GlobalSearchBar() {
   const inputRef = useRef<HTMLInputElement>(null);
   const token = tokenStorage.get();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  function handleResultClick(item: SearchResultItem) {
+    setOpen(false);
+    const tab = TYPE_TO_TAB[item.type];
+    if (tab && onNavigate) {
+      onNavigate(tab);
+    }
+  }
 
   // Keyboard shortcut: Ctrl/Cmd + K
   useEffect(() => {
@@ -181,7 +203,7 @@ export default function GlobalSearchBar() {
                     return (
                       <div
                         key={`${cat}-${item.id}`}
-                        onClick={() => setOpen(false)}
+                        onClick={() => handleResultClick(item)}
                         style={{
                           display: 'flex', alignItems: 'flex-start', gap: 12,
                           padding: '10px 18px', cursor: 'pointer',

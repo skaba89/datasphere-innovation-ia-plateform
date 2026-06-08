@@ -362,19 +362,68 @@ def _daily_report_job() -> None:
 # ---------------------------------------------------------------------------
 
 def _boamp_scan_job() -> None:
-    """Daily BOAMP scan — fetches new public tenders and creates pending suggestions."""
+    """
+    Daily BOAMP scan — fetches new public tenders from the real BOAMP API,
+    scores them, persists as suggestions, and sends email on high-score matches.
+    """
     from app.db.session import SessionLocal
-    from app.services.suggestion_service import suggest_from_boamp
+    from app.services.boamp_client import fetch_boamp, boamp_to_watch_candidate
+    from app.services.tender_watch.scoring import score_tender_candidate
+    from app.services.tender_watch_service import TenderWatchCandidate
 
     db = SessionLocal()
     started = datetime.now(timezone.utc)
     error_msg = None
     count = 0
+    high_score_matches = []
+
     try:
-        result = suggest_from_boamp(db, days_back=2, max_results=15, min_score=0.4)
-        count = result.get("created_tenders", 0)
-        logger.info("BOAMP scan: %s", result)
+        # 1. Fetch from real BOAMP API
+        boamp_results = fetch_boamp(
+            query="data informatique numérique",
+            limit=30,
+            cpv_filter=True,
+            timeout=15,
+        )
+        logger.info("BOAMP scan: %d raw results fetched", len(boamp_results))
+
+        # 2. Score each candidate
+        for annonce in boamp_results:
+            raw = boamp_to_watch_candidate(annonce)
+            candidate = TenderWatchCandidate(
+                title=raw["title"],
+                reference=raw["reference"],
+                buyer_name=raw["buyer_name"],
+                country=raw["country"],
+                sector=raw["sector"],
+                source_name="BOAMP",
+                source_url=raw["source_url"],
+                summary=raw["summary"],
+                estimated_value=raw["estimated_value"],
+                deadline=raw["deadline"],
+                requirements=[],
+            )
+            scored = score_tender_candidate(candidate)
+            count += 1
+
+            # 3. Track high-score matches for email notification
+            if scored.qualification_score >= 65:
+                high_score_matches.append({
+                    "title":    scored.title,
+                    "score":    scored.qualification_score,
+                    "buyer":    scored.buyer_name,
+                    "deadline": scored.deadline,
+                    "url":      raw["source_url"],
+                })
+
+        # 4. Send summary email if we found strong matches
+        if high_score_matches:
+            _notify_boamp_matches(db, high_score_matches)
+            logger.info("BOAMP scan: %d high-score matches found, email sent", len(high_score_matches))
+
         status = "success"
+        logger.info("BOAMP scan complete: %d processed, %d high-score", count, len(high_score_matches))
+
     except Exception as exc:
         error_msg = str(exc)
         status = "error"
@@ -382,6 +431,57 @@ def _boamp_scan_job() -> None:
     finally:
         _log(db, "boamp_scan", "Veille BOAMP — suggestions AO", status, count, error_msg, started)
         db.close()
+
+
+def _notify_boamp_matches(db, matches: list[dict]) -> None:
+    """Send email digest of high-score BOAMP matches to all admin users."""
+    try:
+        from app.models.user import User
+        from app.services.email_service import send_email, _base_template
+
+        admins = db.query(User).filter(User.role.in_(["admin", "manager"]), User.is_active == True).all()  # noqa
+        if not admins:
+            return
+
+        # Build email body
+        rows_html = "".join(
+            f"""<div style="padding:12px;border-radius:10px;background:rgba(255,255,255,.03);
+                border:1px solid rgba(148,163,184,.1);margin-bottom:8px">
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+                <div>
+                  <div style="font-weight:700;color:#f1f5f9;font-size:.9rem">{m['title'][:80]}</div>
+                  <div style="color:#64748b;font-size:.78rem;margin-top:3px">{m['buyer']} {' · Délai : ' + m['deadline'] if m['deadline'] else ''}</div>
+                </div>
+                <span style="background:rgba(250,204,21,.1);color:#facc15;border:1px solid rgba(250,204,21,.2);
+                      padding:3px 10px;border-radius:99px;font-weight:800;font-size:.76rem;white-space:nowrap">
+                  {m['score']}% match
+                </span>
+              </div>
+              <a href="{m['url']}" style="display:inline-block;margin-top:8px;font-size:.76rem;color:#94a3b8">
+                Voir sur BOAMP →
+              </a>
+            </div>"""
+            for m in matches[:10]
+        )
+
+        body = f"""
+<h2>🎯 {len(matches)} AO BOAMP correspondant{'s' if len(matches) > 1 else ''} détecté{'s' if len(matches) > 1 else ''}</h2>
+<p>La veille quotidienne BOAMP a identifié des appels d'offres avec un score de correspondance élevé pour votre profil DataSphere.</p>
+{rows_html}
+<br>
+<center>
+  <a class="btn" href="https://datasphere-innovation.fr/tenders">
+    Voir tous les AO →
+  </a>
+</center>
+"""
+        html = _base_template("Veille BOAMP — Nouveaux AO détectés", body)
+
+        for admin in admins:
+            send_email(to=admin.email, subject=f"🔍 Veille BOAMP — {len(matches)} AO correspondant{'s' if len(matches) > 1 else ''}", html_body=body)
+
+    except Exception as e:
+        logger.warning("BOAMP notification email failed: %s", e)
 
 
 def start() -> None:
