@@ -142,8 +142,12 @@ def _build_alerts(inp: SimulationInput, net: float, breakeven: int, occupancy: f
 
 @router.get("/presets")
 def get_presets():
-    """Reference TJM presets by role and portage company rates."""
-    return {
+    """Reference TJM presets by role and portage company rates. Cached 1h."""
+    from app.core.cache import cache, PRESETS_TTL
+    cached = cache.get("calculator:presets")
+    if cached is not None:
+        return cached
+    result = {
         "roles":   ROLE_PRESETS,
         "portage": PORTAGE_RATES,
         "context": {
@@ -153,6 +157,8 @@ def get_presets():
             "vat_rate":           0.20,
         },
     }
+    cache.set("calculator:presets", result, ttl=PRESETS_TTL)
+    return result
 
 
 @router.post("/simulate", dependencies=[Depends(get_current_user)])

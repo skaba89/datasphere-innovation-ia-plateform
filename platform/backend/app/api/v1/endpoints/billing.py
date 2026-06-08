@@ -64,8 +64,12 @@ class MockUpgradeRequest(BaseModel):
 
 @router.get("/plans")
 def list_plans():
-    """Public plan catalog — no authentication required."""
-    return {
+    """Public plan catalog — no authentication required. Cached 15 min."""
+    from app.core.cache import cache, PLANS_TTL
+    cached = cache.get("billing:plans")
+    if cached is not None:
+        return cached
+    result = {
         "plans": [
             {
                 "key":          key,
@@ -87,6 +91,8 @@ def list_plans():
         ],
         "stripe_enabled": get_settings().stripe_enabled,
     }
+    cache.set("billing:plans", result, ttl=PLANS_TTL)
+    return result
 
 
 @router.get("/subscription", dependencies=[Depends(get_current_user)])

@@ -109,9 +109,16 @@ def detailed_health(db: Session = Depends(get_db)):
     except Exception:
         pass
 
+    # ── In-memory cache stats ─────────────────────────────────────────────────
+    try:
+        from app.core.cache import cache
+        checks["cache"] = {"status": "ok", **cache.stats()}
+    except Exception:
+        checks["cache"] = {"status": "unavailable"}
+
     return {
-        "overall": overall,
-        "version": "1.8.0",
-        "checks": checks,
+        "overall":   overall,
+        "version":   "1.9.0",
+        "checks":    checks,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
