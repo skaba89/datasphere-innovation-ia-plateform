@@ -3,6 +3,11 @@
 > **Cabinet de conseil augmenté par IA** — Missions Data, IT, IA et réponse aux appels d'offres  
 > France & Afrique francophone
 
+![Version](https://img.shields.io/badge/version-1.9.0-facc15?style=flat-square)
+![Tests](https://img.shields.io/badge/tests-1010%20✅-22c55e?style=flat-square)
+![Build](https://img.shields.io/badge/build-481kB-3b82f6?style=flat-square)
+![Routes](https://img.shields.io/badge/routes-182-8b5cf6?style=flat-square)
+
 [![CI](https://github.com/skaba89/datasphere-innovation-ia-plateform/actions/workflows/ci.yml/badge.svg)](https://github.com/skaba89/datasphere-innovation-ia-plateform/actions)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-blue)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green)](https://fastapi.tiangolo.com)
