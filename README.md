@@ -32,18 +32,28 @@ cd datasphere-innovation-ia-plateform
 # 1. Copier et configurer l'environnement
 cp .env.example .env
 # Éditer .env : définir SECRET_KEY et POSTGRES_PASSWORD au minimum
+# ⚠️  DATABASE_URL dans .env.example utilise déjà "postgres" (service Docker)
+#     NE PAS changer "postgres" en "localhost" — localhost = intérieur du container
 
 # 2. Démarrer les services
 docker compose up -d
 
-# 3. Créer l'admin initial (une seule fois)
+# 3. Vérifier que le backend est up
+docker compose logs backend --tail=20
+
+# 4. Créer l'admin initial (une seule fois)
 curl -X POST http://localhost:8000/api/v1/auth/bootstrap-admin \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@datasphere.fr","password":"Admin123456!","first_name":"Admin","last_name":"DataSphere","role":"admin","is_active":true}'
 
-# 4. Ouvrir l'application
+# 5. Ouvrir l'application
 open http://localhost:5173
 ```
+
+> **Docker networking** : en Docker Compose, les services communiquent par leur **nom de service**.
+> Le backend joindra PostgreSQL via `postgres:5432` (nom du service), jamais `localhost:5432`.
+> Le `docker-compose.yml` injecte automatiquement la bonne `DATABASE_URL` — même si votre `.env`
+> local contient `localhost`, il sera surchargé par la valeur correcte.
 
 ### Lancement dev (sans Docker)
 
