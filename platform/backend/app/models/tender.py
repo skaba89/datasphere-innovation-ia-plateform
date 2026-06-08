@@ -32,6 +32,9 @@ class Tender(Base):
     # ────────────────────────────────────────────────────────────────────────
 
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    workspace_id     = Column(Integer, ForeignKey("workspaces.id", ondelete="SET NULL"), nullable=True, index=True)
+    created_by_email = Column(String(255), nullable=True)
+
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     opportunity = relationship("Opportunity")

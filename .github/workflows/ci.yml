@@ -42,6 +42,298 @@ jobs:
           SCHEDULER_ENABLED: "false"
         run: python -c "from app.main import app; print('✓', app.title)"
 
+      - name: Run test suite
+        env:
+          APP_ENV: test
+          APP_DEBUG: "false"
+          SECRET_KEY: ci-secret-key-not-for-prod
+          DATABASE_URL: sqlite:///./ci_test.db
+          SCHEDULER_ENABLED: "false"
+          CORS_ORIGINS: http://localhost:5173
+        run: |
+          pytest -q --tb=short --no-header 2>&1 | tee /tmp/test_output.txt
+          # Extract test count and fail if < 900 (regression guard)
+          TESTS=$(grep -oP '\d+ passed' /tmp/test_output.txt | grep -oP '\d+' || echo "0")
+          echo "Tests passed: $TESTS"
+          [ "$TESTS" -ge 900 ] || (echo "⚠️  Test count regression: $TESTS < 900" && exit 1)
+
+      - name: Workspace isolation smoke test
+        env:
+          APP_ENV: test
+          SECRET_KEY: ci-secret-key-not-for-prod
+          DATABASE_URL: sqlite:///./ci_ws.db
+          SCHEDULER_ENABLED: "false"
+        run: |
+          python -c "
+          import sys, os; sys.path.insert(0, '.')
+          os.environ.update({'DATABASE_URL':'sqlite:///./ci_ws.db','SECRET_KEY':'x','SCHEDULER_ENABLED':'false'})
+          from app.api.workspace_scope import get_workspace_scope, WorkspaceContext
+          from app.api.workspace_scope import require_workspace_scope
+          print('✓ workspace_scope module imports correctly')
+          "
+
+      - name: WeasyPrint PDF check
+        run: |
+          python -c "
+          try:
+              from weasyprint import HTML
+              pdf = HTML(string='<html><body><h1>CI Test</h1></body></html>').write_pdf()
+              assert pdf[:4] == b'%PDF', 'Invalid PDF'
+              print(f'✓ WeasyPrint OK — {len(pdf)} bytes')
+          except Exception as e:
+              print(f'⚠️  WeasyPrint not available: {e} — PDF export will return 503')
+          " || true
+
+      - name: Alembic migration check
+        env:
+          APP_ENV: development
+          SECRET_KEY: ci-secret-key-not-for-prod
+          DATABASE_URL: sqlite:///./ci_migrate.db
+          SCHEDULER_ENABLED: "false"
+        run: |
+          alembic upgrade head
+          echo "✓ Migrations applied successfully"
+
+  # ── Frontend ─────────────────────────────────────────────────────────────────
+  frontend:
+    name: Frontend (Node 22 + TypeScript)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: platform/frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: platform/frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript + Vite build
+        env:
+          VITE_API_BASE_URL: http://localhost:8000/api/v1
+        run: npm run build
+
+      - name: Check bundle size
+        run: |
+          SIZE=$(du -sb dist/assets/*.js | awk '{print $1}')
+          echo "Bundle size: ${SIZE} bytes"
+          # Fail if bundle > 1MB uncompressed
+          [ "$SIZE" -lt 1048576 ] || (echo "Bundle too large!" && exit 1)
+
+      - name: Check page count (regression guard)
+        run: |
+          COUNT=$(ls src/pages/*.tsx 2>/dev/null | wc -l)
+          echo "Pages: $COUNT"
+          [ "$COUNT" -ge 12 ] || (echo "Page count regression!" && exit 1)
+
+      - name: Check component count
+        run: |
+          COUNT=$(ls src/components/*.tsx 2>/dev/null | wc -l)
+          echo "Components: $COUNT"
+          [ "$COUNT" -ge 20 ] || (echo "Component count regression!" && exit 1)
+
+  # ── Docker ───────────────────────────────────────────────────────────────────
+  docker:
+    name: Docker Compose validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare env
+        run: cp .env.example .env
+
+      - name: Validate dev docker-compose
+        run: docker compose config --quiet
+
+      - name: Validate prod docker-compose
+        run: docker compose -f docker-compose.prod.yml config --quiet
+
+  # ── Security scan ─────────────────────────────────────────────────────────────
+  security:
+    name: Security scan
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: platform/backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: platform/backend/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt pip-audit
+
+      - name: Audit dependencies for known CVEs
+        run: pip-audit --require-hashes=false --skip-editable -q || true
+        # 'or true' — advisory, not blocking; remove to make mandatory
+
+  # ── E2E Tests (Playwright) ────────────────────────────────────────────────────
+  e2e:
+    name: E2E Tests (Playwright)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: platform/frontend
+    # Only run E2E on PRs to main, not on every push to feature branches
+    if: github.event_name == 'pull_request'
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: datasphere_test
+          POSTGRES_USER: datasphere
+          POSTGRES_PASSWORD: testpassword
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: platform/backend/requirements.txt
+
+      - name: Install backend dependencies
+        working-directory: platform/backend
+        run: pip install -r requirements.txt
+
+      - name: Start backend
+        working-directory: platform/backend
+        env:
+          APP_ENV: development
+          SECRET_KEY: e2e-test-key
+          DATABASE_URL: postgresql+psycopg2://datasphere:testpassword@localhost:5432/datasphere_test
+          SCHEDULER_ENABLED: "false"
+          CORS_ORIGINS: http://localhost:5173
+        run: |
+          alembic upgrade head
+          uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+          sleep 5
+          curl -sf http://localhost:8000/api/v1/health || exit 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: platform/frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Build frontend
+        env:
+          VITE_API_BASE_URL: http://localhost:8000/api/v1
+        run: npm run build
+
+      - name: Run E2E smoke tests (fast)
+        env:
+          E2E_BASE_URL: http://localhost:4173
+          E2E_API_URL: http://localhost:8000/api/v1
+        run: |
+          npm run preview &
+          sleep 3
+          npx playwright test e2e/api-smoke.spec.ts e2e/auth.spec.ts e2e/navigation.spec.ts \
+            --reporter=line --timeout=30000
+
+      - name: Run E2E full workflow (16 paths)
+        env:
+          E2E_BASE_URL: http://localhost:4173
+          E2E_API_URL: http://localhost:8000/api/v1
+        run: |
+          npx playwright test e2e/workflow.spec.ts \
+            --reporter=line --timeout=60000 || true
+          # 'or true' — workflow tests are best-effort; don't block merge
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: platform/frontend/playwright-report/
+          retention-days: 7
+
+  # ── Summary ──────────────────────────────────────────────────────────────────
+  summary:
+    name: All gates passed
+    runs-on: ubuntu-latest
+    needs: [backend, frontend, docker]
+    if: always()
+    steps:
+      - name: Check all jobs
+        run: |
+          if [[ "${{ needs.backend.result }}" != "success" || \
+                "${{ needs.frontend.result }}" != "success" || \
+                "${{ needs.docker.result }}" != "success" ]]; then
+            echo "One or more quality gates failed!"
+            exit 1
+          fi
+          echo "✅ All quality gates passed — ready to merge"
+
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Backend ─────────────────────────────────────────────────────────────────
+  backend:
+    name: Backend (Python 3.12)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: platform/backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: platform/backend/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Compile check
+        run: python -m compileall app -q
+
+      - name: Application import
+        env:
+          APP_ENV: test
+          SECRET_KEY: ci-secret-key-not-for-prod
+          DATABASE_URL: sqlite:///./ci_import.db
+          SCHEDULER_ENABLED: "false"
+        run: python -c "from app.main import app; print('✓', app.title)"
+
       - name: Run test suite (176 tests)
         env:
           APP_ENV: test

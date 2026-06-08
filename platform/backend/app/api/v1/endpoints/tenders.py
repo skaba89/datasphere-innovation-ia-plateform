@@ -2,6 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user
+from app.api.workspace_scope import get_workspace_scope, WorkspaceContext
+from app.models.user import User
+from typing import Optional
 from app.crud.opportunity import get_opportunity
 from app.crud.tender import (
     create_tender,
@@ -29,8 +32,10 @@ router = APIRouter(prefix="/tenders", tags=["tenders"], dependencies=[Depends(ge
 
 
 @router.get("", response_model=list[TenderRead])
-def read_tenders(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return list_tenders(db, skip=skip, limit=limit)
+def read_tenders(skip: int = 0, limit: int = 100, db: Session = Depends(get_db),
+    ws: Optional[WorkspaceContext] = Depends(get_workspace_scope),
+):
+    items = list_tenders(db, skip=skip, limit=limit)
 
 
 @router.post("", response_model=TenderRead, status_code=status.HTTP_201_CREATED)

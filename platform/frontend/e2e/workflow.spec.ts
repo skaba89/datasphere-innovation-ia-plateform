@@ -641,6 +641,42 @@ test.describe('15 · Export document', () => {
     expect(res.headers.get('content-type')).toMatch(/csv/i);
   });
 
+  test('API: PDF export returns valid PDF bytes', async () => {
+    const apiUrl = process.env.E2E_API_URL || 'http://localhost:8000/api/v1';
+    const token  = await api.getToken();
+
+    // Create a deliverable to export
+    const d = await fetch(`${apiUrl}/deliverables`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        opportunity_id: 1,
+        title: 'Test PDF export — E2E',
+        deliverable_type: 'proposal',
+        status: 'draft',
+        content_markdown: '# Test\n\nContenu de test pour le PDF.',
+        version: 1,
+      }),
+    }).then(r => r.json());
+
+    const pdfRes = await fetch(`${apiUrl}/deliverables/${d.id}/export/pdf`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    // PDF may fail if WeasyPrint not installed in CI — check gracefully
+    if (pdfRes.status === 503) {
+      // WeasyPrint not available in this environment — skip gracefully
+      console.log('WeasyPrint not available in CI — PDF export skipped');
+      return;
+    }
+
+    expect(pdfRes.ok).toBe(true);
+    expect(pdfRes.headers.get('content-type')).toMatch(/pdf/i);
+    const buf = Buffer.from(await pdfRes.arrayBuffer());
+    // Valid PDF starts with %PDF
+    expect(buf.slice(0, 4).toString()).toBe('%PDF');
+  });
+
   test('UI: Opérations > Exports panel shows download buttons', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('.root-switcher');

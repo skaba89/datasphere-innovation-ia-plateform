@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, Float, Integer, String, Text
+from sqlalchemy import Column, ForeignKey, DateTime, Float, Integer, String, Text
 from sqlalchemy.orm import relationship
 
 from app.db.session import Base
@@ -30,6 +30,9 @@ class Organization(Base):
     # ────────────────────────────────────────────────────────────────────────
 
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    workspace_id     = Column(Integer, ForeignKey("workspaces.id", ondelete="SET NULL"), nullable=True, index=True)
+    created_by_email = Column(String(255), nullable=True)
+
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     contacts = relationship("Contact", back_populates="organization", cascade="all, delete-orphan")
