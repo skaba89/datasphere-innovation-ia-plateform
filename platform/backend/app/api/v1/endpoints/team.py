@@ -73,6 +73,9 @@ def invite_team_member(
             detail=f"Invalid role. Must be one of: {ROLES}",
         )
     from app.crud.audit_log import write_log
+    from app.services.email_service import EmailType, send_typed_email
+    import threading
+
     user = create_user(db, payload)
     write_log(
         db, action="INVITE", resource_type="user",
@@ -80,6 +83,20 @@ def invite_team_member(
         actor_name=admin.email,
         detail=f"role={user.role}",
     )
+
+    # Send welcome email asynchronously (fire-and-forget)
+    def _send_welcome():
+        send_typed_email(
+            to=user.email,
+            email_type=EmailType.TEAM_INVITE,
+            params={
+                "inviter_name": f"{admin.first_name} {admin.last_name}".strip() or admin.email,
+                "workspace_name": "DataSphere Innovation IA Platform",
+                "invite_url": "https://datasphere-innovation.fr",
+            },
+        )
+    threading.Thread(target=_send_welcome, daemon=True).start()
+
     return user
 
 
