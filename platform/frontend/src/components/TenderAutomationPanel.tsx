@@ -9,37 +9,40 @@ type Props = {
   role?: string | null;
 };
 
+interface TenderOption {
+  id:        number;
+  title:     string;
+  reference: string;
+  status:    string;
+}
+
+const STATUS_LABEL: Record<string, string> = {
+  draft: 'Brouillon', go: 'Go', no_go: 'No-Go',
+  submitted: 'Soumis', won: 'Gagné', lost: 'Perdu',
+};
+
 export function TenderAutomationPanel({ token, role }: Props) {
-  const [tenderId, setTenderId] = useState('');
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [tenders,  setTenders]  = useState<TenderOption[]>([]);
+  const [tenderId, setTenderId] = useState<string>('');
+  const [message,  setMessage]  = useState<string | null>(null);
+  const [error,    setError]    = useState<string | null>(null);
+  const [loading,  setLoading]  = useState(false);
+  const [loadingList, setLoadingList] = useState(true);
   const canWriteTenders = can(role, 'tenders:write');
 
-  // Auto-fill with first available tender
+  // Load all tenders and auto-select the first
   useEffect(() => {
     if (!token) return;
-    apiRequest<{ id: number; title: string }[]>('/tenders?limit=1', {}, token)
+    setLoadingList(true);
+    apiRequest<TenderOption[]>('/tenders?limit=50', {}, token)
       .then(list => {
-        if (list?.length > 0 && !tenderId) {
-          setTenderId(String(list[0].id));
-        }
+        if (!list?.length) { setLoadingList(false); return; }
+        setTenders(list);
+        setTenderId(String(list[0].id));   // auto-select first
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLoadingList(false));
   }, [token]);
-
-  function getValidatedTenderId(): string | null {
-    const cleaned = tenderId.trim();
-    if (!cleaned) {
-      setError("Renseigne d'abord l'ID de l'appel d'offres.");
-      return null;
-    }
-    if (!/^\d+$/.test(cleaned) || Number(cleaned) <= 0) {
-      setError("L'ID de l'appel d'offres doit être un nombre positif.");
-      return null;
-    }
-    return cleaned;
-  }
 
   async function runAction(action: 'goNoGo' | 'compliance') {
     setMessage(null);
@@ -49,22 +52,23 @@ export function TenderAutomationPanel({ token, role }: Props) {
       setError("Ton rôle ne permet pas d'exécuter les automatisations d'appels d'offres.");
       return;
     }
-
-    const validTenderId = getValidatedTenderId();
-    if (!validTenderId) return;
+    if (!tenderId) {
+      setError("Aucun appel d'offres disponible. Créez-en un d'abord.");
+      return;
+    }
 
     setLoading(true);
     try {
       if (action === 'goNoGo') {
         const created = await apiRequest<GoNoGoCriterion[]>(
-          `/tender-templates/tenders/${validTenderId}/go-no-go/default`,
+          `/tender-templates/tenders/${tenderId}/go-no-go/default`,
           { method: 'POST' },
           token,
         );
         setMessage(`${created.length} critère(s) Go / No-Go ajouté(s).`);
       } else {
         const created = await apiRequest<ComplianceMatrixItem[]>(
-          `/tender-templates/tenders/${validTenderId}/compliance/from-requirements`,
+          `/tender-templates/tenders/${tenderId}/compliance/from-requirements`,
           { method: 'POST' },
           token,
         );
@@ -77,13 +81,16 @@ export function TenderAutomationPanel({ token, role }: Props) {
     }
   }
 
+  const selectedTender = tenders.find(t => String(t.id) === tenderId);
+
   return (
     <section className="panel automation-panel">
       <div>
         <p className="eyebrow">Automatisation contrôlée</p>
         <h2>Accélérer la préparation d'un appel d'offres</h2>
         <p className="subtitle compact-subtitle">
-          Renseigne l'ID du tender, puis applique les templates standards. Les doublons sont évités côté backend.
+          Sélectionne un AO, puis applique les templates standards.
+          Les doublons sont évités côté backend.
         </p>
       </div>
 
@@ -93,27 +100,51 @@ export function TenderAutomationPanel({ token, role }: Props) {
 
       <div className="automation-actions">
         <label>
-          ID appel d'offres
-          <input
-            value={tenderId}
-            onChange={(event) => setTenderId(event.target.value)}
-            placeholder="Ex: 1"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            aria-invalid={Boolean(error)}
-            disabled={!canWriteTenders || loading}
-          />
+          Appel d'offres
+          {loadingList ? (
+            <select disabled>
+              <option>Chargement…</option>
+            </select>
+          ) : tenders.length === 0 ? (
+            <select disabled>
+              <option>— Aucun AO disponible —</option>
+            </select>
+          ) : (
+            <select
+              value={tenderId}
+              onChange={e => { setTenderId(e.target.value); setMessage(null); setError(null); }}
+              disabled={!canWriteTenders || loading}
+              aria-label="Sélectionner un appel d'offres"
+            >
+              {tenders.map(t => (
+                <option key={t.id} value={String(t.id)}>
+                  #{t.id} — {t.title}
+                  {t.reference ? ` (${t.reference})` : ''}
+                  {t.status ? ` · ${STATUS_LABEL[t.status] ?? t.status}` : ''}
+                </option>
+              ))}
+            </select>
+          )}
         </label>
-        <button disabled={!canWriteTenders || loading} onClick={() => runAction('goNoGo')} type="button">
+
+        <button
+          disabled={!canWriteTenders || loading || !tenderId}
+          onClick={() => runAction('goNoGo')}
+          type="button"
+        >
           {loading ? 'Traitement…' : 'Appliquer Go / No-Go'}
         </button>
-        <button disabled={!canWriteTenders || loading} onClick={() => runAction('compliance')} type="button">
+        <button
+          disabled={!canWriteTenders || loading || !tenderId}
+          onClick={() => runAction('compliance')}
+          type="button"
+        >
           {loading ? 'Traitement…' : 'Générer conformité'}
         </button>
       </div>
 
       {message && <p className="success">{message}</p>}
-      {error && <p className="error">{error}</p>}
+      {error   && <p className="error">{error}</p>}
     </section>
   );
 }
