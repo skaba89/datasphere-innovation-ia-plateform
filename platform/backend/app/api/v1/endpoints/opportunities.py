@@ -24,10 +24,16 @@ router = APIRouter(
 
 
 @router.get("", response_model=list[OpportunityRead])
-def read_opportunities(skip: int = 0, limit: int = 100, db: Session = Depends(get_db),
+def read_opportunities(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
     ws: Optional[WorkspaceContext] = Depends(get_workspace_scope),
 ):
     items = list_opportunities(db, skip=skip, limit=limit)
+    if ws is not None:
+        items = [i for i in items if i.workspace_id is None or i.workspace_id == ws.id]
+    return items
 
 
 @router.post("", response_model=OpportunityRead, status_code=status.HTTP_201_CREATED)

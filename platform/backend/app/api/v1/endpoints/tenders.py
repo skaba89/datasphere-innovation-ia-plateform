@@ -32,10 +32,16 @@ router = APIRouter(prefix="/tenders", tags=["tenders"], dependencies=[Depends(ge
 
 
 @router.get("", response_model=list[TenderRead])
-def read_tenders(skip: int = 0, limit: int = 100, db: Session = Depends(get_db),
+def read_tenders(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
     ws: Optional[WorkspaceContext] = Depends(get_workspace_scope),
 ):
     items = list_tenders(db, skip=skip, limit=limit)
+    if ws is not None:
+        items = [i for i in items if i.workspace_id is None or i.workspace_id == ws.id]
+    return items
 
 
 @router.post("", response_model=TenderRead, status_code=status.HTTP_201_CREATED)

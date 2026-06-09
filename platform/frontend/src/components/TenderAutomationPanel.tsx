@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { apiRequest } from '../api/client';
 import type { ComplianceMatrixItem, GoNoGoCriterion } from '../api/domainTypes';
@@ -15,6 +15,18 @@ export function TenderAutomationPanel({ token, role }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const canWriteTenders = can(role, 'tenders:write');
+
+  // Auto-fill with first available tender
+  useEffect(() => {
+    if (!token) return;
+    apiRequest<{ id: number; title: string }[]>('/tenders?limit=1', {}, token)
+      .then(list => {
+        if (list?.length > 0 && !tenderId) {
+          setTenderId(String(list[0].id));
+        }
+      })
+      .catch(() => {});
+  }, [token]);
 
   function getValidatedTenderId(): string | null {
     const cleaned = tenderId.trim();
