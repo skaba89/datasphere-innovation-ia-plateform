@@ -190,56 +190,7 @@ export default function SettingsPage() {
       </div>
 
       {/* ── Providers LLM ── */}
-      <div style={S.section}>
-        <div style={S.header}>
-          <Cpu size={16} color="#8b5cf6" />
-          <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: '.9rem' }}>Providers IA</span>
-          {providers && (
-            <span style={{ marginLeft: 'auto', fontSize: '.75rem', color: '#64748b' }}>
-              {providers.summary.configured} / {providers.summary.total} configurés
-              {providers.simulation_mode && (
-                <span style={{ marginLeft: 8, padding: '2px 8px', borderRadius: 99, background: 'rgba(251,191,36,.1)', color: '#fde68a', fontSize: '.7rem', fontWeight: 700 }}>
-                  Mode simulation
-                </span>
-              )}
-            </span>
-          )}
-        </div>
-        <div style={S.body}>
-          {providers?.simulation_mode && (
-            <div style={{ padding: '10px 14px', background: 'rgba(251,191,36,.05)', border: '1px solid rgba(251,191,36,.15)', borderRadius: 10, marginBottom: 14, fontSize: '.82rem', color: '#fde68a', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-              <Zap size={13} style={{ flexShrink: 0, marginTop: 1 }} />
-              Aucune clé LLM configurée — les agents fonctionnent en mode simulation.
-              Ajouter une clé dans le fichier <code style={{ background: 'rgba(0,0,0,.3)', padding: '1px 5px', borderRadius: 4 }}>.env</code> pour activer l'IA réelle.
-            </div>
-          )}
-          <div style={{ display: 'grid', gap: 0 }}>
-            {providers?.providers.map((p, i, arr) => (
-              <div key={p.id} style={{ ...S.row, borderBottom: i < arr.length - 1 ? undefined : 'none' }}>
-                <div>
-                  <div style={{ fontSize: '.85rem', fontWeight: 600, color: '#e2e8f0' }}>{p.name}</div>
-                  {p.active_model && (
-                    <div style={{ fontSize: '.72rem', color: '#475569', fontFamily: 'monospace', marginTop: 2 }}>{p.active_model}</div>
-                  )}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {providers.active_provider === p.id && (
-                    <span style={{ fontSize: '.68rem', padding: '1px 7px', borderRadius: 99, background: 'rgba(250,204,21,.1)', color: '#facc15', fontWeight: 700 }}>Actif</span>
-                  )}
-                  <span style={S.badge(p.configured)}>
-                    {p.configured ? <Check size={10} /> : <AlertTriangle size={10} />}
-                    {p.configured ? 'Configuré' : 'Non configuré'}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div style={{ marginTop: 16, padding: '12px 14px', background: 'rgba(0,0,0,.2)', borderRadius: 10, fontSize: '.78rem', color: '#475569', lineHeight: 1.6 }}>
-            <strong style={{ color: '#94a3b8' }}>Providers gratuits recommandés :</strong><br />
-            GLM-4-Flash (open.bigmodel.ai) · Groq Llama 3 (console.groq.com) · Gemini Flash (aistudio.google.com)
-          </div>
-        </div>
-      </div>
+      <ProvidersSection token={token} />
 
       {/* ── Email SMTP ── */}
       <div style={S.section}>
@@ -497,6 +448,283 @@ function ApiKeysSection({ token }: { token: string | null }) {
           <code style={{ background: 'rgba(0,0,0,.3)', padding: '1px 5px', borderRadius: 3 }}>Authorization: Bearer {'{votre_clé}'}</code>
           {' '}dans chaque requête vers <code style={{ background: 'rgba(0,0,0,.3)', padding: '1px 5px', borderRadius: 3 }}>https://api.datasphere-innovation.fr/api/v1</code>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ── ProvidersSection ──────────────────────────────────────────────────────────
+
+interface ProviderData {
+  name: string; label: string; tier: string; tier_label: string;
+  configured: boolean; models: string[]; default_model: string;
+  active_model: string; context_window: number;
+  strengths: string[]; notes: string; api_key_env: string;
+}
+
+const TIER_COLOR: Record<string, string> = {
+  'free':       '#86efac',
+  'near-free':  '#6ee7b7',
+  'budget':     '#93c5fd',
+  'standard':   '#c4b5fd',
+  'premium':    '#fca5a5',
+};
+
+const PROVIDER_LINKS: Record<string, string> = {
+  groq:       'https://console.groq.com/keys',
+  gemini:     'https://aistudio.google.com/apikey',
+  openrouter: 'https://openrouter.ai/keys',
+  openai:     'https://platform.openai.com/api-keys',
+  anthropic:  'https://console.anthropic.com/settings/keys',
+  mistral:    'https://console.mistral.ai/api-keys',
+  glm:        'https://open.bigmodel.ai/usercenter/apikeys',
+  qwen:       'https://dashscope.console.aliyun.com/apiKey',
+  together:   'https://api.together.xyz/settings/api-keys',
+  cohere:     'https://dashboard.cohere.com/api-keys',
+  perplexity: 'https://www.perplexity.ai/settings/api',
+};
+
+function ProvidersSection({ token }: { token: string | null }) {
+  const [providers, setProviders] = useState<ProviderData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [keys, setKeys] = useState<Record<string, string>>({});
+  const [models, setModels] = useState<Record<string, string>>({});
+  const [testing, setTesting] = useState<string | null>(null);
+  const [testResults, setTestResults] = useState<Record<string, { success: boolean; message: string; latency_ms?: number }>>({});
+  const [saving, setSaving] = useState<string | null>(null);
+  const [saveMsg, setSaveMsg] = useState<Record<string, string>>({});
+  const [showKey, setShowKey] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    apiRequest<{ providers: ProviderData[] }>('/providers', {}, token)
+      .then(d => setProviders(d.providers ?? []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [token]);
+
+  async function handleTest(name: string) {
+    setTesting(name);
+    try {
+      const r = await apiRequest<{ success: boolean; message: string; latency_ms: number }>(
+        `/providers/${name}/test`, { method: 'POST' }, token
+      );
+      setTestResults(prev => ({ ...prev, [name]: r }));
+    } catch (e) {
+      setTestResults(prev => ({ ...prev, [name]: { success: false, message: String(e) } }));
+    } finally { setTesting(null); }
+  }
+
+  async function handleSave(name: string) {
+    if (!keys[name]?.trim()) return;
+    setSaving(name);
+    try {
+      await apiRequest('/providers/config', {
+        method: 'POST',
+        body: JSON.stringify({ provider: name, api_key: keys[name].trim(), model: models[name] || undefined }),
+      }, token);
+      setSaveMsg(prev => ({ ...prev, [name]: '✓ Clé enregistrée pour cette session' }));
+      // Refresh providers list
+      apiRequest<{ providers: ProviderData[] }>('/providers', {}, token)
+        .then(d => setProviders(d.providers ?? [])).catch(() => {});
+      setTimeout(() => setSaveMsg(prev => ({ ...prev, [name]: '' })), 3000);
+    } catch (e) {
+      setSaveMsg(prev => ({ ...prev, [name]: `❌ ${String(e).slice(0, 80)}` }));
+    } finally { setSaving(null); }
+  }
+
+  const configuredCount = providers.filter(p => p.configured).length;
+
+  const Ps = {
+    wrap: { background: 'rgba(12,20,37,.92)', border: '1px solid rgba(148,163,184,.1)', borderRadius: 16, marginBottom: 20, overflow: 'hidden' } as React.CSSProperties,
+    hdr:  { padding: '16px 22px', borderBottom: '1px solid rgba(148,163,184,.08)', display: 'flex', alignItems: 'center', gap: 10 } as React.CSSProperties,
+    body: { padding: '14px 22px' } as React.CSSProperties,
+  };
+
+  return (
+    <div style={Ps.wrap}>
+      <div style={Ps.hdr}>
+        <Cpu size={16} color="#8b5cf6" />
+        <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: '.9rem', flex: 1 }}>Providers IA</span>
+        <span style={{ fontSize: '.74rem', color: configuredCount > 0 ? '#86efac' : '#fde68a' }}>
+          {configuredCount}/{providers.length} configurés
+          {configuredCount === 0 && <span style={{ marginLeft: 6, color: '#fde68a' }}>· Mode simulation actif</span>}
+        </span>
+      </div>
+      <div style={Ps.body}>
+
+        {configuredCount === 0 && (
+          <div style={{ padding: '10px 14px', background: 'rgba(251,191,36,.05)', border: '1px solid rgba(251,191,36,.15)', borderRadius: 10, marginBottom: 16, fontSize: '.8rem', color: '#fde68a', lineHeight: 1.6 }}>
+            <strong>Aucun provider actif</strong> — les agents fonctionnent en mode simulation.<br />
+            Commence par <strong>Groq</strong> (gratuit, aucune CB) ou <strong>Gemini</strong> (1500 req/jour gratuit).
+          </div>
+        )}
+
+        {loading ? (
+          <div style={{ textAlign: 'center', color: '#475569', padding: 16, fontSize: '.82rem' }}>Chargement…</div>
+        ) : (
+          <div style={{ display: 'grid', gap: 6 }}>
+            {providers.map(p => {
+              const isExp = expanded === p.name;
+              const testR = testResults[p.name];
+              const isFirst = providers.indexOf(p) === 0;
+
+              return (
+                <div key={p.name} style={{
+                  border: `1px solid ${p.configured ? 'rgba(134,239,172,.2)' : isExp ? 'rgba(148,163,184,.15)' : 'rgba(148,163,184,.08)'}`,
+                  borderRadius: 11,
+                  background: p.configured ? 'rgba(34,197,94,.03)' : 'rgba(12,20,37,.6)',
+                  overflow: 'hidden',
+                }}>
+                  {/* Row header */}
+                  <div
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer' }}
+                    onClick={() => setExpanded(isExp ? null : p.name)}
+                  >
+                    {/* Tier badge */}
+                    <span style={{ width: 10, height: 10, borderRadius: '50%', background: TIER_COLOR[p.tier] || '#475569', flexShrink: 0 }} />
+
+                    {/* Name + model */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '.86rem', fontWeight: 700, color: p.configured ? '#e2e8f0' : '#64748b' }}>
+                          {p.label}
+                        </span>
+                        <span style={{ fontSize: '.66rem', padding: '1px 6px', borderRadius: 99, background: `${TIER_COLOR[p.tier] || '#475569'}15`, color: TIER_COLOR[p.tier] || '#475569', border: `1px solid ${TIER_COLOR[p.tier] || '#475569'}30`, fontWeight: 700 }}>
+                          {p.tier_label}
+                        </span>
+                      </div>
+                      {p.configured && p.active_model && (
+                        <div style={{ fontSize: '.7rem', color: '#475569', fontFamily: 'monospace', marginTop: 1 }}>{p.active_model}</div>
+                      )}
+                    </div>
+
+                    {/* Status + test result */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                      {testR && (
+                        <span style={{ fontSize: '.7rem', color: testR.success ? '#86efac' : '#fca5a5', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {testR.success ? `✓ ${testR.latency_ms}ms` : '✗'}
+                        </span>
+                      )}
+                      <span style={{ fontSize: '.7rem', padding: '2px 8px', borderRadius: 99, border: `1px solid ${p.configured ? 'rgba(34,197,94,.3)' : 'rgba(148,163,184,.15)'}`, color: p.configured ? '#86efac' : '#475569', background: p.configured ? 'rgba(34,197,94,.08)' : 'none' }}>
+                        {p.configured ? '✓ Actif' : '—'}
+                      </span>
+                      <span style={{ color: '#475569', fontSize: '.7rem' }}>{isExp ? '▲' : '▼'}</span>
+                    </div>
+                  </div>
+
+                  {/* Expanded body */}
+                  {isExp && (
+                    <div style={{ padding: '0 14px 14px', borderTop: '1px solid rgba(148,163,184,.08)' }}>
+                      {/* Notes */}
+                      {p.notes && (
+                        <div style={{ margin: '10px 0', padding: '8px 12px', background: 'rgba(0,0,0,.2)', borderRadius: 8, fontSize: '.76rem', color: '#94a3b8', lineHeight: 1.5 }}>
+                          {p.notes}
+                        </div>
+                      )}
+
+                      {/* Strengths */}
+                      {p.strengths?.length > 0 && (
+                        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 12 }}>
+                          {p.strengths.map(s => (
+                            <span key={s} style={{ fontSize: '.66rem', padding: '2px 8px', borderRadius: 99, background: 'rgba(148,163,184,.06)', color: '#64748b', border: '1px solid rgba(148,163,184,.1)' }}>
+                              {s}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* API Key input */}
+                      <div style={{ display: 'grid', gap: 8 }}>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <div style={{ flex: 1, position: 'relative' }}>
+                            <input
+                              type={showKey[p.name] ? 'text' : 'password'}
+                              value={keys[p.name] ?? ''}
+                              onChange={e => setKeys(prev => ({ ...prev, [p.name]: e.target.value }))}
+                              placeholder={`${p.api_key_env}=sk-...`}
+                              style={{ width: '100%', padding: '8px 36px 8px 12px', background: 'rgba(255,255,255,.05)', border: '1.5px solid rgba(148,163,184,.15)', borderRadius: 9, color: '#f1f5f9', fontSize: '.8rem', outline: 'none', fontFamily: 'monospace', boxSizing: 'border-box' }}
+                            />
+                            <button
+                              onClick={() => setShowKey(prev => ({ ...prev, [p.name]: !prev[p.name] }))}
+                              style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '.7rem', padding: 0 }}
+                            >
+                              {showKey[p.name] ? '🙈' : '👁'}
+                            </button>
+                          </div>
+                          <button
+                            onClick={() => handleSave(p.name)}
+                            disabled={!keys[p.name]?.trim() || saving === p.name}
+                            style={{ padding: '8px 14px', borderRadius: 9, border: 'none', background: keys[p.name]?.trim() ? '#8b5cf6' : 'rgba(148,163,184,.1)', color: keys[p.name]?.trim() ? 'white' : '#475569', cursor: 'pointer', fontWeight: 700, fontSize: '.78rem', flexShrink: 0 }}
+                          >
+                            {saving === p.name ? '…' : 'Sauver'}
+                          </button>
+                          {p.configured && (
+                            <button
+                              onClick={() => handleTest(p.name)}
+                              disabled={testing === p.name}
+                              style={{ padding: '8px 12px', borderRadius: 9, border: '1px solid rgba(34,197,94,.25)', background: 'rgba(34,197,94,.06)', color: '#86efac', cursor: 'pointer', fontWeight: 700, fontSize: '.78rem', flexShrink: 0 }}
+                            >
+                              {testing === p.name ? '…' : 'Tester'}
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Model selector */}
+                        {p.models?.length > 0 && (
+                          <select
+                            value={models[p.name] || p.active_model || p.default_model}
+                            onChange={e => setModels(prev => ({ ...prev, [p.name]: e.target.value }))}
+                            style={{ padding: '7px 12px', background: 'rgba(255,255,255,.05)', border: '1px solid rgba(148,163,184,.12)', borderRadius: 8, color: '#94a3b8', fontSize: '.76rem' }}
+                          >
+                            {p.models.map(m => (
+                              <option key={m} value={m}>{m}{m === p.default_model ? ' (défaut)' : ''}</option>
+                            ))}
+                          </select>
+                        )}
+
+                        {/* Messages */}
+                        {saveMsg[p.name] && (
+                          <div style={{ fontSize: '.76rem', color: saveMsg[p.name].startsWith('✓') ? '#86efac' : '#fca5a5' }}>
+                            {saveMsg[p.name]}
+                          </div>
+                        )}
+                        {testR && (
+                          <div style={{ fontSize: '.76rem', color: testR.success ? '#86efac' : '#fca5a5', padding: '6px 10px', background: testR.success ? 'rgba(34,197,94,.05)' : 'rgba(239,68,68,.05)', borderRadius: 7 }}>
+                            {testR.message}
+                          </div>
+                        )}
+
+                        {/* Get key link */}
+                        {PROVIDER_LINKS[p.name] && (
+                          <a href={PROVIDER_LINKS[p.name]} target="_blank" rel="noopener noreferrer"
+                            style={{ fontSize: '.72rem', color: '#475569', textDecoration: 'none' }}>
+                            ↗ Obtenir une clé API {p.label}
+                          </a>
+                        )}
+
+                        {/* .env instruction */}
+                        <div style={{ fontSize: '.7rem', color: '#334155', padding: '6px 10px', background: 'rgba(0,0,0,.2)', borderRadius: 7, fontFamily: 'monospace' }}>
+                          # .env — pour la persistance :<br />
+                          {p.api_key_env}=votre_clé_ici
+                          {models[p.name] && <><br />LLM_MODEL_{p.name.toUpperCase()}={models[p.name]}</>}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Priority chain */}
+        {configuredCount > 0 && (
+          <div style={{ marginTop: 14, padding: '10px 14px', background: 'rgba(0,0,0,.2)', borderRadius: 9, fontSize: '.74rem', color: '#475569', lineHeight: 1.7 }}>
+            <strong style={{ color: '#94a3b8' }}>Chaîne de fallback active :</strong>{' '}
+            {providers.filter(p => p.configured).map(p => p.name).join(' → ')}{' '}→ simulation
+          </div>
+        )}
       </div>
     </div>
   );
