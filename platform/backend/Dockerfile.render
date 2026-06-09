@@ -1,0 +1,76 @@
+# Dockerfile.render — Image de production pour Render
+#
+# Différences avec Dockerfile dev :
+#   - Multi-stage build (builder → runtime) : image finale allégée
+#   - Gunicorn + uvicorn workers (4 workers) pour la prod
+#   - WeasyPrint dependencies installées (génération PDF)
+#   - Utilisateur non-root (sécurité)
+#   - Pas de volume mount (code copié dans l'image)
+
+# ── Stage 1 : builder ─────────────────────────────────────────────────────────
+FROM python:3.12-slim AS builder
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+WORKDIR /build
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+
+# ── Stage 2 : runtime ─────────────────────────────────────────────────────────
+FROM python:3.12-slim AS runtime
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app
+
+WORKDIR /app
+
+# Dépendances système runtime
+# libpq5     : PostgreSQL client
+# libpango   : WeasyPrint PDF rendering
+# libcairo2  : WeasyPrint PDF rendering
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libcairo2 \
+    libgdk-pixbuf2.0-0 \
+    fonts-liberation \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copier les packages Python depuis le builder
+COPY --from=builder /install /usr/local
+
+# Copier le code applicatif
+COPY . .
+
+# Utilisateur non-root
+RUN useradd --no-create-home --shell /bin/false appuser \
+    && chown -R appuser:appuser /app
+USER appuser
+
+EXPOSE 8000
+
+# Healthcheck pour Render
+HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=5 \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=5).read()" || exit 1
+
+# Gunicorn avec 4 uvicorn workers — adapté à la prod
+# Workers = (2 × CPU) + 1, capped à 4 pour le plan free Render (512 MB RAM)
+CMD ["gunicorn", "app.main:app", \
+     "--worker-class", "uvicorn.workers.UvicornWorker", \
+     "--workers", "2", \
+     "--bind", "0.0.0.0:8000", \
+     "--timeout", "120", \
+     "--keep-alive", "5", \
+     "--access-logfile", "-", \
+     "--error-logfile", "-", \
+     "--log-level", "info"]

@@ -1,4 +1,5 @@
 from functools import lru_cache
+from pydantic import validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -11,6 +12,18 @@ class Settings(BaseSettings):
     secret_key: str = "change-me"
     access_token_expire_minutes: int = 60
     database_url: str = "postgresql+psycopg2://datasphere:change-me@localhost:5432/datasphere_platform"
+
+    @validator("database_url", pre=True)
+    def fix_database_url(cls, v: str) -> str:
+        """
+        Render injecte une URL postgres:// (sans +psycopg2).
+        SQLAlchemy 2.0 requiert postgresql+psycopg2:// — on corrige automatiquement.
+        """
+        if v.startswith("postgres://"):
+            v = v.replace("postgres://", "postgresql+psycopg2://", 1)
+        elif v.startswith("postgresql://") and "+psycopg2" not in v:
+            v = v.replace("postgresql://", "postgresql+psycopg2://", 1)
+        return v
 
     # ── LLM Providers ─────────────────────────────────────────────────────────
     # Leave empty to skip a provider. At least one key is needed for real AI.
