@@ -158,7 +158,20 @@ def setup_run(payload: SetupRequest):
     except Exception as e:
         results.append({"step": "admin_user", "status": "error", "detail": str(e)[:300]})
 
-    # 3. Final status check
+    # 3. Test login process (diagnose 500 cause)
+    try:
+        from app.core.security import get_password_hash, verify_password, create_access_token
+        # Test password hashing
+        test_hash = get_password_hash("TestPassword123!")
+        assert verify_password("TestPassword123!", test_hash), "verify_password failed"
+        # Test JWT creation
+        token = create_access_token(subject="1", extra_claims={"role": "admin"})
+        assert token and len(token) > 20, "JWT creation failed"
+        results.append({"step": "auth_test", "status": "ok",
+                       "detail": "bcrypt + JWT working correctly"})
+    except Exception as e:
+        results.append({"step": "auth_test", "status": "error",
+                       "detail": f"Auth error (likely bcrypt/passlib conflict): {str(e)[:300]}"})
     try:
         status = setup_status()
         results.append({"step": "final_check", "status": "ok",

@@ -69,7 +69,10 @@ def login(request: Request, payload: LoginRequest, db: Session = Depends(get_db)
     """
     settings = get_settings()
     if settings.app_env not in ("test", "development"):
-        limiter.hit(request)
+        try:
+            limiter.hit(request)
+        except Exception:
+            pass  # Rate limiter failure must never block login
 
     user = authenticate_user(db, payload.email, payload.password)
     if user is None:
