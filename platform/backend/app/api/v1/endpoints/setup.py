@@ -67,7 +67,18 @@ class SetupRequest(BaseModel):
     admin_last_name: str = "DataSphere"
 
 
-@router.post("/run")
+@router.get("/bootstrap")
+def setup_bootstrap(token: str, email: str = "admin@datasphere-innovation.fr",
+                    password: str = "Admin123456!"):
+    """
+    Bootstrap admin via GET — callable directly from browser.
+    Usage : /api/v1/setup/bootstrap?token=XXXX
+    """
+    req = SetupRequest(token=token, admin_email=email, admin_password=password,
+                       admin_first_name="Admin", admin_last_name="DataSphere")
+    return setup_run(req)
+
+
 def setup_run(payload: SetupRequest):
     """
     Run database migrations and create the initial admin user.
