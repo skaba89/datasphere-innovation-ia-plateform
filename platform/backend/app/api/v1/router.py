@@ -8,7 +8,7 @@ from app.api.v1.endpoints import (
     health_monitor, notifications, opportunities, organizations, pdf_ao,
     providers, scheduler, search, sector_templates, sse,
     staffing, suggestions, team, tender_governance, tender_templates,
-    tender_watch, tenders, uploads, webhooks, workflow, workspaces,
+    setup, tender_watch, tenders, uploads, webhooks, workflow, workspaces,
 )
 
 router = APIRouter()
@@ -17,6 +17,7 @@ router.include_router(auth.router)
 router.include_router(billing.router)
 router.include_router(api_keys.router)
 router.include_router(csv_import.router)
+router.include_router(setup.router)
 router.include_router(webhooks.router)
 router.include_router(workflow.router)
 router.include_router(calculator.router)

@@ -71,6 +71,13 @@ services:
       - key: SMTP_FROM
         value: "noreply@datasphere-innovation.fr"
 
+      # Setup endpoint — init DB + admin sans accès Shell
+      # Générer un token aléatoire : openssl rand -hex 16
+      - key: SETUP_SECRET_KEY
+        generateValue: true
+      - key: SETUP_ENABLED
+        value: "true"
+
       # Scheduler BOAMP
       - key: SCHEDULER_ENABLED
         value: "true"
