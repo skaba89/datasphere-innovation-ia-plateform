@@ -260,3 +260,44 @@ def setup_run(payload: SetupRequest):
             "Set SETUP_ENABLED=false in Render env vars to disable this endpoint",
         ] if all_ok else ["Check errors above and retry"],
     }
+
+
+@router.post("/test-login-raw")
+def test_login_raw(email: str = "admin@datasphere-innovation.fr", password: str = "Admin123456!"):
+    """Call the actual login handler with full traceback capture."""
+    import traceback
+    from fastapi import Request
+    from starlette.datastructures import Headers
+    from starlette.types import Scope
+
+    try:
+        # Import everything the login endpoint needs
+        from app.db.session import SessionLocal
+        from app.crud.user import authenticate_user
+        from app.core.security import create_access_token, create_refresh_token
+        from app.schemas.user import TokenResponse
+        import fastapi.encoders as encoders
+
+        db = SessionLocal()
+        try:
+            user = authenticate_user(db, email, password)
+            if user is None:
+                return {"error": "authenticate_user returned None — wrong credentials or inactive user"}
+
+            at = create_access_token(subject=str(user.id), extra_claims={"role": user.role})
+            rt = create_refresh_token(subject=str(user.id), extra_claims={"role": user.role})
+
+            # This is what FastAPI does to serialize response_model
+            resp = TokenResponse(access_token=at, refresh_token=rt, user=user)
+            serialized = encoders.jsonable_encoder(resp)
+            return {"success": True, "response_keys": list(serialized.keys()), "user_email": serialized.get("user", {}).get("email")}
+        finally:
+            db.close()
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error_type": type(e).__name__,
+            "error_msg": str(e)[:500],
+            "traceback": traceback.format_exc()[-1500:],
+        }
