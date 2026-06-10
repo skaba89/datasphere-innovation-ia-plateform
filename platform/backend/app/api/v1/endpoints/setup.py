@@ -43,12 +43,10 @@ def setup_status():
     try:
         with engine.connect() as conn:
             result["database"] = "connected"
-            # List tables
             tables = sa.inspect(engine).get_table_names()
             result["tables"] = tables
             result["has_users"] = "users" in tables
             result["has_workspaces"] = "workspaces" in tables
-            # Check alembic version
             try:
                 row = conn.execute(sa.text("SELECT version_num FROM alembic_version")).fetchone()
                 result["alembic_version"] = row[0] if row else None
@@ -57,6 +55,80 @@ def setup_status():
     except Exception as e:
         result["database"] = f"error: {str(e)[:200]}"
     return result
+
+
+@router.get("/diagnose-login")
+def diagnose_login(email: str = "admin@datasphere-innovation.fr", password: str = "Admin123456!"):
+    """
+    Diagnose login 500 — tests each step and returns the real error.
+    Public, no auth required. Remove after debugging.
+    """
+    steps = {}
+
+    # Step 1: DB connection
+    try:
+        from app.db.session import engine
+        import sqlalchemy as sa
+        with engine.connect() as conn:
+            conn.execute(sa.text("SELECT 1"))
+        steps["db_connect"] = "ok"
+    except Exception as e:
+        steps["db_connect"] = f"ERROR: {e}"
+        return steps
+
+    # Step 2: Find user
+    try:
+        from app.db.session import SessionLocal
+        from app.crud.user import get_user_by_email
+        db = SessionLocal()
+        user = get_user_by_email(db, email)
+        if user:
+            steps["find_user"] = f"ok — id={user.id} active={user.is_active}"
+        else:
+            steps["find_user"] = f"NOT FOUND — email={email}"
+        db.close()
+    except Exception as e:
+        steps["find_user"] = f"ERROR: {e}"
+        return steps
+
+    # Step 3: Verify password
+    try:
+        from app.core.security import verify_password
+        if user:
+            ok = verify_password(password, user.password_hash)
+            steps["verify_password"] = "ok" if ok else "WRONG PASSWORD"
+        else:
+            steps["verify_password"] = "skipped (no user)"
+    except Exception as e:
+        steps["verify_password"] = f"ERROR: {e}"
+        return steps
+
+    # Step 4: Create JWT
+    try:
+        from app.core.security import create_access_token, create_refresh_token
+        if user:
+            at = create_access_token(subject=str(user.id), extra_claims={"role": user.role})
+            rt = create_refresh_token(subject=str(user.id), extra_claims={"role": user.role})
+            steps["create_jwt"] = f"ok — access={at[:20]}... refresh={rt[:20]}..."
+        else:
+            steps["create_jwt"] = "skipped (no user)"
+    except Exception as e:
+        steps["create_jwt"] = f"ERROR: {e}"
+        return steps
+
+    # Step 5: Build TokenResponse
+    try:
+        from app.schemas.user import TokenResponse, UserRead
+        if user:
+            resp = TokenResponse(access_token=at, refresh_token=rt, user=user)
+            steps["build_response"] = "ok"
+        else:
+            steps["build_response"] = "skipped"
+    except Exception as e:
+        steps["build_response"] = f"ERROR: {e}"
+
+    steps["conclusion"] = "all ok — login should work" if all("ERROR" not in str(v) for v in steps.values()) else "see errors above"
+    return steps
 
 
 class SetupRequest(BaseModel):
