@@ -262,7 +262,7 @@ def setup_run(payload: SetupRequest):
     }
 
 
-@router.post("/test-login-raw")
+@router.get("/test-login-raw")
 def test_login_raw(email: str = "admin@datasphere-innovation.fr", password: str = "Admin123456!"):
     """Call the actual login handler with full traceback capture."""
     import traceback
