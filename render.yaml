@@ -120,4 +120,4 @@ services:
     envVars:
       # URL de l'API backend — URL réelle avec suffixe Render
       - key: VITE_API_BASE_URL
-        value: https://datasphere-backend-n1mb.onrender.com/api/v1
+        value: https://datasphere-backend-zl3v.onrender.com/api/v1
