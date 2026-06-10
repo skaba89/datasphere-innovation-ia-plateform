@@ -185,7 +185,7 @@ async def _global_exception_handler(request: Request, exc: Exception):
         type(exc).__name__, exc,
         exc_info=True,
     )
-    detail = str(exc) if settings.app_env != "production" else "Internal server error"
+    detail = str(exc)  # TEMP DEBUG
     return JSONResponse(status_code=500, content={"detail": detail, "type": type(exc).__name__})
 
 
@@ -202,7 +202,7 @@ async def security_headers(request: Request, call_next):
             "Route exception caught in security_headers [%s %s]: %s",
             request.method, request.url.path, exc, exc_info=True,
         )
-        detail = str(exc) if settings.app_env != "production" else "Internal server error"
+        detail = str(exc)  # TEMP DEBUG
         return JSONResponse(status_code=500, content={"detail": detail})
 
     response.headers["X-Content-Type-Options"] = "nosniff"
