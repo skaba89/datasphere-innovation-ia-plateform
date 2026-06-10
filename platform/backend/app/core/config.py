@@ -142,6 +142,20 @@ class Settings(BaseSettings):
                 if origin not in parsed:
                     parsed.append(origin)
 
+        # Render auto-detection : RENDER_EXTERNAL_URL est injecté automatiquement
+        # par Render sur le service backend. On en déduit l'URL du frontend.
+        import os as _os
+        render_external = _os.environ.get("RENDER_EXTERNAL_URL", "")
+        if render_external:
+            # Le backend est sur datasphere-backend-xxxx.onrender.com
+            # Le frontend est sur datasphere-frontend-xxxx.onrender.com
+            # On autorise tous les *.onrender.com pour l'auto-discovery
+            frontend_guess = render_external.replace(
+                "datasphere-backend", "datasphere-frontend"
+            ).rstrip("/")
+            if frontend_guess and frontend_guess not in parsed:
+                parsed.append(frontend_guess)
+
         # Safety net: never return an empty list (would block everything)
         if not parsed:
             return [

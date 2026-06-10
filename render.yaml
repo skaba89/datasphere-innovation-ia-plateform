@@ -49,10 +49,9 @@ services:
       - key: APP_DEBUG
         value: "false"
 
-      # CORS — doit contenir l'URL exacte du frontend Render
-      # Sera complété manuellement dans le dashboard après le premier déploiement
+      # CORS — URL réelle du frontend (suffixe Render auto-généré)
       - key: CORS_ORIGINS
-        value: https://datasphere-frontend.onrender.com
+        value: https://datasphere-frontend-n1mb.onrender.com
 
       # Stripe (optionnel — laisser vide pour désactiver)
       - key: STRIPE_SECRET_KEY
@@ -119,6 +118,6 @@ services:
         destination: /index.html
 
     envVars:
-      # URL de l'API backend — adapter après le premier déploiement si le nom change
+      # URL de l'API backend — URL réelle avec suffixe Render
       - key: VITE_API_BASE_URL
-        value: https://datasphere-backend.onrender.com/api/v1
+        value: https://datasphere-backend-n1mb.onrender.com/api/v1
