@@ -163,14 +163,15 @@ def _run_agent(db, instance, step) -> tuple[str, str | None, int | None]:
 
 
 def _tender_context(tender) -> str:
-    """Résumé structuré de l'AO pour les prompts."""
+    """Résumé structuré de l'AO pour les prompts LLM."""
     parts = []
-    if tender.title:       parts.append(f"Titre : {tender.title}")
-    if tender.buyer_name:  parts.append(f"Acheteur : {tender.buyer_name}")
-    if tender.reference:   parts.append(f"Référence : {tender.reference}")
-    if tender.deadline:    parts.append(f"Date limite : {tender.deadline}")
-    if tender.budget_max:  parts.append(f"Budget max : {tender.budget_max} €")
-    if tender.summary:     parts.append(f"Résumé :\n{tender.summary[:1200]}")
+    if tender.title:                parts.append(f"Titre : {tender.title}")
+    if tender.buyer_name:           parts.append(f"Acheteur : {tender.buyer_name}")
+    if tender.reference:            parts.append(f"Référence : {tender.reference}")
+    if tender.submission_deadline:  parts.append(f"Date limite : {tender.submission_deadline}")
+    if tender.source_url:           parts.append(f"Source : {tender.source_url}")
+    if tender.summary:              parts.append(f"Résumé :\n{tender.summary[:1200]}")
+    if tender.ai_notes:             parts.append(f"Notes IA : {tender.ai_notes[:400]}")
     return "\n".join(parts) if parts else "Appel d'offres sans détail"
 
 
@@ -290,22 +291,27 @@ Pour chaque exigence précise :
 def _save_requirements_from_llm(db: Session, tender_id: int, llm_text: str) -> None:
     """Parse LLM output and create TenderRequirement rows."""
     try:
-        from app.crud.tender_requirements import create_requirement
-        from app.schemas.tender_requirement import TenderRequirementCreate
+        from app.crud.tender import create_tender_requirement
+        from app.schemas.tender import TenderRequirementCreate
+
         lines = [l.strip() for l in llm_text.split("\n") if l.strip() and len(l.strip()) > 10]
-        for i, line in enumerate(lines[:20]):
+        for line in lines[:20]:
             if any(c in line for c in [":", "-", "•", "–"]):
-                cat = "technical"
+                req_type = "technical"
                 if any(w in line.lower() for w in ["admin", "juridique", "attestation", "bilan"]):
-                    cat = "administrative"
+                    req_type = "administrative"
                 elif any(w in line.lower() for w in ["financier", "budget", "prix", "tarif"]):
-                    cat = "financial"
-                priority = "mandatory" if any(w in line.lower() for w in ["obligat", "éliminat", "requis"]) else "important"
-                create_requirement(db, TenderRequirementCreate(
+                    req_type = "financial"
+
+                status = "to_analyze"
+                if any(w in line.lower() for w in ["obligat", "éliminat", "requis"]):
+                    status = "mandatory"
+
+                create_tender_requirement(db, TenderRequirementCreate(
                     tender_id=tender_id,
-                    title=line[:120],
-                    category=cat,
-                    priority=priority,
+                    description=line[:255],
+                    requirement_type=req_type,
+                    status=status,
                 ))
     except Exception as e:
         log.debug("Could not save requirements: %s", e)
@@ -460,23 +466,24 @@ Sois précis, professionnel, en français. Minimum 800 mots.
         row = db.execute(text("SELECT id FROM opportunities LIMIT 1")).fetchone()
         opp_id = row[0] if row else None
 
-    if opp_id:
+    if markdown:
         try:
             from app.crud.deliverable import create_deliverable
             from app.schemas.deliverable import DeliverableCreate
             draft = create_deliverable(db, DeliverableCreate(
-                opportunity_id=opp_id,
+                tender_id=tender_id,           # lien direct à l'AO
+                opportunity_id=opp_id or None,
                 title=f"Mémoire technique — {tender.title}",
                 deliverable_type="technical_proposal",
                 status="draft",
                 content_markdown=markdown,
                 version=1,
             ))
-            return (f"Mémoire technique rédigé ({len(markdown)} caractères).\nLivrable créé — prêt pour revue finale.", "deliverable", draft.id)
+            return (f"Mémoire technique rédigé ({len(markdown)} caractères).\nLivrable #{draft.id} créé — prêt pour revue finale.", "deliverable", draft.id)
         except Exception as e:
             log.warning("Could not create deliverable: %s", e)
 
-    return (f"Mémoire technique rédigé ({len(markdown)} caractères).\n\n{markdown[:400]}...", None, None)
+    return (f"Mémoire généré ({len(markdown)} caractères).\n\n{markdown[:400]}...", None, None)
 
 
 # ── Étape 8 : Revue finale ────────────────────────────────────────────────────
