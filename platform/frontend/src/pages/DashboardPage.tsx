@@ -102,22 +102,25 @@ export default function DashboardPage() {
   const [kpis, setKpis] = useState<any>(null);
   const [perf, setPerf] = useState<any>(null);
   const [pendingSuggestions, setPendingSuggestions] = useState<{ total: number; tenders: number; opportunities: number; organizations: number } | null>(null);
+  const [pendingWorkflow, setPendingWorkflow] = useState<{ count: number; steps: any[] } | null>(null);
   const token = tokenStorage.get();
 
   async function load() {
     setLoading(true);
     setError(null);
     try {
-      const [analytics, dashKpis, suggestions, perf] = await Promise.all([
+      const [analytics, dashKpis, suggestions, perf, wf] = await Promise.all([
         apiRequest<PipelineAnalytics>('/analytics/pipeline', {}, token),
         apiRequest<any>('/analytics/dashboard', {}, token).catch(() => null),
         apiRequest<any>('/suggestions/count', {}, token).catch(() => null),
         apiRequest<any>('/analytics/performance', {}, token).catch(() => null),
+        apiRequest<any>('/workflow/approvals/pending', {}, token).catch(() => null),
       ]);
       setData(analytics);
       if (dashKpis) setKpis(dashKpis);
       if (suggestions) setPendingSuggestions(suggestions);
       if (perf) setPerf(perf);
+      if (wf) setPendingWorkflow({ count: wf.count ?? 0, steps: wf.pending ?? [] });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erreur de chargement');
     } finally {
@@ -251,6 +254,28 @@ export default function DashboardPage() {
               <div style={{ fontSize: '.7rem', color: '#475569', marginTop: 3 }}>{k.label}</div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Workflow approvals banner */}
+      {pendingWorkflow && pendingWorkflow.count > 0 && (
+        <div style={{ padding: '14px 18px', borderRadius: 12, background: 'rgba(250,204,21,.08)', border: '1.5px solid rgba(250,204,21,.35)', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Zap size={16} color="#facc15" style={{ flexShrink: 0 }} />
+          <div style={{ flex: 1 }}>
+            <span style={{ fontWeight: 800, fontSize: '.9rem', color: '#facc15' }}>
+              {pendingWorkflow.count} étape{pendingWorkflow.count > 1 ? 's' : ''} workflow en attente de validation
+            </span>
+            <div style={{ marginTop: 6, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {pendingWorkflow.steps.slice(0, 3).map((s: any, i: number) => (
+                <span key={i} style={{ fontSize: '.74rem', padding: '2px 8px', borderRadius: 99, background: 'rgba(250,204,21,.1)', color: '#fde68a', border: '1px solid rgba(250,204,21,.2)' }}>
+                  AO #{s.tender_id} — {s.step_label}
+                </span>
+              ))}
+            </div>
+          </div>
+          <a href="/tenders" style={{ padding: '7px 14px', borderRadius: 8, border: 'none', background: '#facc15', color: '#060e18', fontWeight: 800, fontSize: '.8rem', textDecoration: 'none', flexShrink: 0 }}>
+            Valider →
+          </a>
         </div>
       )}
 

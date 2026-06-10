@@ -76,13 +76,13 @@ services:
       - key: SETUP_SECRET_KEY
         generateValue: true
       - key: SETUP_ENABLED
-        value: "true"
+        value: "false"
 
       # Scheduler BOAMP
       - key: SCHEDULER_ENABLED
-        value: "true"
+        value: "false"
       - key: BOAMP_SCAN_ENABLED
-        value: "true"
+        value: "false"
 
       # LLM (optionnel — au moins un recommandé)
       - key: OPENAI_API_KEY
