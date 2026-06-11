@@ -19,6 +19,7 @@ import TenderPage from './pages/TenderPage';
 import UserProfilePage from './pages/UserProfilePage';
 import WorkspacesPage from './pages/WorkspacesPage';
 import DataExportPage from './pages/DataExportPage';
+import LinkedInAgentPage from './pages/LinkedInAgentPage';
 import OnboardingWizard, { shouldShowOnboarding, markOnboardingDone } from './components/OnboardingWizard';
 import ToastContainer from './components/ToastContainer';
 import { LangToggle } from './i18n';
@@ -46,6 +47,7 @@ type RootView =
   | 'profile'
   | 'workspaces'
   | 'data-export'
+  | 'linkedin'
   | 'calculator'
   | 'pricing'
   | 'settings';
@@ -217,6 +219,7 @@ export default function AppRoot() {
     { key: 'opportunities', label: 'Opportunités',         permission: 'crm:read' },
     { key: 'operations',    label: 'Opérations',           permission: 'operations:read' },
     { key: 'data-export',   label: 'Export données',       permission: 'audit:read' },
+    { key: 'linkedin',      label: 'Agent LinkedIn',        permission: 'deliverables:write' },
     { key: 'team',          label: 'Équipe',               permission: 'team:read' },
     { key: 'audit',         label: 'Audit',                permission: 'audit:read' },
     { key: 'workspaces',    label: 'Workspaces',           permission: 'workspaces:read' },
@@ -390,6 +393,7 @@ export default function AppRoot() {
       {activeView === 'opportunities' && <CrmWorkspace token={token} view="opportunities" />}
       {activeView === 'operations'    && <OperationsPage />}
       {activeView === 'data-export'   && <DataExportPage />}
+      {activeView === 'linkedin'       && <LinkedInAgentPage />}
       {activeView === 'team'          && <TeamPage />}
       {activeView === 'audit'         && <AuditLogPage />}
       {activeView === 'workspaces'    && <WorkspacesPage />}
