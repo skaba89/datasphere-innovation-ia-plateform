@@ -342,3 +342,96 @@ def performance_metrics(db: Session = Depends(get_db)):
             "weekly_tenders": weekly_tenders,
         },
     }
+
+
+@router.get("/timeline")
+def timeline_analytics(db: Session = Depends(get_db)):
+    """
+    Return monthly stats for the last 12 months — AOs, workflow completions,
+    deliverables, taux de succès estimé.
+    """
+    from datetime import datetime, timedelta
+    from sqlalchemy import func, text, extract
+    from app.models.tender import Tender
+    from app.models.workflow import WorkflowInstance
+    from app.models.deliverable import Deliverable
+
+    months = []
+    now = datetime.utcnow()
+    for i in range(11, -1, -1):
+        month_start = (now.replace(day=1) - timedelta(days=i * 30)).replace(day=1, hour=0, minute=0, second=0)
+        month_end   = (month_start + timedelta(days=32)).replace(day=1)
+        label = month_start.strftime("%b %Y")
+
+        ao_count = db.query(Tender).filter(
+            Tender.created_at >= month_start,
+            Tender.created_at < month_end,
+        ).count()
+
+        wf_done = db.query(WorkflowInstance).filter(
+            WorkflowInstance.status == "completed",
+            WorkflowInstance.completed_at >= month_start,
+            WorkflowInstance.completed_at < month_end,
+        ).count()
+
+        deliverables = db.query(Deliverable).filter(
+            Deliverable.created_at >= month_start,
+            Deliverable.created_at < month_end,
+        ).count()
+
+        won = db.query(Tender).filter(
+            Tender.status == "won",
+            Tender.updated_at >= month_start,
+            Tender.updated_at < month_end,
+        ).count()
+
+        months.append({
+            "month":        label,
+            "ao_detectes":  ao_count,
+            "wf_completes": wf_done,
+            "livrables":    deliverables,
+            "gagnes":       won,
+            "taux_succes":  round(won / ao_count * 100, 1) if ao_count > 0 else 0,
+        })
+
+    return {
+        "months":  months,
+        "totals": {
+            "ao_detectes":  sum(m["ao_detectes"] for m in months),
+            "wf_completes": sum(m["wf_completes"] for m in months),
+            "livrables":    sum(m["livrables"] for m in months),
+            "gagnes":       sum(m["gagnes"] for m in months),
+        },
+    }
+
+
+@router.get("/performance")
+def performance_stats(db: Session = Depends(get_db)):
+    """KPIs de performance : TJM moyen, délai moyen workflow, nb providers actifs."""
+    from datetime import datetime, timedelta
+    from app.models.workflow import WorkflowInstance, WorkflowStep
+    from app.services.llm_service import list_providers
+
+    # Avg workflow duration (completed ones)
+    completed = db.query(WorkflowInstance).filter(
+        WorkflowInstance.status == "completed",
+        WorkflowInstance.completed_at.isnot(None),
+    ).limit(50).all()
+
+    durations = [
+        (wf.completed_at - wf.started_at).total_seconds() / 60
+        for wf in completed
+        if wf.started_at and wf.completed_at
+    ]
+    avg_duration = round(sum(durations) / len(durations), 1) if durations else 0
+
+    # Providers configured
+    providers = list_providers()
+    active_providers = [p["name"] for p in providers if p["configured"]]
+
+    return {
+        "avg_workflow_minutes":  avg_duration,
+        "workflows_completed":   len(completed),
+        "active_providers":      active_providers,
+        "active_providers_count": len(active_providers),
+    }

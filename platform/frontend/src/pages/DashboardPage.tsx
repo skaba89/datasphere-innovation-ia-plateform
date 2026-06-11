@@ -3,6 +3,8 @@ import {
   Activity, AlertTriangle, Bot, Building2, CheckCircle2,
   Clock, FileText, RefreshCw, Target, TrendingUp, Zap,
 } from 'lucide-react';
+import { DashboardCharts } from '../components/DashboardCharts';
+import { SetupWizard } from '../components/SetupWizard';
 import { apiRequest, tokenStorage } from '../api/client';
 import type { PipelineAnalytics } from '../api/domainTypes';
 import ActivityFeed from '../components/ActivityFeed';
@@ -103,6 +105,9 @@ export default function DashboardPage() {
   const [perf, setPerf] = useState<any>(null);
   const [pendingSuggestions, setPendingSuggestions] = useState<{ total: number; tenders: number; opportunities: number; organizations: number } | null>(null);
   const [pendingWorkflow, setPendingWorkflow] = useState<{ count: number; steps: any[] } | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    try { return sessionStorage.getItem('onboarding_dismissed') !== 'true'; } catch { return true; }
+  });
   const token = tokenStorage.get();
 
   async function load() {
@@ -256,6 +261,22 @@ export default function DashboardPage() {
           ))}
         </div>
       )}
+
+      {/* Onboarding wizard */}
+      {showOnboarding && (
+        <SetupWizard
+          token={token}
+          hasProviders={(kpis?.providers?.configured ?? 0) > 0}
+          hasTenders={(data?.tenders?.total ?? 0) > 0}
+          onDismiss={() => {
+            try { sessionStorage.setItem('onboarding_dismissed', 'true'); } catch {}
+            setShowOnboarding(false);
+          }}
+        />
+      )}
+
+      {/* Analytics charts */}
+      <DashboardCharts token={token} />
 
       {/* Workflow approvals banner */}
       {pendingWorkflow && pendingWorkflow.count > 0 && (
