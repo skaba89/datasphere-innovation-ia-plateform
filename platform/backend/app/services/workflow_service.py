@@ -224,7 +224,7 @@ Fournis une analyse structurée avec :
 
 def _step_go_no_go(db, tender_id: int) -> tuple:
     from app.crud.tender import get_tender
-    from app.crud.tender_governance import list_go_no_go_criteria
+    from sqlalchemy import text
     tender = get_tender(db, tender_id)
     ctx = _tender_context(tender)
 
@@ -247,12 +247,19 @@ Conclusion claire : GO ✅ ou NO-GO ❌ avec justification en 3 lignes.
         action_type="go_no_go_recommendation",
     )
 
-    # Create Go/No-Go criteria in DB
+    # Create Go/No-Go criteria in DB (best-effort)
     try:
-        from app.api.v1.endpoints.tender_templates import _create_default_go_no_go_criteria
-        from app.crud.tender_governance import list_go_no_go_criteria
-        if not list_go_no_go_criteria(db, tender_id):
-            _create_default_go_no_go_criteria(db, tender_id)
+        from sqlalchemy import text
+        count = db.execute(text("SELECT COUNT(*) FROM go_no_go_criteria WHERE tender_id=:tid"), {"tid": tender_id}).scalar() or 0
+        if count == 0:
+            # Create default criteria based on LLM result
+            for criterion in ["Adéquation technique", "Budget/TJM", "Probabilité de gain", "Charge de réponse", "Risques contractuels"]:
+                decision = "go" if "GO ✅" in result or result.upper().count("GO") > result.upper().count("NO") else "no_go"
+                db.execute(text(
+                    "INSERT INTO go_no_go_criteria (tender_id, criterion, decision, comment, created_at, updated_at) "
+                    "VALUES (:tid, :criterion, :decision, :comment, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"
+                ), {"tid": tender_id, "criterion": criterion, "decision": decision, "comment": result[:200]})
+            db.commit()
     except Exception as e:
         log.debug("Could not create go_no_go criteria: %s", e)
 
@@ -335,14 +342,14 @@ def _save_requirements_from_llm(db: Session, tender_id: int, llm_text: str) -> N
 
 def _step_compliance(db, tender_id: int) -> tuple:
     from app.crud.tender import get_tender
-    from app.crud.tender_governance import list_compliance_items, list_go_no_go_criteria
+    from sqlalchemy import text
     tender = get_tender(db, tender_id)
     ctx = _tender_context(tender)
 
     # Get requirements for context
     from sqlalchemy import text
-    reqs = db.execute(text("SELECT title, category FROM tender_requirements WHERE tender_id=:tid LIMIT 15"), {"tid": tender_id}).fetchall()
-    reqs_text = "\n".join(f"- {r[0]} ({r[1]})" for r in reqs) if reqs else "Aucune exigence enregistrée"
+    reqs = db.execute(text("SELECT description, requirement_type FROM tender_requirements WHERE tender_id=:tid LIMIT 15"), {"tid": tender_id}).fetchall()
+    reqs_text = "\n".join(f"- {r[0]} ({r[1] or 'technique'})" for r in reqs) if reqs else "Aucune exigence enregistrée"
 
     result = _llm(
         prompt=f"""Génère la matrice de conformité pour cet AO :
@@ -364,16 +371,23 @@ Sois réaliste et précis pour un cabinet Data/IA spécialisé en Snowflake, dbt
         action_type="compliance_matrix",
     )
 
-    # Create compliance items
+    # Create compliance items (best-effort)
     try:
-        if not list_compliance_items(db, tender_id):
-            from app.api.v1.endpoints.tender_templates import _create_compliance_from_requirements
-            _create_compliance_from_requirements(db, tender_id)
+        from sqlalchemy import text
+        count = db.execute(text("SELECT COUNT(*) FROM compliance_matrix_items WHERE tender_id=:tid"), {"tid": tender_id}).scalar() or 0
+        if count == 0 and reqs:
+            for req in reqs[:10]:
+                db.execute(text(
+                    "INSERT INTO compliance_matrix_items (tender_id, requirement, compliance_status, our_response, created_at, updated_at) "
+                    "VALUES (:tid, :req, :status, :resp, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"
+                ), {"tid": tender_id, "req": req[0][:200], "status": "compliant", "resp": result[:150]})
+            db.commit()
+            count = len(reqs[:10])
     except Exception as e:
-        log.debug("Compliance creation: %s", e)
+        log.debug("Compliance items: %s", e)
+        count = 0
 
-    items = list_compliance_items(db, tender_id)
-    return (f"{len(items)} ligne(s) de conformité.\n\n{result[:600]}", "compliance", tender_id)
+    return (f"{count} ligne(s) de conformité générée(s).\n\n{result[:800]}", "compliance", tender_id)
 
 
 # ── Étape 5 : Staffing ────────────────────────────────────────────────────────
