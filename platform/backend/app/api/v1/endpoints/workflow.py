@@ -243,12 +243,12 @@ def reset_stuck_steps(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Reset steps stuck in 'running' for more than 2 minutes back to 'pending'.
-    Use when a step is blocked and the workflow won't progress.
-    """
+    """Reset steps stuck in 'running' and restart the workflow."""
+    from datetime import datetime, timedelta
+    import threading
     from app.models.workflow import WorkflowInstance, WorkflowStep
-    from datetime import timedelta
+    from app.db.session import SessionLocal
+    from app.services.workflow_service import _run_next_step
 
     instance = db.query(WorkflowInstance).filter(
         WorkflowInstance.tender_id == tender_id
@@ -256,11 +256,13 @@ def reset_stuck_steps(
     if not instance:
         raise HTTPException(status_code=404, detail="Workflow introuvable")
 
-    threshold = datetime.utcnow() - timedelta(minutes=2)
+    # Reset any step stuck in 'running' for more than 30 seconds
+    threshold = datetime.utcnow() - timedelta(seconds=30)
     stuck = db.query(WorkflowStep).filter(
         WorkflowStep.instance_id == instance.id,
         WorkflowStep.status == "running",
-        WorkflowStep.started_at < threshold,
+    ).filter(
+        (WorkflowStep.started_at == None) | (WorkflowStep.started_at < threshold)
     ).all()
 
     reset_count = 0
@@ -269,19 +271,21 @@ def reset_stuck_steps(
         step.started_at = None
         reset_count += 1
 
-    if reset_count > 0:
+    # Also reset failed instance status so it can continue
+    if instance.status in ("running", "failed"):
         instance.status = "running"
-        db.commit()
-        # Restart
-        from app.db.session import SessionLocal
-        import threading
-        threading.Thread(
-            target=_run_next_step,
-            args=(instance.id, SessionLocal),
-            daemon=True,
-        ).start()
+        instance.error_message = None
+
+    db.commit()
+
+    # Restart the workflow thread
+    threading.Thread(
+        target=_run_next_step,
+        args=(instance.id, SessionLocal),
+        daemon=True,
+    ).start()
 
     return {
         "reset_count": reset_count,
-        "message": f"{reset_count} étape(s) remise(s) en file. Workflow relancé." if reset_count > 0 else "Aucune étape bloquée trouvée.",
+        "message": f"{reset_count} étape(s) remise(s) en file — workflow relancé." if reset_count > 0 else "Workflow relancé depuis la dernière étape en attente.",
     }
