@@ -230,6 +230,29 @@ export default function WorkflowPanel({ tenderId, tenderTitle, token }: Props) {
               transition: 'width .5s ease',
             }} />
           </div>
+
+          {/* Deliverable link when completed */}
+          {isCompleted && (() => {
+            const deliverableStep = workflow?.steps.find(s => s.artifact_type === 'deliverable' && s.artifact_id);
+            return deliverableStep ? (
+              <div style={{ marginTop: 14, padding: '14px 16px', background: 'rgba(34,197,94,.06)', border: '1px solid rgba(34,197,94,.25)', borderRadius: 11, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: '.88rem', color: '#86efac', marginBottom: 3 }}>
+                    ✅ Mémoire technique généré
+                  </div>
+                  <div style={{ fontSize: '.74rem', color: '#475569' }}>
+                    Livrable #{deliverableStep.artifact_id} disponible dans l'onglet Livrables
+                  </div>
+                </div>
+                <a
+                  href="/deliverables"
+                  style={{ padding: '9px 16px', borderRadius: 9, border: 'none', background: '#22c55e', color: 'white', fontWeight: 800, fontSize: '.82rem', textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}
+                >
+                  Voir le livrable →
+                </a>
+              </div>
+            ) : null;
+          })()}
         </div>
       )}
 
@@ -375,6 +398,15 @@ export default function WorkflowPanel({ tenderId, tenderTitle, token }: Props) {
               {isRej && step.rejection_reason && (
                 <div style={{ padding: '0 16px 12px 54px', fontSize: '.78rem', color: '#fca5a5' }}>
                   Raison : {step.rejection_reason}
+                </div>
+              )}
+
+              {/* Artifact link */}
+              {isDone && step.artifact_type === 'deliverable' && step.artifact_id && (
+                <div style={{ padding: '0 16px 12px 54px' }}>
+                  <a href="/deliverables" style={{ fontSize: '.76rem', color: '#86efac', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 7, background: 'rgba(34,197,94,.08)', border: '1px solid rgba(34,197,94,.2)' }}>
+                    📄 Livrable #{step.artifact_id} — Voir dans Livrables →
+                  </a>
                 </div>
               )}
             </div>
