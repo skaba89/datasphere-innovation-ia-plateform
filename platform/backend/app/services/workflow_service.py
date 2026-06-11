@@ -83,6 +83,25 @@ def _run_next_step(instance_id: int, session_factory) -> None:
             instance.completed_at = datetime.utcnow()
             db.commit()
             log.info("Workflow completed: instance=%d tender=%d", instance_id, instance.tender_id)
+            # Send completion email
+            try:
+                from app.services.email_service import notify_workflow_completed
+                from app.models.workflow import WorkflowStep
+                from app.core.config import get_settings
+                deliverable_step = db.query(WorkflowStep).filter(
+                    WorkflowStep.instance_id == instance_id,
+                    WorkflowStep.artifact_type == "deliverable",
+                ).first()
+                tender = db.query(__import__('app.models.tender', fromlist=['Tender']).Tender).filter_by(id=instance.tender_id).first()
+                settings = get_settings()
+                notify_workflow_completed(
+                    tender_title=tender.title if tender else f"AO #{instance.tender_id}",
+                    tender_id=instance.tender_id,
+                    deliverable_id=deliverable_step.artifact_id if deliverable_step else None,
+                    frontend_url=getattr(settings, 'frontend_url', ''),
+                )
+            except Exception as e:
+                log.debug("Completion email failed: %s", e)
             return
 
         _execute_step(db, instance, next_step, session_factory)
@@ -139,6 +158,21 @@ def _execute_step(db: Session, instance: WorkflowInstance,
             db.commit()
             log.info("Step awaiting approval: %s tender=%d", step.step_key, instance.tender_id)
             _notify_approval_needed(db, instance, step)
+            # Send email notification
+            try:
+                from app.services.email_service import notify_approval_required
+                from app.core.config import get_settings
+                settings = get_settings()
+                tender_title = getattr(instance, '_tender_title', f"AO #{instance.tender_id}")
+                notify_approval_required(
+                    step_label=step.step_label,
+                    tender_title=tender_title,
+                    tender_id=instance.tender_id,
+                    step_id=step.id,
+                    frontend_url=getattr(settings, 'frontend_url', ''),
+                )
+            except Exception as e:
+                log.debug("Email notification failed: %s", e)
         else:
             step.status = "done"
             db.commit()

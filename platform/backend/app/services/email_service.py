@@ -339,3 +339,102 @@ class RelanceSequence:
              "email_type": EmailType.RELANCE_J14.value,
              "scheduled_at": (now + timedelta(days=14)).isoformat(), "params": params},
         ]
+
+
+# ── Workflow notifications ─────────────────────────────────────────────────────
+
+def notify_approval_required(
+    step_label: str,
+    tender_title: str,
+    tender_id: int,
+    step_id: int,
+    frontend_url: str = "",
+) -> bool:
+    """
+    Send email when a workflow step requires human approval.
+    Returns True if sent, False if SMTP not configured (dry-run).
+    """
+    from app.core.config import get_settings
+    settings = get_settings()
+    if not settings.smtp_configured:
+        import logging
+        logging.getLogger("datasphere.email").info(
+            "[DRY-RUN] Approval needed: %s — %s (step_id=%d)", tender_title, step_label, step_id
+        )
+        return False
+
+    approve_url = f"{frontend_url}/tenders" if frontend_url else "/tenders"
+
+    subject = f"⏳ Validation requise : {step_label} — {tender_title[:60]}"
+    html = f"""
+    <div style="font-family:Inter,sans-serif;max-width:600px;margin:0 auto;background:#060e18;color:#e2e8f0;border-radius:12px;overflow:hidden">
+      <div style="background:#facc15;padding:20px 28px">
+        <h1 style="margin:0;color:#060e18;font-size:1.2rem">⚡ DataSphere — Validation requise</h1>
+      </div>
+      <div style="padding:28px">
+        <p style="color:#94a3b8;margin:0 0 16px">Une étape du workflow nécessite votre validation :</p>
+        <div style="background:#0c1425;border:1px solid rgba(250,204,21,.2);border-radius:10px;padding:20px;margin-bottom:24px">
+          <div style="font-size:.8rem;color:#475569;margin-bottom:4px">APPEL D'OFFRES</div>
+          <div style="font-size:1.1rem;font-weight:700;color:#e2e8f0;margin-bottom:12px">{tender_title}</div>
+          <div style="font-size:.8rem;color:#475569;margin-bottom:4px">ÉTAPE EN ATTENTE</div>
+          <div style="font-size:1rem;font-weight:600;color:#facc15">{step_label}</div>
+        </div>
+        <a href="{approve_url}"
+           style="display:inline-block;padding:12px 24px;background:#facc15;color:#060e18;border-radius:9px;text-decoration:none;font-weight:800;font-size:.9rem">
+          Valider maintenant →
+        </a>
+        <p style="color:#334155;font-size:.75rem;margin-top:24px">
+          DataSphere Innovation · <a href="{approve_url}" style="color:#475569">Ouvrir la plateforme</a>
+        </p>
+      </div>
+    </div>
+    """
+    return send_typed_email(
+        to_email=settings.smtp_from,
+        subject=subject,
+        html_body=html,
+        plain_body=f"Validation requise : {step_label} — {tender_title}\nOuvrir : {approve_url}",
+    )
+
+
+def notify_workflow_completed(
+    tender_title: str,
+    tender_id: int,
+    deliverable_id: int | None,
+    frontend_url: str = "",
+) -> bool:
+    """Send email when the full workflow is completed and deliverable is ready."""
+    from app.core.config import get_settings
+    settings = get_settings()
+    if not settings.smtp_configured:
+        import logging
+        logging.getLogger("datasphere.email").info(
+            "[DRY-RUN] Workflow completed: %s deliverable=%s", tender_title, deliverable_id
+        )
+        return False
+
+    url = f"{frontend_url}/deliverables" if frontend_url else "/deliverables"
+    subject = f"✅ Workflow terminé — {tender_title[:60]}"
+    html = f"""
+    <div style="font-family:Inter,sans-serif;max-width:600px;margin:0 auto;background:#060e18;color:#e2e8f0;border-radius:12px;overflow:hidden">
+      <div style="background:#22c55e;padding:20px 28px">
+        <h1 style="margin:0;color:white;font-size:1.2rem">✅ DataSphere — Workflow terminé</h1>
+      </div>
+      <div style="padding:28px">
+        <p style="color:#94a3b8;margin:0 0 16px">Le workflow IA est terminé pour :</p>
+        <div style="background:#0c1425;border:1px solid rgba(34,197,94,.2);border-radius:10px;padding:20px;margin-bottom:24px">
+          <div style="font-size:1.1rem;font-weight:700;color:#e2e8f0;margin-bottom:8px">{tender_title}</div>
+          {"<div style='color:#86efac;font-size:.9rem'>📄 Mémoire technique généré — Livrable #" + str(deliverable_id) + "</div>" if deliverable_id else ""}
+        </div>
+        <a href="{url}" style="display:inline-block;padding:12px 24px;background:#22c55e;color:white;border-radius:9px;text-decoration:none;font-weight:800;font-size:.9rem">
+          Voir le livrable →
+        </a>
+      </div>
+    </div>
+    """
+    return send_typed_email(
+        to_email=settings.smtp_from,
+        subject=subject,
+        html_body=html,
+        plain_body=f"Workflow terminé : {tender_title}\nLivrable : {url}",
+    )

@@ -102,6 +102,7 @@ class Settings(BaseSettings):
     smtp_user: str = ""
     smtp_password: str = ""
     smtp_from: str = "DataSphere Innovation <noreply@datasphere-innovation.fr>"
+    frontend_url: str = "https://datasphere-frontend-n1mb.onrender.com"
     smtp_tls: bool = True
 
     @property
