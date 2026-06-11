@@ -12,9 +12,8 @@
  */
 
 import { useEffect, useRef } from 'react';
+import { API_BASE } from '../api/config';
 
-const API_BASE = (import.meta as { env: { VITE_API_BASE_URL?: string } }).env.VITE_API_BASE_URL
-  || 'http://localhost:8000/api/v1';
 
 export interface ToastEvent {
   id:      string;

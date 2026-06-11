@@ -15,6 +15,7 @@ import {
   FileText, Loader, Upload, X,
 } from 'lucide-react';
 import { apiRequest, tokenStorage } from '../api/client';
+import { API_BASE } from '../api/config';
 
 interface Props {
   opportunityId: number;
@@ -74,8 +75,8 @@ export default function TenderPDFUpload({ opportunityId, opportunityTitle, onCre
     try {
       const form = new FormData();
       form.append('file', f);
-      const API = (import.meta as { env: { VITE_API_BASE_URL?: string } }).env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
-      const res = await fetch(`${API}/pdf-ao/analyze`, {
+      // API_BASE imported from '../api/config'
+      const res = await fetch(`${API_BASE}/pdf-ao/analyze`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: form,
@@ -101,8 +102,8 @@ export default function TenderPDFUpload({ opportunityId, opportunityTitle, onCre
       const form = new FormData();
       form.append('file', file);
       form.append('opportunity_id', String(opportunityId));
-      const API = (import.meta as { env: { VITE_API_BASE_URL?: string } }).env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
-      const res = await fetch(`${API}/pdf-ao/analyze-and-create`, {
+      // API_BASE imported from '../api/config'
+      const res = await fetch(`${API_BASE}/pdf-ao/analyze-and-create`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: form,

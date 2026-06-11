@@ -2,9 +2,8 @@ import { useEffect, useState } from 'react';
 import { ChevronDown, ChevronUp, Clock, Download, GitBranch, RefreshCw, RotateCcw } from 'lucide-react';
 import { apiRequest, tokenStorage } from '../api/client';
 import type { DeliverableVersionItem } from '../api/domainTypes';
+import { API_BASE } from '../api/config';
 
-const API_BASE = (import.meta as { env: { VITE_API_BASE_URL?: string } }).env.VITE_API_BASE_URL
-  || 'http://localhost:8000/api/v1';
 
 interface DiffLine {
   type: 'add' | 'remove' | 'equal';

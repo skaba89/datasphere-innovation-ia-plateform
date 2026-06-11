@@ -252,13 +252,20 @@ Conclusion claire : GO ✅ ou NO-GO ❌ avec justification en 3 lignes.
         from sqlalchemy import text
         count = db.execute(text("SELECT COUNT(*) FROM go_no_go_criteria WHERE tender_id=:tid"), {"tid": tender_id}).scalar() or 0
         if count == 0:
-            # Create default criteria based on LLM result
-            for criterion in ["Adéquation technique", "Budget/TJM", "Probabilité de gain", "Charge de réponse", "Risques contractuels"]:
-                decision = "go" if "GO ✅" in result or result.upper().count("GO") > result.upper().count("NO") else "no_go"
+            is_go = "GO ✅" in result or result.upper().count("GO ✅") > 0
+            score = 7 if is_go else 3
+            rec = "go" if is_go else "no_go"
+            for name, desc in [
+                ("Adéquation technique", "Maîtrise Data/IA, Snowflake, dbt, Python"),
+                ("Budget / TJM marché", "Cohérence budget vs TJM senior 600-900€/j"),
+                ("Probabilité de gain", "Estimation concurrence et probabilité de succès"),
+                ("Charge de réponse", "Effort de réponse vs bénéfice attendu"),
+                ("Risques contractuels", "Délai, pénalités, engagements de résultat"),
+            ]:
                 db.execute(text(
-                    "INSERT INTO go_no_go_criteria (tender_id, criterion, decision, comment, created_at, updated_at) "
-                    "VALUES (:tid, :criterion, :decision, :comment, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"
-                ), {"tid": tender_id, "criterion": criterion, "decision": decision, "comment": result[:200]})
+                    "INSERT INTO go_no_go_criteria (tender_id, name, description, score, weight, max_score, rationale, recommendation, created_at, updated_at) "
+                    "VALUES (:tid, :name, :desc, :score, 1.0, 10, :rationale, :rec, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"
+                ), {"tid": tender_id, "name": name, "desc": desc, "score": score, "rationale": result[:200], "rec": rec})
             db.commit()
     except Exception as e:
         log.debug("Could not create go_no_go criteria: %s", e)
@@ -378,9 +385,10 @@ Sois réaliste et précis pour un cabinet Data/IA spécialisé en Snowflake, dbt
         if count == 0 and reqs:
             for req in reqs[:10]:
                 db.execute(text(
-                    "INSERT INTO compliance_matrix_items (tender_id, requirement, compliance_status, our_response, created_at, updated_at) "
-                    "VALUES (:tid, :req, :status, :resp, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"
-                ), {"tid": tender_id, "req": req[0][:200], "status": "compliant", "resp": result[:150]})
+                    "INSERT INTO compliance_matrix_items "
+                    "(tender_id, requirement_summary, compliance_status, evidence, created_at, updated_at) "
+                    "VALUES (:tid, :req, :status, :evidence, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"
+                ), {"tid": tender_id, "req": req[0][:200], "status": "compliant", "evidence": result[:150]})
             db.commit()
             count = len(reqs[:10])
     except Exception as e:
