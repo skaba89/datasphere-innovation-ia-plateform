@@ -117,6 +117,15 @@ export default function WorkflowPanel({ tenderId, tenderTitle, token }: Props) {
     finally { setStarting(false); }
   }
 
+  async function handleUnstuck() {
+    setError(null);
+    try {
+      const r = await apiRequest<{ message: string }>(`/workflow/${tenderId}/reset-stuck`, { method: 'POST' }, token);
+      setError(r.message); // show as info
+      await load();
+    } catch (e) { setError(e instanceof Error ? e.message : 'Erreur'); }
+  }
+
   async function handleApprove(stepId: number) {
     setApproving(stepId); setError(null);
     try {
@@ -171,6 +180,15 @@ export default function WorkflowPanel({ tenderId, tenderTitle, token }: Props) {
 
         {/* Actions header */}
         <div style={{ display: 'flex', gap: 6 }}>
+          {isRunning && (
+            <button
+              onClick={handleUnstuck}
+              title="Débloquer les étapes bloquées depuis +2 min"
+              style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid rgba(251,191,36,.3)', background: 'rgba(251,191,36,.06)', color: '#fde68a', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontSize: '.74rem' }}
+            >
+              <AlertTriangle size={12} /> Débloquer
+            </button>
+          )}
           {hasStarted && (
             <button
               onClick={() => handleStart(true)}

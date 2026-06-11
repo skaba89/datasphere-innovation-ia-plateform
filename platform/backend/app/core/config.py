@@ -58,7 +58,7 @@ class Settings(BaseSettings):
 
     # ── LLM Global settings ───────────────────────────────────────────────────
     llm_max_tokens: int = 1500
-    llm_timeout_seconds: int = 60
+    llm_timeout_seconds: int = 25   # 25s max per LLM call — fail fast, try next provider
     # Override provider priority order (comma-separated provider names)
     llm_provider_order: str = ""     # e.g. "groq,anthropic,gemini"
 

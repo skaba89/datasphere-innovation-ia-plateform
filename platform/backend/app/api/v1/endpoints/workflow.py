@@ -235,3 +235,53 @@ def reset(
         db.delete(instance)
         db.commit()
     return {"success": True, "message": f"Workflow AO #{tender_id} remis à zéro."}
+
+
+@router.post("/{tender_id}/reset-stuck")
+def reset_stuck_steps(
+    tender_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Reset steps stuck in 'running' for more than 2 minutes back to 'pending'.
+    Use when a step is blocked and the workflow won't progress.
+    """
+    from app.models.workflow import WorkflowInstance, WorkflowStep
+    from datetime import timedelta
+
+    instance = db.query(WorkflowInstance).filter(
+        WorkflowInstance.tender_id == tender_id
+    ).first()
+    if not instance:
+        raise HTTPException(status_code=404, detail="Workflow introuvable")
+
+    threshold = datetime.utcnow() - timedelta(minutes=2)
+    stuck = db.query(WorkflowStep).filter(
+        WorkflowStep.instance_id == instance.id,
+        WorkflowStep.status == "running",
+        WorkflowStep.started_at < threshold,
+    ).all()
+
+    reset_count = 0
+    for step in stuck:
+        step.status = "pending"
+        step.started_at = None
+        reset_count += 1
+
+    if reset_count > 0:
+        instance.status = "running"
+        db.commit()
+        # Restart
+        from app.db.session import SessionLocal
+        import threading
+        threading.Thread(
+            target=_run_next_step,
+            args=(instance.id, SessionLocal),
+            daemon=True,
+        ).start()
+
+    return {
+        "reset_count": reset_count,
+        "message": f"{reset_count} étape(s) remise(s) en file. Workflow relancé." if reset_count > 0 else "Aucune étape bloquée trouvée.",
+    }

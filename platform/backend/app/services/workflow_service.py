@@ -102,6 +102,8 @@ def _run_next_step(instance_id: int, session_factory) -> None:
 
 def _execute_step(db: Session, instance: WorkflowInstance,
                   step: WorkflowStep, session_factory) -> None:
+    import signal
+
     step.status = "running"
     step.started_at = datetime.utcnow()
     instance.current_step = step.step_key
@@ -110,8 +112,20 @@ def _execute_step(db: Session, instance: WorkflowInstance,
 
     log.info("Executing step: %s tender=%d", step.step_key, instance.tender_id)
 
+    # Global timeout per step: 45 seconds max
+    STEP_TIMEOUT = 45
+
     try:
-        summary, artifact_type, artifact_id = _run_agent(db, instance, step)
+        from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(_run_agent, db, instance, step)
+            try:
+                summary, artifact_type, artifact_id = future.result(timeout=STEP_TIMEOUT)
+            except FutureTimeout:
+                raise RuntimeError(
+                    f"Timeout dépassé ({STEP_TIMEOUT}s). "
+                    "Vérifiez que GROQ_API_KEY ou GEMINI_API_KEY est configuré dans Render → Environment."
+                )
 
         step.completed_at = datetime.utcnow()
         step.result_summary = summary
@@ -132,7 +146,7 @@ def _execute_step(db: Session, instance: WorkflowInstance,
 
     except Exception as e:
         step.status = "failed"
-        step.result_summary = f"Erreur agent : {e}"
+        step.result_summary = f"Erreur : {str(e)[:300]}"
         instance.status = "failed"
         instance.error_message = f"Étape '{step.step_label}' : {str(e)[:300]}"
         db.commit()
