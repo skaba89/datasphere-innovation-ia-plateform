@@ -53,7 +53,7 @@ class TenderRead(TenderBase):
 
 
 class TenderRequirementBase(BaseModel):
-    tender_id: int
+    tender_id: int | None = None  # Auto-injected from URL path if not provided
     requirement_code: str | None = None
     section: str | None = None
     description: str = Field(..., min_length=2)

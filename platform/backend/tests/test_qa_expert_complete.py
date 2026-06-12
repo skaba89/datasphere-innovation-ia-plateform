@@ -1149,3 +1149,168 @@ class TestQA_Resilience:
                       "/analytics/timeline", "/analytics/performance"]:
             r = get(client, route, auth_headers)
             assert r.status_code == 200, f"{route} returned {r.status_code}"
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 21. TESTS DES AMÉLIORATIONS QA (après audit)
+# ═══════════════════════════════════════════════════════════════════
+
+class TestQA_Improvements:
+    """Validations des corrections et améliorations post-audit QA."""
+
+    # ── Statuts opportunité — aliases anglais ──────────────────────
+
+    def test_opportunity_accepts_english_won(self, client, auth_headers):
+        """PATCH /status doit accepter 'won' comme alias de 'Gagnée'."""
+        org = post(client, "/organizations", auth_headers, {"name": "Alias Org", "source": "manual"}).json()
+        opp = post(client, "/opportunities", auth_headers, {
+            "organization_id": org["id"], "title": "Alias Test", "status": "open", "source": "manual"
+        }).json()
+        r = patch(client, f"/opportunities/{opp['id']}/status", auth_headers, {"status": "won"})
+        assert r.status_code == 200
+        assert r.json()["status"] == "Gagnée"
+
+    def test_opportunity_accepts_english_lost(self, client, auth_headers):
+        org = post(client, "/organizations", auth_headers, {"name": "Alias Org2", "source": "manual"}).json()
+        opp = post(client, "/opportunities", auth_headers, {
+            "organization_id": org["id"], "title": "Alias Lost", "status": "open", "source": "manual"
+        }).json()
+        r = patch(client, f"/opportunities/{opp['id']}/status", auth_headers, {"status": "lost"})
+        assert r.status_code == 200
+        assert r.json()["status"] == "Perdue"
+
+    def test_pipeline_statuses_endpoint(self, client, auth_headers):
+        """GET /opportunities/pipeline/statuses doit retourner la liste + aliases."""
+        r = get(client, "/opportunities/pipeline/statuses", auth_headers)
+        assert r.status_code == 200
+        data = r.json()
+        assert "statuses" in data
+        assert "aliases" in data
+        assert "won" in data["aliases"]
+        assert "lost" in data["aliases"]
+        assert len(data["statuses"]) >= 6
+
+    # ── Tender requirements — tender_id auto-injecté ──────────────
+
+    def test_requirement_without_body_tender_id(self, client, auth_headers):
+        """POST /tenders/{id}/requirements sans tender_id dans le body → auto-inject."""
+        org = post(client, "/organizations", auth_headers, {"name": "AutoInj Org", "source": "manual"}).json()
+        opp = post(client, "/opportunities", auth_headers, {
+            "organization_id": org["id"], "title": "AutoInj Opp", "status": "open", "source": "manual"
+        }).json()
+        t = post(client, "/tenders", auth_headers, {
+            "opportunity_id": opp["id"], "title": "AO AutoInj", "buyer_name": "ARTP",
+            "summary": "Test auto-injection.", "status": "draft", "source": "manual"
+        }).json()
+        # No tender_id in body — should be auto-injected from URL
+        r = post(client, f"/tenders/{t['id']}/requirements", auth_headers, {
+            "description": "Maîtrise de Python 3.11 et Snowflake en production.",
+            "requirement_type": "technical", "status": "to_analyze"
+        })
+        assert r.status_code == 201
+        assert r.json()["tender_id"] == t["id"]
+
+    # ── Governance — tender_id auto-injecté ───────────────────────
+
+    def test_go_no_go_without_body_tender_id(self, client, auth_headers):
+        """GoNoGo criterion sans tender_id dans le body → auto-inject."""
+        org = post(client, "/organizations", auth_headers, {"name": "GNG Org", "source": "manual"}).json()
+        opp = post(client, "/opportunities", auth_headers, {
+            "organization_id": org["id"], "title": "GNG Opp", "status": "open", "source": "manual"
+        }).json()
+        t = post(client, "/tenders", auth_headers, {
+            "opportunity_id": opp["id"], "title": "AO GNG", "buyer_name": "ARTP",
+            "summary": "Test Go/No-Go.", "status": "draft", "source": "manual"
+        }).json()
+        # No tender_id in body
+        r = post(client, f"/tender-governance/tenders/{t['id']}/go-no-go", auth_headers, {
+            "name": "Adéquation technique data",
+            "description": "Snowflake + dbt Core maîtrisés.",
+            "score": 8, "weight": 2, "max_score": 10,
+            "rationale": "Stack parfaitement aligné.", "recommendation": "go"
+        })
+        assert r.status_code == 201
+        assert r.json()["tender_id"] == t["id"]
+
+    # ── Deliverables — approver optionnel ─────────────────────────
+
+    def test_approve_without_approver_name(self, client, auth_headers):
+        """POST /deliverables/{id}/approve sans approver_name → utilise l'email du user."""
+        org = post(client, "/organizations", auth_headers, {"name": "Appr Org", "source": "manual"}).json()
+        opp = post(client, "/opportunities", auth_headers, {
+            "organization_id": org["id"], "title": "Appr Opp", "status": "open", "source": "manual"
+        }).json()
+        t = post(client, "/tenders", auth_headers, {
+            "opportunity_id": opp["id"], "title": "AO Appr", "buyer_name": "TEST",
+            "summary": "Test approbation.", "status": "draft", "source": "manual"
+        }).json()
+        d = post(client, "/deliverables", auth_headers, {
+            "tender_id": t["id"], "title": "Livrable Approbation",
+            "deliverable_type": "technical_proposal", "status": "draft",
+            "content_markdown": "# Mémoire test\n\nContenu de test pour approbation automatique.", "version": 1
+        }).json()
+        # No body at all — approver defaults to current user
+        r = post(client, f"/deliverables/{d['id']}/approve", auth_headers)
+        assert r.status_code == 200
+        assert r.json()["status"] == "approved"
+        # approved_by should be set (to current user email or name)
+        assert r.json().get("approved_by") is not None
+
+    # ── Sections — section_key auto-généré ───────────────────────
+
+    def test_section_without_section_key(self, client, auth_headers):
+        """POST /deliverables/{id}/sections sans section_key → auto-généré depuis title."""
+        org = post(client, "/organizations", auth_headers, {"name": "SK Org", "source": "manual"}).json()
+        opp = post(client, "/opportunities", auth_headers, {
+            "organization_id": org["id"], "title": "SK Opp", "status": "open", "source": "manual"
+        }).json()
+        t = post(client, "/tenders", auth_headers, {
+            "opportunity_id": opp["id"], "title": "AO SK", "buyer_name": "TEST",
+            "summary": "Test section key.", "status": "draft", "source": "manual"
+        }).json()
+        d = post(client, "/deliverables", auth_headers, {
+            "tender_id": t["id"], "title": "Livrable Section Key",
+            "deliverable_type": "technical_proposal", "status": "draft",
+            "content_markdown": "# Mémoire\n\nTest section_key auto-génération.", "version": 1
+        }).json()
+        # No section_key — should be auto-generated from title
+        r = post(client, f"/deliverables/{d['id']}/sections", auth_headers, {
+            "deliverable_id": d["id"],
+            "title": "Compréhension du besoin client",
+            "content_markdown": "Nous avons analysé les besoins ARTP."
+        })
+        assert r.status_code == 201
+        section = r.json()
+        assert section["section_key"] is not None
+        assert len(section["section_key"]) >= 2
+        # Should be slugified from title
+        assert "compr" in section["section_key"].lower() or "section" in section["section_key"].lower()
+
+    # ── 500 prevention renforcé ───────────────────────────────────
+
+    def test_status_aliases_complete_coverage(self, client, auth_headers):
+        """Tous les alias anglais sont documentés dans /pipeline/statuses."""
+        r = get(client, "/opportunities/pipeline/statuses", auth_headers)
+        aliases = r.json()["aliases"]
+        for alias in ["won", "lost", "open", "closed", "prospect"]:
+            assert alias in aliases, f"Missing alias: {alias}"
+
+    def test_requirement_with_mismatched_tender_id_auto_corrects(self, client, auth_headers):
+        """tender_id dans le body != URL → auto-corrigé (pas d'erreur 400)."""
+        org = post(client, "/organizations", auth_headers, {"name": "MM Org", "source": "manual"}).json()
+        opp = post(client, "/opportunities", auth_headers, {
+            "organization_id": org["id"], "title": "MM Opp", "status": "open", "source": "manual"
+        }).json()
+        t = post(client, "/tenders", auth_headers, {
+            "opportunity_id": opp["id"], "title": "AO MM", "buyer_name": "B",
+            "summary": "Test mismatch.", "status": "draft", "source": "manual"
+        }).json()
+        # Wrong tender_id in body (999 != real tid)
+        r = post(client, f"/tenders/{t['id']}/requirements", auth_headers, {
+            "tender_id": 999,
+            "description": "Exigence mismatch test auto-correction.",
+            "requirement_type": "technical", "status": "to_analyze"
+        })
+        assert r.status_code == 201
+        # Should be auto-corrected to the URL tender_id
+        assert r.json()["tender_id"] == t["id"]
