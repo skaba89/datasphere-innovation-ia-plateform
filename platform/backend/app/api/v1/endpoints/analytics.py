@@ -405,7 +405,7 @@ def timeline_analytics(db: Session = Depends(get_db)):
     }
 
 
-@router.get("/performance")
+@router.get("/performance-v2")
 def performance_stats(db: Session = Depends(get_db)):
     """KPIs de performance : TJM moyen, délai moyen workflow, nb providers actifs."""
     from datetime import datetime, timedelta

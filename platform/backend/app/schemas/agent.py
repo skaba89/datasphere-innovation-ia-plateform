@@ -11,7 +11,7 @@ class AgentProfileBase(BaseModel):
     languages: str = "fr,en"
     mission_types: str | None = None
     description: str | None = None
-    instruction_template: str | None = Field(default=None, min_length=20)
+    instruction_template: str = Field(..., min_length=10, description="System prompt envoyé au LLM. Obligatoire.")
     tools: str | None = None
     governance_rules: str | None = None
     is_active: bool = True
@@ -28,7 +28,7 @@ class AgentProfileUpdate(BaseModel):
     languages: str | None = None
     mission_types: str | None = None
     description: str | None = None
-    instruction_template: str | None = Field(default=None, min_length=20)
+    instruction_template: str = Field(..., min_length=10, description="System prompt envoyé au LLM. Obligatoire.")
     tools: str | None = None
     governance_rules: str | None = None
     is_active: bool | None = None
@@ -40,6 +40,18 @@ class AgentProfileRead(AgentProfileBase):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+    @model_validator(mode="before")
+    @classmethod
+    def map_system_prompt(cls, data):
+        """Map ORM system_prompt → instruction_template before Pydantic validation."""
+        if hasattr(data, "__dict__"):
+            if hasattr(data, "system_prompt") and not hasattr(data, "instruction_template"):
+                object.__setattr__(data, "instruction_template", data.system_prompt or "")
+        elif isinstance(data, dict):
+            if "system_prompt" in data and "instruction_template" not in data:
+                data["instruction_template"] = data["system_prompt"]
+        return data
 
 
 class AgentAssignmentBase(BaseModel):
