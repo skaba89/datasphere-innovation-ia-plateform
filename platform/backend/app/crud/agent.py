@@ -26,7 +26,10 @@ def get_agent_by_slug(db: Session, slug: str) -> AgentProfile | None:
 
 def create_agent(db: Session, payload: AgentProfileCreate) -> AgentProfile:
     data = payload.model_dump()
-    data["system_prompt"] = data.pop("instruction_template")
+    system_prompt = data.pop("instruction_template", None)
+    if not system_prompt:
+        raise ValueError("instruction_template (system_prompt) est obligatoire")
+    data["system_prompt"] = system_prompt
     agent = AgentProfile(**data)
     db.add(agent)
     db.commit()
