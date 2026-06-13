@@ -253,8 +253,9 @@ def diagnose_login(db: Session = Depends(get_db)):
         checks["alembic_revision"] = f"ERROR: {e}"
 
     # 5. Settings
-    checks["app_env"] = settings.app_env
-    checks["secret_key_set"] = len(settings.secret_key) >= 32
+    _s = get_settings()
+    checks["app_env"] = _s.app_env
+    checks["secret_key_set"] = len(_s.secret_key) >= 32
 
     overall = all(
         "ERROR" not in str(v) and "MISSING" not in str(v)
