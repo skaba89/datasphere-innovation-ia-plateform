@@ -181,3 +181,101 @@ def test_webhook(
         "url":          ep.url,
         "message":      "Événement test envoyé en arrière-plan. Vérifiez votre endpoint dans quelques secondes.",
     }
+
+
+@router.get("/templates")
+def list_webhook_templates(current_user=Depends(get_current_user)):
+    """Return pre-built webhook templates for Zapier, Make, Slack, etc."""
+    return [
+        {
+            "key":         "zapier_tender_go",
+            "name":        "Zapier — AO décision GO",
+            "description": "Déclenche un Zap quand un AO reçoit une décision GO",
+            "platform":    "zapier",
+            "events":      ["tender.go_decision"],
+            "payload_example": {
+                "event":      "tender.go_decision",
+                "tender_id":  42,
+                "title":      "Mission Data Lake ARTP",
+                "buyer_name": "ARTP Guinée",
+                "score":      87,
+                "decision":   "go",
+                "deadline":   "2026-07-15T00:00:00Z",
+            },
+            "setup_url":   "https://zapier.com/apps/webhooks",
+            "docs":        "Collez l'URL du Zap dans le champ URL de votre webhook DataSphere.",
+        },
+        {
+            "key":         "make_workflow_complete",
+            "name":        "Make — Workflow terminé",
+            "description": "Déclenche un scénario Make quand un mémoire technique est prêt",
+            "platform":    "make",
+            "events":      ["workflow.completed"],
+            "payload_example": {
+                "event":          "workflow.completed",
+                "tender_id":      42,
+                "tender_title":   "Mission Data Lake ARTP",
+                "deliverable_id": 15,
+                "generated_at":   "2026-06-13T08:30:00Z",
+            },
+            "setup_url": "https://www.make.com/en/integrations/webhooks",
+            "docs":      "Créez un scénario Make avec le module Webhooks > Custom Webhook.",
+        },
+        {
+            "key":         "slack_boamp_match",
+            "name":        "Slack — BOAMP AO détecté",
+            "description": "Notifie un canal Slack quand un AO BOAMP à fort score est détecté",
+            "platform":    "slack",
+            "events":      ["boamp.match"],
+            "payload_example": {
+                "text":        "🎯 *Nouvel AO détecté* — Mission Data Engineering (Score : 91/100)",
+                "attachments": [{
+                    "color":  "#facc15",
+                    "fields": [
+                        {"title": "Acheteur",  "value": "ARTP Guinée",    "short": True},
+                        {"title": "Score",     "value": "91/100",         "short": True},
+                        {"title": "Deadline",  "value": "15 juillet 2026","short": True},
+                    ],
+                }],
+            },
+            "setup_url": "https://api.slack.com/messaging/webhooks",
+            "docs":      "Créez une Slack App avec Incoming Webhooks activé.",
+        },
+        {
+            "key":         "teams_deliverable_approved",
+            "name":        "Microsoft Teams — Livrable approuvé",
+            "description": "Notifie un canal Teams quand un livrable est approuvé",
+            "platform":    "teams",
+            "events":      ["deliverable.approved"],
+            "payload_example": {
+                "@type":    "MessageCard",
+                "@context": "http://schema.org/extensions",
+                "title":    "✅ Livrable approuvé",
+                "text":     "Le mémoire **Mission Data Lake ARTP** a été approuvé.",
+                "sections": [{"facts": [
+                    {"name": "Livrable", "value": "Mémoire Technique — Mission Data Lake"},
+                    {"name": "Approuvé par", "value": "Cheickna KABA"},
+                    {"name": "Date", "value": "13/06/2026"},
+                ]}],
+            },
+            "setup_url": "https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors",
+            "docs":      "Dans Teams : canal → Connecteurs → Webhook entrant.",
+        },
+        {
+            "key":         "notion_tender_created",
+            "name":        "Notion — AO importé",
+            "description": "Crée une page Notion quand un nouvel AO est importé",
+            "platform":    "notion",
+            "events":      ["tender.created"],
+            "payload_example": {
+                "event":      "tender.created",
+                "tender_id":  43,
+                "title":      "Mission Gouvernance Data — DGNUM",
+                "buyer_name": "DGNUM Mali",
+                "source":     "boamp",
+                "created_at": "2026-06-13T06:00:00Z",
+            },
+            "setup_url": "https://www.make.com/en/integrations/notion",
+            "docs":      "Utilisez Make pour connecter ce webhook à votre base Notion.",
+        },
+    ]

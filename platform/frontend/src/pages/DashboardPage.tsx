@@ -549,6 +549,115 @@ export default function DashboardPage() {
         </div>
       )}
 
+
+      {/* ── Top AOs urgents + Livrables récents ─────────────────────────── */}
+      {data && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }} className="dashboard-bottom-row">
+
+          {/* Top AOs urgents */}
+          <div style={{ ...card, padding: '18px 22px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <div style={sectionTitle}>
+                <Target size={12} style={{ verticalAlign: 'middle', marginRight: 6 }} />
+                AOs prioritaires
+              </div>
+              <span style={{ fontSize: '.7rem', color: '#64748b' }}>deadlines les plus proches</span>
+            </div>
+            {(data.top_tenders ?? []).length === 0 ? (
+              <p style={{ fontSize: '.82rem', color: '#475569', margin: 0 }}>Aucun AO en cours avec deadline</p>
+            ) : (
+              <div style={{ display: 'grid', gap: 8 }}>
+                {(data.top_tenders ?? []).map((t: any) => {
+                  const urgent = t.days_left !== null && t.days_left <= 7;
+                  const warning = t.days_left !== null && t.days_left <= 14;
+                  return (
+                    <div key={t.id} style={{
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      padding: '8px 12px', borderRadius: 10,
+                      background: urgent ? 'rgba(239,68,68,.05)' : 'rgba(255,255,255,.02)',
+                      border: `1px solid ${urgent ? 'rgba(239,68,68,.18)' : warning ? 'rgba(245,158,11,.15)' : 'rgba(148,163,184,.08)'}`,
+                    }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '.82rem', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {t.title}
+                        </div>
+                        <div style={{ fontSize: '.72rem', color: '#64748b', marginTop: 2 }}>
+                          {t.buyer_name}
+                          {t.go_no_go === 'go' && <span style={{ marginLeft: 6, color: '#22c55e', fontWeight: 700 }}>GO ✓</span>}
+                        </div>
+                      </div>
+                      {t.days_left !== null && (
+                        <div style={{
+                          fontSize: '.75rem', fontWeight: 800, whiteSpace: 'nowrap',
+                          color: urgent ? '#fca5a5' : warning ? '#fbbf24' : '#94a3b8',
+                          padding: '2px 7px', borderRadius: 6,
+                          background: urgent ? 'rgba(239,68,68,.1)' : warning ? 'rgba(245,158,11,.08)' : 'transparent',
+                        }}>
+                          {t.days_left <= 0 ? 'Expiré' : `${t.days_left}j`}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Livrables récents */}
+          <div style={{ ...card, padding: '18px 22px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <div style={sectionTitle}>
+                <FileText size={12} style={{ verticalAlign: 'middle', marginRight: 6 }} />
+                Livrables récents
+              </div>
+              <span style={{ fontSize: '.7rem', color: '#64748b' }}>7 derniers jours</span>
+            </div>
+            {(data.recent_deliverables ?? []).length === 0 ? (
+              <p style={{ fontSize: '.82rem', color: '#475569', margin: 0 }}>Aucun livrable récent</p>
+            ) : (
+              <div style={{ display: 'grid', gap: 8 }}>
+                {(data.recent_deliverables ?? []).map((d: any) => {
+                  const statusColor: Record<string, string> = {
+                    approved: '#22c55e', in_review: '#f59e0b',
+                    draft: '#64748b', rejected: '#ef4444',
+                  };
+                  const statusLabel: Record<string, string> = {
+                    approved: 'Approuvé', in_review: 'En révision',
+                    draft: 'Brouillon', rejected: 'Rejeté',
+                  };
+                  return (
+                    <div key={d.id} style={{
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      padding: '8px 12px', borderRadius: 10,
+                      background: 'rgba(255,255,255,.02)',
+                      border: '1px solid rgba(148,163,184,.08)',
+                    }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '.82rem', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {d.title}
+                        </div>
+                        <div style={{ fontSize: '.7rem', color: '#64748b', marginTop: 2 }}>
+                          {d.type?.replace(/_/g, ' ')}
+                        </div>
+                      </div>
+                      <span style={{
+                        fontSize: '.68rem', fontWeight: 700, padding: '2px 7px', borderRadius: 6,
+                        background: `${statusColor[d.status] || '#64748b'}15`,
+                        color: statusColor[d.status] || '#64748b',
+                        border: `1px solid ${statusColor[d.status] || '#64748b'}30`,
+                        whiteSpace: 'nowrap',
+                      }}>
+                        {statusLabel[d.status] || d.status}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>

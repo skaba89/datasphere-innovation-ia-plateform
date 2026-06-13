@@ -9,6 +9,8 @@ import { can, type AppPermission } from './auth/rbac';
 import AuditLogPage from './pages/AuditLogPage';
 import CommercialPage from './pages/CommercialPage';
 import ConsultantProfilesPage from './pages/ConsultantProfilesPage';
+import NotificationsPage from './pages/NotificationsPage';
+import SearchPage from './pages/SearchPage';
 import DashboardPage from './pages/DashboardPage';
 import DeliverablePage from './pages/DeliverablePage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
@@ -50,6 +52,8 @@ type RootView =
   | 'data-export'
   | 'linkedin'
   | 'consultant-profiles'
+  | 'notifications'
+  | 'search'
   | 'calculator'
   | 'pricing'
   | 'settings';
@@ -242,6 +246,8 @@ export default function AppRoot() {
     { key: 'data-export',   label: t('nav.data_export'),       permission: 'audit:read' },
     { key: 'linkedin',      label: t('nav.linkedin'),        permission: 'deliverables:write' },
     { key: 'consultant-profiles', label: t('nav.cv_consultant'),  permission: 'deliverables:write' },
+    { key: 'notifications',       label: t('nav.notifications'),    permission: 'deliverables:read'  },
+    { key: 'search',              label: t('nav.search'),           permission: 'deliverables:read'  },
     { key: 'team',          label: t('nav.team'),               permission: 'team:read' },
     { key: 'audit',         label: t('nav.audit'),                permission: 'audit:read' },
     { key: 'workspaces',    label: t('nav.workspaces'),           permission: 'workspaces:read' },
@@ -417,6 +423,8 @@ export default function AppRoot() {
       {activeView === 'data-export'   && <DataExportPage />}
       {activeView === 'linkedin'       && <LinkedInAgentPage />}
       {activeView === 'consultant-profiles' && <ConsultantProfilesPage />}
+      {activeView === 'notifications'        && <NotificationsPage />}
+      {activeView === 'search'               && <SearchPage />}
       {activeView === 'team'          && <TeamPage />}
       {activeView === 'audit'         && <AuditLogPage />}
       {activeView === 'workspaces'    && <WorkspacesPage />}

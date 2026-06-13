@@ -28,6 +28,9 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     'nav.profile':        'Mon profil',
     'nav.linkedin':       'Agent LinkedIn',
     'nav.cv_consultant':  'Agent CV Consultant',
+    'nav.notifications':  'Notifications',
+    'nav.search':         'Recherche',
+    'nav.webhooks':       'Webhooks',
 
     // Dashboard
     'dashboard.title':      'Tableau de bord',
@@ -204,6 +207,9 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     'nav.profile':        'My Profile',
     'nav.linkedin':       'LinkedIn Agent',
     'nav.cv_consultant':  'CV Agent',
+    'nav.notifications':  'Notifications',
+    'nav.search':         'Search',
+    'nav.webhooks':       'Webhooks',
 
     // Dashboard
     'dashboard.title':      'Dashboard',
