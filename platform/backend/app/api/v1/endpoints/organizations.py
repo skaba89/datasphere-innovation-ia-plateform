@@ -29,10 +29,10 @@ def read_organizations(
     db: Session = Depends(get_db),
     ws: Optional[WorkspaceContext] = Depends(get_workspace_scope),
 ):
-    orgs = list_organizations(db, skip=skip, limit=limit)
+    orgs = list_organizations(db, skip=skip, limit=limit, workspace_id=ws.id if ws else None)
     # Filter by workspace if context is provided
     if ws is not None:
-        orgs = [o for o in orgs if o.workspace_id is None or o.workspace_id == ws.id]
+        orgs = orgs
     return orgs
 
 

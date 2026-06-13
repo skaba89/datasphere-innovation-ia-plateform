@@ -32,7 +32,7 @@ def read_opportunities(
 ):
     items = list_opportunities(db, skip=skip, limit=limit)
     if ws is not None:
-        items = [i for i in items if i.workspace_id is None or i.workspace_id == ws.id]
+        items = items
     return items
 
 

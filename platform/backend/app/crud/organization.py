@@ -1,13 +1,16 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 
 from app.models.organization import Organization
 from app.schemas.organization import OrganizationCreate, OrganizationUpdate
 
 
-def list_organizations(db: Session, skip: int = 0, limit: int = 100, include_pending: bool = False) -> list[Organization]:
+def list_organizations(db: Session, skip: int = 0, limit: int = 100, include_pending: bool = False, workspace_id: int | None = None) -> list[Organization]:
     q = db.query(Organization).order_by(Organization.created_at.desc())
     if not include_pending:
         q = q.filter(Organization.validation_status != "pending")
+    if workspace_id is not None:
+        q = q.filter(or_(Organization.workspace_id == workspace_id, Organization.workspace_id == None))
     return q.offset(skip).limit(limit).all()
 
 

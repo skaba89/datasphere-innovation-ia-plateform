@@ -268,8 +268,6 @@ export default function DashboardPage() {
       {showOnboarding && (
         <SetupWizard
           token={token}
-          hasProviders={(kpis?.providers?.configured ?? 0) > 0}
-          hasTenders={(data?.tenders?.total ?? 0) > 0}
           onDismiss={() => {
             try { sessionStorage.setItem('onboarding_dismissed', 'true'); } catch {}
             setShowOnboarding(false);

@@ -5,6 +5,8 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user
+from app.api.workspace_scope import get_workspace_scope, WorkspaceContext
+from typing import Optional
 from app.models.user import User
 from app.crud.deliverable import (
     approve_deliverable,
