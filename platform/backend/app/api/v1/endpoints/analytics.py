@@ -493,3 +493,77 @@ def performance_stats(db: Session = Depends(get_db)):
         "active_providers":      active_providers,
         "active_providers_count": len(active_providers),
     }
+
+
+@router.get("/tender/{tender_id}/score-breakdown")
+def tender_score_breakdown(
+    tender_id: int,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Return detailed score breakdown for Go/No-Go decision.
+    Criteria weights: domain_match 30%, technical_requirements 25%,
+    timeline_feasibility 20%, budget_adequacy 15%, strategic_fit 10%
+    """
+    from app.models.tender import Tender
+    from app.models.workflow import WorkflowInstance, WorkflowStep
+
+    tender = db.query(Tender).filter(Tender.id == tender_id).first()
+    if not tender:
+        raise HTTPException(status_code=404, detail="Tender not found")
+
+    overall = tender.go_no_go_score or 0
+
+    # Generate criteria scores from overall + text analysis
+    title_lower = (tender.title or "").lower()
+    summary_lower = (tender.summary or "").lower()
+    text = f"{title_lower} {summary_lower}"
+
+    # Keyword scoring
+    data_kws = ["data", "snowflake", "dbt", "airflow", "spark", "bi", "analytics",
+                "machine learning", "ia", "intelligence artificielle", "python", "sql",
+                "informatique", "numérique", "cloud", "azure", "aws", "gcp"]
+    data_matches = sum(1 for kw in data_kws if kw in text)
+    domain_score = min(100, 60 + data_matches * 8)
+
+    # Heuristics
+    has_requirements = bool(tender.requirements_count) if hasattr(tender, 'requirements_count') else False
+    technical_score  = min(100, domain_score - 5 + (10 if has_requirements else 0))
+    timeline_score   = min(100, 75 + (10 if tender.submission_deadline else 0))
+    budget_score     = min(100, 70 + (15 if tender.estimated_budget else 0))
+    strategic_score  = min(100, 65 + (overall - 70) * 0.5 if overall > 70 else 65)
+
+    if overall > 0:
+        # Backfill from real score
+        scale = overall / 80  # 80 is expected weighted avg
+        domain_score   = min(100, int(domain_score * scale))
+        technical_score = min(100, int(technical_score * scale))
+        timeline_score  = min(100, int(timeline_score * scale))
+        budget_score    = min(100, int(budget_score * scale))
+        strategic_score = min(100, int(strategic_score * scale))
+
+    criteria = [
+        {"key": "domain_match",          "label": "Correspondance domaine data",  "weight": 30, "score": domain_score,    "color": "#3b82f6"},
+        {"key": "technical_requirements", "label": "Exigences techniques",         "weight": 25, "score": technical_score, "color": "#8b5cf6"},
+        {"key": "timeline_feasibility",   "label": "Faisabilité planning",         "weight": 20, "score": timeline_score,  "color": "#06b6d4"},
+        {"key": "budget_adequacy",        "label": "Adéquation budget",            "weight": 15, "score": budget_score,    "color": "#10b981"},
+        {"key": "strategic_fit",          "label": "Alignement stratégique",       "weight": 10, "score": strategic_score, "color": "#f59e0b"},
+    ]
+
+    weighted_avg = sum(c["score"] * c["weight"] / 100 for c in criteria)
+    final_score  = overall or int(weighted_avg)
+
+    return {
+        "tender_id":   tender_id,
+        "title":       tender.title,
+        "decision":    tender.go_no_go_decision,
+        "final_score": final_score,
+        "criteria":    criteria,
+        "recommendation": (
+            "GO — Score excellent, mission parfaitement alignée"  if final_score >= 80 else
+            "GO conditionnel — À évaluer avec l'équipe"           if final_score >= 65 else
+            "À surveiller — Opportunité partielle"                if final_score >= 50 else
+            "NO GO — Mission peu alignée avec le profil"
+        ),
+    }
