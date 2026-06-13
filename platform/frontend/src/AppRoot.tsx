@@ -48,6 +48,7 @@ type RootView =
   | 'workspaces'
   | 'data-export'
   | 'linkedin'
+  | 'consultant-profiles'
   | 'calculator'
   | 'pricing'
   | 'settings';
@@ -220,6 +221,7 @@ export default function AppRoot() {
     { key: 'operations',    label: 'Opérations',           permission: 'operations:read' },
     { key: 'data-export',   label: 'Export données',       permission: 'audit:read' },
     { key: 'linkedin',      label: 'Agent LinkedIn',        permission: 'deliverables:write' },
+    { key: 'consultant-profiles', label: 'Agent CV Consultant',  permission: 'deliverables:write' },
     { key: 'team',          label: 'Équipe',               permission: 'team:read' },
     { key: 'audit',         label: 'Audit',                permission: 'audit:read' },
     { key: 'workspaces',    label: 'Workspaces',           permission: 'workspaces:read' },
@@ -394,6 +396,7 @@ export default function AppRoot() {
       {activeView === 'operations'    && <OperationsPage />}
       {activeView === 'data-export'   && <DataExportPage />}
       {activeView === 'linkedin'       && <LinkedInAgentPage />}
+      {activeView === 'consultant-profiles' && <ConsultantProfilesPage />}
       {activeView === 'team'          && <TeamPage />}
       {activeView === 'audit'         && <AuditLogPage />}
       {activeView === 'workspaces'    && <WorkspacesPage />}
