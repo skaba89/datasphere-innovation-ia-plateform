@@ -476,3 +476,59 @@ def create_deliverable_from_template(
     )
     deliverable = create_deliverable(db, payload)
     return get_deliverable_read(db, deliverable.id)
+
+
+# ── RAG — Similar deliverables ────────────────────────────────────────────────
+
+@router.get("/similar")
+def find_similar_deliverables(
+    title:   str,
+    type:    str | None = None,
+    limit:   int = 3,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Find similar approved deliverables (RAG context retrieval)."""
+    from app.services.rag_service import find_similar_deliverables as find_sim
+    return find_sim(db, query_title=title, query_content="",
+                    deliverable_type=type, limit=limit)
+
+
+@router.get("/{deliverable_id}/export/docx")
+def export_deliverable_docx(
+    deliverable_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Export deliverable as formatted Word (.docx) document."""
+    from fastapi.responses import Response
+    from app.services.docx_export import markdown_to_docx
+    from app.crud.tender import get_tender
+
+    deliverable = get_deliverable(db, deliverable_id)
+    if not deliverable:
+        raise HTTPException(status_code=404, detail="Deliverable not found")
+
+    # Get buyer name from tender if available
+    buyer_name = None
+    if deliverable.tender_id:
+        tender = get_tender(db, deliverable.tender_id)
+        if tender:
+            buyer_name = tender.buyer_name
+
+    docx_bytes = markdown_to_docx(
+        title=deliverable.title,
+        content_markdown=deliverable.content_markdown or "",
+        author=f"{current_user.first_name or ''} {current_user.last_name or ''}".strip() or "DataSphere",
+        buyer_name=buyer_name,
+        confidential=True,
+    )
+
+    safe_title = "".join(c for c in deliverable.title if c.isalnum() or c in " -_")[:50]
+    filename = f"Livrable_{safe_title}.docx"
+
+    return Response(
+        content=docx_bytes,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

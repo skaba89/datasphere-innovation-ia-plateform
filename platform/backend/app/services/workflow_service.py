@@ -80,6 +80,7 @@ def _run_next_step(instance_id: int, session_factory) -> None:
 
         if not next_step:
             instance.status = "completed"
+            _push_workflow_event("workflow.completed", instance.tender_id)
             instance.completed_at = datetime.utcnow()
             db.commit()
             log.info("Workflow completed: instance=%d tender=%d", instance_id, instance.tender_id)
@@ -154,6 +155,7 @@ def _execute_step(db: Session, instance: WorkflowInstance,
 
         if step.requires_approval:
             step.status = "awaiting"
+            _push_workflow_event("workflow.step_awaiting", instance.tender_id, step.step_key, step.step_label, "awaiting")
             instance.status = "awaiting_approval"
             db.commit()
             log.info("Step awaiting approval: %s tender=%d", step.step_key, instance.tender_id)
@@ -175,6 +177,7 @@ def _execute_step(db: Session, instance: WorkflowInstance,
                 log.debug("Email notification failed: %s", e)
         else:
             step.status = "done"
+            _push_workflow_event("workflow.step_done", instance.tender_id, step.step_key, step.step_label, "done")
             db.commit()
             threading.Thread(target=_run_next_step, args=(instance.id, session_factory), daemon=True).start()
 
@@ -208,6 +211,24 @@ def _run_agent(db, instance, step) -> tuple[str, str | None, int | None]:
     if key == "generate_draft":   return _step_generate_draft(db, tid, instance)
     if key == "final_review":     return _step_final_review(db, tid)
     return (f"Étape '{key}' exécutée.", None, None)
+
+
+
+def _push_workflow_event(event_type: str, tender_id: int, step_key: str = "",
+                         step_label: str = "", status: str = ""):
+    """Push workflow update to all connected clients via SSE."""
+    try:
+        from app.api.v1.endpoints.sse import push_event
+        push_event(None, {
+            "type":        event_type,
+            "tender_id":   tender_id,
+            "step_key":    step_key,
+            "step_label":  step_label,
+            "status":      status,
+            "timestamp":   __import__("datetime").datetime.utcnow().isoformat(),
+        })
+    except Exception:
+        pass  # SSE is best-effort — never block the workflow
 
 
 def _tender_context(tender) -> str:
@@ -493,7 +514,7 @@ Format : plan numéroté avec sous-sections.
 
 def _step_generate_draft(db, tender_id: int, instance: WorkflowInstance) -> tuple:
     from app.crud.tender import get_tender
-    from sqlalchemy import text
+    from app.services.rag_service import enhance_prompt_with_rag
     tender = get_tender(db, tender_id)
     ctx = _tender_context(tender)
 
@@ -508,8 +529,7 @@ def _step_generate_draft(db, tender_id: int, instance: WorkflowInstance) -> tupl
         if s.result_summary and s.step_key in ("analyze", "go_no_go", "requirements", "proposal_outline"):
             prev_context += f"\n\n### Résultats {s.step_label} :\n{s.result_summary[:400]}"
 
-    markdown = _llm(
-        prompt=f"""Rédige le mémoire technique complet pour cet appel d'offres.
+    base_prompt = f"""Rédige le mémoire technique complet pour cet appel d'offres.
 
 AO : {ctx}
 
@@ -525,7 +545,19 @@ Rédige un mémoire technique professionnel complet en Markdown incluant :
 7. Garanties et engagements qualité
 
 Sois précis, professionnel, en français. Minimum 800 mots.
-""",
+"""
+
+    # RAG: enhance prompt with similar approved deliverables
+    enhanced_prompt, rag_sources = enhance_prompt_with_rag(
+        db,
+        base_prompt=base_prompt,
+        title=tender.title or "",
+        content_hint=tender.summary or "",
+        deliverable_type="technical_proposal",
+    )
+
+    markdown = _llm(
+        prompt=enhanced_prompt,
         system="Tu es consultant senior Data & IA rédigeant un mémoire technique de haute qualité pour un cabinet de conseil. Tu maîtrises Snowflake, dbt, Airflow, Python, ML/IA.",
         action_type="commercial_proposal",
     )
