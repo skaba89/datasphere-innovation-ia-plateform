@@ -39,6 +39,9 @@ export default function TenderPage() {
   const [activeTenderId, setActiveTenderId] = useState<number|null>(null);
   const [showPDF,      setShowPDF]      = useState(false);
   const [showWorkflow, setShowWorkflow] = useState(false);
+  const [page,    setPage]    = useState(1);
+  const [perPage] = useState(20);
+  const [total,   setTotal]   = useState(0);
   const [showBOAMP,    setShowBOAMP]    = useState(false);
 
   const loadTenders = useCallback(() => {
@@ -125,6 +128,31 @@ export default function TenderPage() {
 
       {/* Tenders list + editor */}
       <TenderWorkspace token={accessKey} />
+
+      {/* Pagination */}
+      {total > perPage && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, paddingTop: 8 }}>
+          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+            style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid rgba(148,163,184,.15)', background: 'none', color: page === 1 ? '#334155' : '#94a3b8', cursor: page === 1 ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: '.78rem' }}>
+            ← Précédent
+          </button>
+          {Array.from({ length: Math.ceil(total / perPage) }, (_, i) => i + 1).slice(
+            Math.max(0, page - 3), Math.min(Math.ceil(total / perPage), page + 2)
+          ).map(p => (
+            <button key={p} onClick={() => setPage(p)}
+              style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${p === page ? 'rgba(250,204,21,.4)' : 'rgba(148,163,184,.15)'}`, background: p === page ? 'rgba(250,204,21,.08)' : 'none', color: p === page ? '#facc15' : '#94a3b8', cursor: 'pointer', fontWeight: 700, fontSize: '.78rem' }}>
+              {p}
+            </button>
+          ))}
+          <button onClick={() => setPage(p => Math.min(Math.ceil(total / perPage), p + 1))} disabled={page >= Math.ceil(total / perPage)}
+            style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid rgba(148,163,184,.15)', background: 'none', color: page >= Math.ceil(total / perPage) ? '#334155' : '#94a3b8', cursor: page >= Math.ceil(total / perPage) ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: '.78rem' }}>
+            Suivant →
+          </button>
+          <span style={{ fontSize: '.72rem', color: '#475569', marginLeft: 8 }}>
+            {((page - 1) * perPage) + 1}–{Math.min(page * perPage, total)} sur {total}
+          </span>
+        </div>
+      )}
     </main>
   );
 }

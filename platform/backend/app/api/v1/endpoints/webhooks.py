@@ -279,3 +279,47 @@ def list_webhook_templates(current_user=Depends(get_current_user)):
             "docs":      "Utilisez Make pour connecter ce webhook à votre base Notion.",
         },
     ]
+
+
+@router.get("/{webhook_id}/delivery-history")
+def webhook_delivery_history(
+    webhook_id: int,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Return recent delivery attempts for a webhook."""
+    from app.services.webhook_service import WebhookEndpoint
+    ep = db.query(WebhookEndpoint).filter(WebhookEndpoint.id == webhook_id).first()
+    if not ep:
+        raise HTTPException(status_code=404, detail="Webhook not found")
+    return {
+        "id":                  ep.id,
+        "url":                 ep.url,
+        "last_delivery_at":    ep.last_delivery_at.isoformat() if ep.last_delivery_at else None,
+        "last_delivery_status": ep.last_delivery_status,
+        "retry_count":         3,  # Always 3 retries with backoff: 0, 2, 10, 30s
+        "is_healthy":          ep.last_delivery_status in (None, "200", "201", "202", "204"),
+    }
+
+
+@router.post("/{webhook_id}/redeliver")
+def redeliver_webhook(
+    webhook_id: int,
+    event_type: str = "test",
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Manually redeliver a test event to this webhook."""
+    from app.services.webhook_service import WebhookEndpoint
+    from app.services.webhook_service import dispatch
+    ep = db.query(WebhookEndpoint).filter(WebhookEndpoint.id == webhook_id).first()
+    if not ep:
+        raise HTTPException(status_code=404, detail="Webhook not found")
+    if not ep.is_active:
+        raise HTTPException(status_code=400, detail="Webhook is not active")
+    dispatch(event_type, {
+        "message":   "Redelivery test from DataSphere",
+        "webhook_id": webhook_id,
+        "timestamp":  __import__("datetime").datetime.utcnow().isoformat(),
+    }, db)
+    return {"ok": True, "message": f"Event '{event_type}' queued for delivery"}
