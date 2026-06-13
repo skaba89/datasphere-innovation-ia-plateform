@@ -201,6 +201,58 @@ def dashboard_kpis(db: Session = Depends(get_db)):
         Deliverable.created_at >= last_7
     ).count()
 
+    # ── Top AOs — deadlines urgentes (14j) ───────────────────────────────────
+    top_tenders = []
+    try:
+        urgent = db.query(Tender).filter(
+            Tender.validation_status == "validated",
+            Tender.status.notin_(["submitted", "lost", "cancelled"]),
+            Tender.go_no_go_decision != "no_go",
+        ).order_by(Tender.submission_deadline.asc().nullslast()).limit(5).all()
+
+        for t in urgent:
+            days_left = None
+            if t.submission_deadline:
+                delta = (t.submission_deadline.replace(tzinfo=None) - now.replace(tzinfo=None)).days
+                days_left = delta
+            top_tenders.append({
+                "id":              t.id,
+                "title":           t.title[:60],
+                "buyer_name":      t.buyer_name or "—",
+                "status":          t.status,
+                "go_no_go":        t.go_no_go_decision,
+                "score":           t.go_no_go_score,
+                "days_left":       days_left,
+                "deadline":        t.submission_deadline.isoformat() if t.submission_deadline else None,
+            })
+    except Exception:
+        pass
+
+    # ── Livrables récents ────────────────────────────────────────────────────
+    recent_deliverables = []
+    try:
+        recents = db.query(Deliverable).order_by(Deliverable.updated_at.desc()).limit(5).all()
+        for d in recents:
+            recent_deliverables.append({
+                "id":     d.id,
+                "title":  d.title[:55],
+                "status": d.status,
+                "type":   d.deliverable_type,
+                "updated_at": d.updated_at.isoformat() if d.updated_at else None,
+                "tender_id": d.tender_id,
+            })
+    except Exception:
+        pass
+
+    # ── Provider actif ───────────────────────────────────────────────────────
+    active_provider = "simulation"
+    try:
+        from app.services.llm_service import provider_label
+        active_provider = provider_label()
+    except Exception:
+        pass
+
+
     return {
         "generated_at": now.isoformat(),
         "crm": {

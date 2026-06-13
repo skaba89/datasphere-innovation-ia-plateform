@@ -295,6 +295,9 @@ export type NotificationItem = {
 };
 
 export type PipelineAnalytics = {
+  top_tenders?: { id: number; title: string; buyer_name: string; status: string; go_no_go: string | null; score: number | null; days_left: number | null; deadline: string | null }[];
+  recent_deliverables?: { id: number; title: string; status: string; type: string; updated_at: string | null; tender_id: number | null }[];
+  active_provider?: string;
   opportunities: OpportunityStats;
   tenders: TenderStats;
   agents: AgentStats;
