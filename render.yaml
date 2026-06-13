@@ -93,7 +93,13 @@ services:
       - key: SCHEDULER_ENABLED
         value: "true"   # Activé — jobs: BOAMP scan 6h, rapport 7h, hebdo lundi 8h
       - key: BOAMP_SCAN_ENABLED
-        value: "true"   # Scan BOAMP quotidien 6h du matin
+        value: "true"
+      - key: BOAMP_KEYWORDS
+        value: "data informatique numérique IA intelligence artificielle machine learning"
+      - key: BOAMP_SCORE_THRESHOLD
+        value: "70"
+      - key: BOAMP_DAILY_LIMIT
+        value: "50"   # Scan BOAMP quotidien 6h du matin
 
       # LLM (optionnel — au moins un recommandé)
       - key: OPENAI_API_KEY

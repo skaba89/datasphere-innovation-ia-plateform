@@ -164,6 +164,60 @@ function buildFilename(baseName: string, format: ExportFormat): string {
   return `${baseName}-${date}.${format}`;
 }
 
+
+
+// ── Server-side CSV Quick Downloads ──────────────────────────────────────────
+function QuickCSVDownloads({ token }: { token: string | null }) {
+  const API = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+
+  const downloads = [
+    { label: "📋 Appels d'offres",   path: '/export/excel/tenders/csv',       file: 'appels_offres.csv' },
+    { label: '📝 Livrables',          path: '/export/excel/deliverables/csv',  file: 'livrables.csv'    },
+    { label: '🏢 Organisations',      path: '/export/excel/contacts/csv',       file: 'contacts.csv'     },
+    { label: '🎯 Opportunités',       path: '/export/excel/opportunities/csv',  file: 'opportunites.csv' },
+    { label: '🔍 Logs audit',         path: '/audit-logs/export/csv',          file: 'audit_logs.csv'   },
+  ];
+
+  async function download(path: string, filename: string) {
+    try {
+      const resp = await fetch(`${API}${path}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!resp.ok) throw new Error(`${resp.status}`);
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename; a.click();
+      URL.revokeObjectURL(url);
+    } catch(e) {
+      alert(`Erreur export: ${e}`);
+    }
+  }
+
+  return (
+    <div style={{ display: 'grid', gap: 8 }}>
+      <h3 style={{ margin: '0 0 8px', fontSize: '.82rem', fontWeight: 800, color: '#facc15' }}>
+        ⚡ Export rapide CSV (serveur)
+      </h3>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+        {downloads.map(d => (
+          <button key={d.path} onClick={() => download(d.path, d.file)}
+            style={{
+              padding: '10px 14px', borderRadius: 9, border: '1px solid rgba(148,163,184,.12)',
+              background: 'rgba(255,255,255,.03)', color: '#94a3b8', cursor: 'pointer',
+              fontSize: '.78rem', fontWeight: 600, textAlign: 'left' as const,
+              display: 'flex', alignItems: 'center', gap: 8, transition: 'all .1s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(250,204,21,.3)')}
+            onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(148,163,184,.12)')}>
+            {d.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function DataExportPage() {
   const token = tokenStorage.get();
   const [data, setData] = useState<ExportState>({});

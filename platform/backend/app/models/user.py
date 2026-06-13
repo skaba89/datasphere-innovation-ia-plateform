@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, Integer, String
+from sqlalchemy import Boolean, Column, DateTime, Integer, String, Text
 
 from app.db.session import Base
 
@@ -16,4 +16,5 @@ class User(Base):
     role = Column(String(50), nullable=False, default="consultant", index=True)
     is_active = Column(Boolean, nullable=False, default=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    extra_data  = Column(Text, nullable=True)   # JSON blob for extended profile
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
