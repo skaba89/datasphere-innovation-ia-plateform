@@ -1,13 +1,16 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 
 from app.models.opportunity import Opportunity
 from app.schemas.opportunity import OpportunityCreate, OpportunityUpdate
 
 
-def list_opportunities(db: Session, skip: int = 0, limit: int = 100, include_pending: bool = False) -> list[Opportunity]:
+def list_opportunities(db: Session, skip: int = 0, limit: int = 100, include_pending: bool = False, workspace_id: int | None = None) -> list[Opportunity]:
     q = db.query(Opportunity).order_by(Opportunity.created_at.desc())
     if not include_pending:
         q = q.filter(Opportunity.validation_status != "pending")
+    if workspace_id is not None:
+        q = q.filter(or_(Opportunity.workspace_id == workspace_id, Opportunity.workspace_id == None))
     return q.offset(skip).limit(limit).all()
 
 

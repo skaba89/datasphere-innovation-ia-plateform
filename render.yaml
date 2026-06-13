@@ -79,6 +79,14 @@ services:
         value: "false"
 
       # Scheduler BOAMP
+      # LinkedIn OAuth2 (optionnel — pour publier directement sur LinkedIn)
+      - key: LINKEDIN_CLIENT_ID
+        value: ""
+      - key: LINKEDIN_CLIENT_SECRET
+        value: ""
+      - key: LINKEDIN_REDIRECT_URI
+        value: "https://datasphere-backend-zl3v.onrender.com/api/v1/linkedin/oauth/callback"
+
       # Sentry error tracking (optionnel — https://sentry.io)
       - key: SENTRY_DSN
         value: ""

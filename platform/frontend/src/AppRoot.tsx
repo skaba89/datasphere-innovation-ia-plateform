@@ -24,6 +24,7 @@ import OnboardingWizard, { shouldShowOnboarding, markOnboardingDone } from './co
 import ToastContainer from './components/ToastContainer';
 import { LangToggle, useI18n } from './i18n';
 import { useRealtimeToasts } from './hooks/useRealtimeToasts';
+import { useWorkflowSSE } from './hooks/useWorkflowSSE';
 import type { ToastEvent } from './hooks/useRealtimeToasts';
 import { CrmWorkspace } from './components/CrmWorkspace';
 import GlobalSearchBar from './components/GlobalSearchBar';
@@ -155,6 +156,23 @@ export default function AppRoot() {
 
   // Real-time SSE toasts
   useRealtimeToasts(token, addToast);
+
+  // Workflow real-time events → toasts
+  useWorkflowSSE({
+    token,
+    onEvent: (event) => {
+      if (event.type === 'workflow.step_awaiting') {
+        addToast({ id: `wf-${Date.now()}`, type: 'warning', title: '⏳ Validation requise',
+          message: `Étape « ${(event as any).step_label || (event as any).step_key} » en attente de votre approbation`, at: Date.now() });
+      } else if (event.type === 'workflow.step_done') {
+        addToast({ id: `wf-${Date.now()}`, type: 'success', title: '✅ Étape terminée',
+          message: `« ${(event as any).step_label || (event as any).step_key} » complétée`, at: Date.now() });
+      } else if (event.type === 'workflow.completed') {
+        addToast({ id: `wf-${Date.now()}`, type: 'success', title: '🎉 Workflow terminé !',
+          message: 'Le mémoire technique est prêt à consulter', at: Date.now() });
+      }
+    },
+  });
 
   useEffect(() => {
     if (!token) return;

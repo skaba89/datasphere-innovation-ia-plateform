@@ -1,152 +1,331 @@
 /**
- * OnboardingWizard — Apparaît au premier démarrage si :
- * - Aucun provider LLM configuré
- * - Aucun AO importé
- * Se ferme définitivement après complétion ou skip.
+ * SetupWizard — Onboarding complet en 5 étapes
+ * Apparaît au premier démarrage si setup non terminé.
+ * Chaque étape est interactive et exécute une vraie action.
  */
 
-import { useState } from 'react';
-import { CheckCircle, ChevronRight, ExternalLink, X, Zap } from 'lucide-react';
-import { apiRequest } from '../api/client';
+import { useState, useEffect } from 'react';
+import { Award, CheckCircle2, ChevronRight, ExternalLink, Loader2, Users, Zap, X, Search, Play } from 'lucide-react';
+import { apiRequest, tokenStorage } from '../api/client';
 
-interface Step {
-  key: string;
-  title: string;
-  desc: string;
-  action?: () => void;
-  actionLabel?: string;
-  link?: string;
-  linkLabel?: string;
-  done: boolean;
+const LS_KEY = 'datasphere_onboarding_done';
+
+export function useOnboardingNeeded(): boolean {
+  try { return localStorage.getItem(LS_KEY) !== 'true'; } catch { return false; }
 }
 
-export function SetupWizard({
-  token,
-  hasProviders,
-  hasTenders,
-  onDismiss,
-}: {
-  token: string | null;
-  hasProviders: boolean;
-  hasTenders: boolean;
-  onDismiss: () => void;
-}) {
-  const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState<string | null>(null);
+export function markOnboardingDone(): void {
+  try { localStorage.setItem(LS_KEY, 'true'); } catch {}
+}
 
-  const steps: Step[] = [
+interface StepState { done: boolean; loading: boolean; error: string; }
+
+export function SetupWizard({ token, onDismiss }: { token: string | null; onDismiss: () => void }) {
+  const [current,   setCurrent]   = useState(0);
+  const [collapsed, setCollapsed] = useState(false);
+  const [steps, setSteps] = useState<Record<string, StepState>>({
+    provider:  { done: false, loading: false, error: '' },
+    agents:    { done: false, loading: false, error: '' },
+    boamp:     { done: false, loading: false, error: '' },
+    workflow:  { done: false, loading: false, error: '' },
+    team:      { done: false, loading: false, error: '' },
+  });
+  const [groqKey, setGroqKey]  = useState('');
+  const [inviteEmail, setInviteEmail] = useState('');
+
+  const setStep = (key: string, patch: Partial<StepState>) =>
+    setSteps(s => ({ ...s, [key]: { ...s[key], ...patch } }));
+
+  // Pre-check: load existing state
+  useEffect(() => {
+    if (!token) return;
+    (async () => {
+      try {
+        const provs = await apiRequest<{providers:{configured:boolean}[]}>('/providers', {}, token);
+        if (provs?.providers?.some(p => p.configured)) setStep('provider', { done: true });
+
+        const agents = await apiRequest<any[]>('/agents', {}, token);
+        if (agents?.length >= 5) setStep('agents', { done: true });
+
+        const tenders = await apiRequest<any[]>('/tenders?limit=1', {}, token);
+        if (tenders?.length > 0) setStep('boamp', { done: true });
+
+        const team = await apiRequest<any[]>('/team', {}, token);
+        if (team?.length > 1) setStep('team', { done: true });
+      } catch {}
+    })();
+  }, [token]);
+
+  const doneCount = Object.values(steps).filter(s => s.done).length;
+  const allDone   = doneCount === 5;
+  const progress  = Math.round((doneCount / 5) * 100);
+
+  // ── Step actions ─────────────────────────────────────────────────────────
+
+  async function configureProvider() {
+    if (!groqKey.trim()) return;
+    setStep('provider', { loading: true, error: '' });
+    try {
+      await apiRequest('/providers/config', {
+        method: 'POST',
+        body: JSON.stringify({ provider: 'groq', api_key: groqKey.trim(), model: 'llama-3.3-70b-versatile' }),
+      }, token);
+      setStep('provider', { done: true, loading: false });
+      setCurrent(1);
+    } catch (e) {
+      setStep('provider', { loading: false, error: String(e).slice(0, 80) });
+    }
+  }
+
+  async function installAgents() {
+    setStep('agents', { loading: true, error: '' });
+    try {
+      await apiRequest('/agents/defaults/install', { method: 'POST' }, token);
+      setStep('agents', { done: true, loading: false });
+      setCurrent(2);
+    } catch (e) {
+      setStep('agents', { loading: false, error: String(e).slice(0, 80) });
+    }
+  }
+
+  async function inviteTeamMember() {
+    if (!inviteEmail.trim()) return;
+    setStep('team', { loading: true, error: '' });
+    try {
+      await apiRequest('/team/invite', {
+        method: 'POST',
+        body: JSON.stringify({ email: inviteEmail.trim(), role: 'consultant', first_name: '', last_name: '', password: 'Temp1234!' }),
+      }, token);
+      setStep('team', { done: true, loading: false });
+      if (allDone) { markOnboardingDone(); onDismiss(); }
+    } catch (e) {
+      setStep('team', { loading: false, error: String(e).slice(0, 80) });
+    }
+  }
+
+  function skipStep(key: string) {
+    setStep(key, { done: true });
+    setCurrent(c => Math.min(c + 1, 4));
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────
+
+  const STEPS = [
     {
-      key: 'llm',
-      title: '1 — Configurer un provider IA',
-      desc: 'Ajoutez une clé API Groq (gratuit) pour activer les agents. Sans clé, le workflow tourne en simulation.',
-      link: 'https://console.groq.com/keys',
-      linkLabel: 'Obtenir une clé Groq gratuite ↗',
-      done: hasProviders,
+      key: 'provider', icon: <Zap size={16} color="#facc15" />,
+      title: 'Configurer un provider IA',
+      subtitle: 'Groq est gratuit — 100 requêtes/jour suffisent pour démarrer',
+      content: (
+        <div style={{ display: 'grid', gap: 8 }}>
+          <p style={{ fontSize: '.8rem', color: '#94a3b8', margin: 0 }}>
+            Entrez votre clé API Groq pour activer le workflow IA, les agents et la génération de CV.{' '}
+            <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" style={{ color: '#facc15' }}>
+              Obtenir une clé gratuite ↗
+            </a>
+          </p>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input value={groqKey} onChange={e => setGroqKey(e.target.value)}
+              placeholder="gsk_..." type="password"
+              onKeyDown={e => e.key === 'Enter' && configureProvider()}
+              style={{ flex: 1, padding: '8px 12px', background: 'rgba(255,255,255,.06)',
+                       border: '1px solid rgba(148,163,184,.2)', borderRadius: 8,
+                       color: '#f1f5f9', fontSize: '.82rem' }} />
+            <button onClick={configureProvider} disabled={!groqKey.trim() || steps.provider.loading}
+              style={btnStyle(steps.provider.loading)}>
+              {steps.provider.loading ? <Loader2 size={13} style={{ animation: 'spin .7s linear infinite' }} /> : <ChevronRight size={13} />}
+              Valider
+            </button>
+          </div>
+          {steps.provider.error && <p style={{ color: '#fca5a5', fontSize: '.75rem', margin: 0 }}>{steps.provider.error}</p>}
+          <button onClick={() => skipStep('provider')} style={skipStyle}>Passer — utiliser le mode simulation</button>
+        </div>
+      ),
     },
     {
-      key: 'boamp',
-      title: '2 — Importer votre premier AO',
-      desc: "Utilisez 'Chercher des AOs' pour trouver un appel d'offres BOAMP, ou importez un PDF.",
-      done: hasTenders,
+      key: 'agents', icon: <Award size={16} color="#a78bfa" />,
+      title: 'Installer les 5 agents IA',
+      subtitle: 'Data Architect, Expert AO, Gouvernance, Business Analyst, Documentation',
+      content: (
+        <div style={{ display: 'grid', gap: 8 }}>
+          <p style={{ fontSize: '.8rem', color: '#94a3b8', margin: 0 }}>
+            Les agents sont pré-configurés pour DataSphere. Un seul clic pour les activer.
+          </p>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={installAgents} disabled={steps.agents.loading} style={btnStyle(steps.agents.loading)}>
+              {steps.agents.loading ? <Loader2 size={13} style={{ animation: 'spin .7s linear infinite' }} /> : <Award size={13} />}
+              Installer les agents
+            </button>
+            <button onClick={() => skipStep('agents')} style={skipStyle}>Passer</button>
+          </div>
+          {steps.agents.error && <p style={{ color: '#fca5a5', fontSize: '.75rem', margin: 0 }}>{steps.agents.error}</p>}
+        </div>
+      ),
     },
     {
-      key: 'workflow',
-      title: '3 — Lancer le workflow automatisé',
-      desc: 'Sélectionnez un AO → Workflow IA → Lancer. Les 8 étapes s\'enchaînent automatiquement, vous validez les étapes clés.',
-      done: false,
+      key: 'boamp', icon: <Search size={16} color="#38bdf8" />,
+      title: 'Importer votre premier AO',
+      subtitle: 'Cherchez sur BOAMP ou importez un PDF',
+      content: (
+        <div style={{ display: 'grid', gap: 8 }}>
+          <p style={{ fontSize: '.8rem', color: '#94a3b8', margin: 0 }}>
+            Allez dans <strong style={{ color: '#e2e8f0' }}>Appels d'offres</strong> → Chercher BOAMP → importez un AO qui correspond à votre expertise.
+          </p>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => { skipStep('boamp'); setCurrent(3); onDismiss(); }}
+              style={btnStyle(false)}>
+              <ExternalLink size={13} /> Aller aux AOs
+            </button>
+            <button onClick={() => skipStep('boamp')} style={skipStyle}>J'en ai déjà un</button>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'workflow', icon: <Play size={16} color="#86efac" />,
+      title: 'Lancer le premier workflow',
+      subtitle: '8 étapes automatisées : analyse → Go/No-Go → exigences → livrable',
+      content: (
+        <div style={{ display: 'grid', gap: 8 }}>
+          <p style={{ fontSize: '.8rem', color: '#94a3b8', margin: 0 }}>
+            Sélectionnez un AO → bouton <strong style={{ color: '#facc15' }}>Workflow IA</strong> → Lancer.
+            Les étapes s'enchaînent automatiquement, vous validez les points clés.
+          </p>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => { skipStep('workflow'); setCurrent(4); }}
+              style={btnStyle(false)}>
+              <ChevronRight size={13} /> Compris, j'y vais
+            </button>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'team', icon: <Users size={16} color="#fb923c" />,
+      title: 'Inviter un collègue',
+      subtitle: 'Optionnel — vous pouvez le faire plus tard dans Équipe',
+      content: (
+        <div style={{ display: 'grid', gap: 8 }}>
+          <p style={{ fontSize: '.8rem', color: '#94a3b8', margin: 0 }}>
+            Invitez un consultant ou manager pour collaborer sur les AOs et livrables.
+          </p>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input value={inviteEmail} onChange={e => setInviteEmail(e.target.value)}
+              placeholder="collegue@email.fr" type="email"
+              onKeyDown={e => e.key === 'Enter' && inviteTeamMember()}
+              style={{ flex: 1, padding: '8px 12px', background: 'rgba(255,255,255,.06)',
+                       border: '1px solid rgba(148,163,184,.2)', borderRadius: 8,
+                       color: '#f1f5f9', fontSize: '.82rem' }} />
+            <button onClick={inviteTeamMember} disabled={!inviteEmail.trim() || steps.team.loading}
+              style={btnStyle(steps.team.loading)}>
+              {steps.team.loading ? <Loader2 size={13} style={{ animation: 'spin .7s linear infinite' }} /> : <Users size={13} />}
+              Inviter
+            </button>
+          </div>
+          {steps.team.error && <p style={{ color: '#fca5a5', fontSize: '.75rem', margin: 0 }}>{steps.team.error}</p>}
+          <button onClick={() => { markOnboardingDone(); onDismiss(); }} style={skipStyle}>
+            Terminer sans inviter
+          </button>
+        </div>
+      ),
     },
   ];
 
-  const completedSteps = steps.filter(s => s.done).length;
-  const allDone = completedSteps === steps.length;
+  if (collapsed) {
+    return (
+      <div style={{ background: 'rgba(12,20,37,.9)', border: '1px solid rgba(250,204,21,.2)', borderRadius: 12,
+                    padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer',
+                    marginBottom: 16 }} onClick={() => setCollapsed(false)}>
+        <Zap size={14} color="#facc15" />
+        <span style={{ fontSize: '.82rem', color: '#e2e8f0', flex: 1 }}>
+          Onboarding — {doneCount}/5 étapes complétées ({progress}%)
+        </span>
+        <div style={{ width: 80, height: 4, background: 'rgba(148,163,184,.2)', borderRadius: 99 }}>
+          <div style={{ width: `${progress}%`, height: '100%', background: '#facc15', borderRadius: 99, transition: 'width .4s' }} />
+        </div>
+        <ChevronRight size={14} color="#64748b" />
+      </div>
+    );
+  }
+
+  const step = STEPS[current];
 
   return (
-    <div style={{
-      background: 'linear-gradient(135deg, rgba(12,20,37,.98) 0%, rgba(20,30,50,.98) 100%)',
-      border: '1.5px solid rgba(250,204,21,.25)',
-      borderRadius: 16,
-      padding: '24px 24px 20px',
-      marginBottom: 20,
-      position: 'relative',
-    }}>
-      {/* Close */}
-      <button onClick={onDismiss} style={{ position: 'absolute', top: 14, right: 14, background: 'none', border: 'none', color: '#475569', cursor: 'pointer', padding: 4 }}>
-        <X size={16} />
-      </button>
-
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-        <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(250,204,21,.1)', border: '1.5px solid rgba(250,204,21,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Zap size={18} color="#facc15" />
+    <div style={{ background: 'linear-gradient(135deg,rgba(12,20,37,.98),rgba(20,30,50,.98))',
+                  border: '1.5px solid rgba(250,204,21,.25)', borderRadius: 16,
+                  padding: '20px 24px', marginBottom: 20, position: 'relative' }}>
+      {/* Top bar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+        <span style={{ fontSize: '.72rem', color: '#facc15', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase' }}>
+          🚀 Démarrage rapide
+        </span>
+        <div style={{ flex: 1, height: 4, background: 'rgba(148,163,184,.1)', borderRadius: 99 }}>
+          <div style={{ width: `${progress}%`, height: '100%', background: 'linear-gradient(90deg,#facc15,#f59e0b)', borderRadius: 99, transition: 'width .5s ease' }} />
         </div>
-        <div>
-          <h2 style={{ margin: 0, fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: '1rem' }}>
-            Bienvenue sur DataSphere IA
-          </h2>
-          <p style={{ margin: 0, fontSize: '.75rem', color: '#64748b' }}>
-            {completedSteps}/{steps.length} étapes complétées — {allDone ? 'Vous êtes prêt ! 🎉' : 'Configurez la plateforme en 5 minutes'}
-          </p>
-        </div>
+        <span style={{ fontSize: '.72rem', color: '#64748b' }}>{doneCount}/5</span>
+        <button onClick={() => setCollapsed(true)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', padding: 2 }}>
+          <X size={14} />
+        </button>
       </div>
 
-      {/* Progress */}
-      <div style={{ height: 4, background: 'rgba(148,163,184,.1)', borderRadius: 99, marginBottom: 20, overflow: 'hidden' }}>
-        <div style={{ height: '100%', borderRadius: 99, background: '#facc15', width: `${(completedSteps / steps.length) * 100}%`, transition: 'width .5s ease' }} />
-      </div>
-
-      {/* Steps */}
-      <div style={{ display: 'grid', gap: 10 }}>
-        {steps.map((step) => (
-          <div key={step.key} style={{
-            padding: '14px 16px',
-            borderRadius: 11,
-            background: step.done ? 'rgba(34,197,94,.04)' : 'rgba(0,0,0,.2)',
-            border: `1px solid ${step.done ? 'rgba(34,197,94,.2)' : 'rgba(148,163,184,.08)'}`,
-            display: 'flex', alignItems: 'flex-start', gap: 12,
-          }}>
-            <div style={{ flexShrink: 0, marginTop: 1 }}>
-              {step.done
-                ? <CheckCircle size={16} color="#22c55e" />
-                : <div style={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid rgba(148,163,184,.2)', background: 'none' }} />
-              }
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 700, fontSize: '.86rem', color: step.done ? '#86efac' : '#e2e8f0', marginBottom: 3 }}>
-                {step.title}
-              </div>
-              <div style={{ fontSize: '.78rem', color: '#64748b', lineHeight: 1.5 }}>
-                {step.desc}
-              </div>
-              {step.link && !step.done && (
-                <a href={step.link} target="_blank" rel="noopener noreferrer"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 8, fontSize: '.76rem', color: '#facc15', textDecoration: 'none' }}>
-                  <ExternalLink size={11} /> {step.linkLabel}
-                </a>
-              )}
-              {step.key === 'llm' && !step.done && (
-                <div style={{ marginTop: 8, fontSize: '.74rem', color: '#334155', padding: '6px 10px', background: 'rgba(0,0,0,.25)', borderRadius: 7, fontFamily: 'monospace' }}>
-                  Render → datasphere-backend-zl3v → Environment<br />
-                  GROQ_API_KEY = gsk_...
-                </div>
-              )}
-              {step.key === 'boamp' && !step.done && (
-                <div style={{ marginTop: 8, display: 'flex', gap: 6 }}>
-                  <a href="/tenders" style={{ fontSize: '.75rem', padding: '4px 10px', borderRadius: 7, border: 'none', background: 'rgba(250,204,21,.1)', color: '#facc15', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
-      desc: "Utilisez 'Chercher des AOs' pour trouver un appel d'offres BOAMP, ou importez un PDF.",
-                  </a>
-                </div>
-              )}
-            </div>
-          </div>
+      {/* Step tabs */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
+        {STEPS.map((s, i) => (
+          <button key={s.key} onClick={() => setCurrent(i)}
+            style={{ display: 'flex', alignItems: 'center', gap: 5,
+                     padding: '4px 10px', borderRadius: 99,
+                     border: `1px solid ${i === current ? 'rgba(250,204,21,.4)' : 'rgba(148,163,184,.1)'}`,
+                     background: i === current ? 'rgba(250,204,21,.08)' : 'none',
+                     color: steps[s.key].done ? '#86efac' : i === current ? '#facc15' : '#475569',
+                     cursor: 'pointer', fontSize: '.72rem', fontWeight: 700 }}>
+            {steps[s.key].done ? <CheckCircle2 size={11} /> : s.icon}
+            {i + 1}
+          </button>
         ))}
       </div>
 
-      {/* Footer */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
-        <button onClick={onDismiss} style={{ fontSize: '.74rem', color: '#334155', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}>
-          {allDone ? 'Fermer' : 'Masquer pour l\'instant'}
-        </button>
+      {/* Current step */}
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          {step.icon}
+          <div>
+            <div style={{ fontWeight: 800, fontSize: '.9rem', color: '#f1f5f9' }}>{step.title}</div>
+            <div style={{ fontSize: '.74rem', color: '#64748b' }}>{step.subtitle}</div>
+          </div>
+          {steps[step.key].done && (
+            <CheckCircle2 size={16} color="#86efac" style={{ marginLeft: 'auto' }} />
+          )}
+        </div>
+        {!steps[step.key].done && step.content}
+        {steps[step.key].done && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: '.8rem', color: '#86efac' }}>✓ Étape complétée</span>
+            {current < 4 && (
+              <button onClick={() => setCurrent(c => c + 1)} style={btnStyle(false)}>
+                <ChevronRight size={13} /> Étape suivante
+              </button>
+            )}
+            {allDone && (
+              <button onClick={() => { markOnboardingDone(); onDismiss(); }}
+                style={{ ...btnStyle(false), background: 'linear-gradient(135deg,#facc15,#f59e0b)' }}>
+                🎉 Terminer
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
 }
+
+const btnStyle = (loading: boolean): React.CSSProperties => ({
+  display: 'flex', alignItems: 'center', gap: 5,
+  padding: '7px 14px', borderRadius: 8, border: 'none',
+  background: loading ? '#334155' : '#facc15', color: loading ? '#64748b' : '#0f172a',
+  cursor: loading ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: '.78rem',
+  opacity: loading ? 0.7 : 1,
+});
+
+const skipStyle: React.CSSProperties = {
+  background: 'none', border: 'none', color: '#475569', cursor: 'pointer',
+  fontSize: '.72rem', padding: 0, textDecoration: 'underline', textAlign: 'left',
+};

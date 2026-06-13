@@ -97,7 +97,26 @@ if _sentry_dsn:
 app = FastAPI(
     title="DataSphere Innovation IA Platform",
     description="""
-## Cabinet de conseil augmenté par IA — France & Afrique
+## DataSphere Innovation IA Platform v2.0
+
+**Cabinet de conseil data augmenté par IA** — France & Afrique Francophone
+
+### Fonctionnalités principales
+
+- 🎯 **Workflow IA** : 8 étapes automatisées pour répondre aux appels d'offres (BOAMP)
+- 🤖 **Agents IA** : 5 agents spécialisés (Data Architect, Expert AO, Gouvernance, BA, Documentation)
+- 📝 **Livrables** : Génération automatique avec RAG sur les meilleurs exemples passés
+- 📄 **Export** : Markdown · HTML · PDF · **Word DOCX**
+- 🧠 **RAG** : Amélioration continue — l'IA apprend de vos livrables approuvés
+- 📊 **Analytics** : Pipeline commercial, KPIs, rapport hebdomadaire automatique
+- 🌍 **i18n** : Interface FR / EN
+- 📱 **Mobile** : Responsive complet, bottom nav
+
+### Authentification
+Toutes les routes protégées nécessitent un JWT Bearer token.
+```
+Authorization: Bearer <access_token>
+```
 
 DataSphere est une plateforme SaaS pour consultants **Data / IA / Tech** qui automatise :
 - La gestion CRM des missions et clients
@@ -133,7 +152,7 @@ ou paramètre `?workspace_id=42`.
 - Upload PDF : **25 MB** max
 - Tokens JWT : **60 min** (access) / **30 jours** (refresh)
 """,
-    version="1.9.0",
+    version="2.0.0",
     debug=settings.app_debug,
     lifespan=lifespan,
     docs_url="/docs" if settings.app_env != "production" else None,
@@ -251,6 +270,6 @@ def root() -> dict[str, str]:
     return {
         "message": "Welcome to DataSphere Innovation IA Platform API",
         "docs":    "/docs",
-        "version": "1.9.0",
+        "version": "2.0.0",
         "health":  f"{settings.api_v1_prefix}/health",
     }
