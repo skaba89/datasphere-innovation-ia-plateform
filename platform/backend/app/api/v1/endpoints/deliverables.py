@@ -536,3 +536,46 @@ def export_deliverable_docx(
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+@router.get("/{deliverable_id}/export/pdf")
+def export_deliverable_pdf(
+    deliverable_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Export deliverable as styled PDF (WeasyPrint)."""
+    from fastapi.responses import Response
+    from app.services.pdf_export import markdown_to_pdf
+    from app.crud.tender import get_tender
+
+    deliverable = get_deliverable(db, deliverable_id)
+    if not deliverable:
+        raise HTTPException(status_code=404, detail="Deliverable not found")
+
+    buyer_name = None
+    if deliverable.tender_id:
+        tender = get_tender(db, deliverable.tender_id)
+        if tender:
+            buyer_name = tender.buyer_name
+
+    try:
+        pdf_bytes = markdown_to_pdf(
+            title=deliverable.title,
+            content_markdown=deliverable.content_markdown or "",
+            author=f"{current_user.first_name or ''} {current_user.last_name or ''}".strip() or "DataSphere",
+            buyer_name=buyer_name,
+            version=deliverable.version or 1,
+            confidential=True,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PDF generation failed: {e}")
+
+    safe_title = "".join(ch for ch in deliverable.title if ch.isalnum() or ch in " -_")[:50]
+    filename = f"Livrable_{safe_title}.pdf"
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

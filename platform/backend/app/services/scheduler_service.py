@@ -380,8 +380,8 @@ def _boamp_scan_job() -> None:
     try:
         # 1. Fetch from real BOAMP API
         boamp_results = fetch_boamp(
-            query="data informatique numérique",
-            limit=30,
+            query=settings.boamp_keywords or "data informatique numérique",
+            limit=settings.boamp_daily_limit or 50,
             cpv_filter=True,
             timeout=15,
         )

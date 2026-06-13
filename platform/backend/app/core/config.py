@@ -81,7 +81,13 @@ class Settings(BaseSettings):
     scheduler_auto_draft_interval_minutes: int = 10
     scheduler_daily_report_hour: int = 7
     scheduler_max_actions_per_run: int = 10
-    boamp_scan_enabled: bool = True         # Daily BOAMP public tender scan
+    boamp_scan_enabled: bool = True
+    boamp_keywords: str = Field(
+        default="data informatique numérique IA intelligence artificielle machine learning",
+        description="Mots-clés BOAMP séparés par espaces"
+    )
+    boamp_score_threshold: int = Field(default=70, description="Score minimum pour notification")
+    boamp_daily_limit: int = Field(default=50, description="Nombre max d'AOs à analyser par scan")         # Daily BOAMP public tender scan
 
     # ── Stripe Billing ────────────────────────────────────────────────────────
     stripe_secret_key: str = ""             # sk_live_... or sk_test_...
