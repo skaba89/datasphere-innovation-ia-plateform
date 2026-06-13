@@ -1,4 +1,5 @@
 import { useI18n } from '../i18n';
+import { useWorkflowSSE } from '../hooks/useWorkflowSSE';
 import { useEffect, useState, useCallback } from 'react';
 import { FileText, Search, Zap, Plus, RefreshCw } from 'lucide-react';
 import { apiRequest, tokenStorage } from '../api/client';
@@ -22,6 +23,16 @@ const S = {
 export default function TenderPage() {
   const { t, lang } = useI18n();
   const accessKey = tokenStorage.get();
+
+  // Real-time workflow updates via SSE (remplace le polling 5s)
+  useWorkflowSSE({
+    token: accessKey,
+    onEvent: (event) => {
+      if (event.type === 'workflow.step_done' || event.type === 'workflow.step_awaiting' || event.type === 'workflow.completed') {
+        loadTenders(); // Refresh on any workflow update
+      }
+    },
+  });
   const [user, setUser]       = useState<CurrentUser|null>(null);
   const [tenders, setTenders] = useState<TenderOption[]>([]);
   const [defaultOppId, setDefaultOppId]     = useState(0);

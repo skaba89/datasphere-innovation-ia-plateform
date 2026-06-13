@@ -650,3 +650,219 @@ code {
     padding: 14px !important;
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SPRINT 2 — Mobile responsive complet
+   Breakpoints :
+     < 480px  : mobile portrait (iPhone SE, Galaxy S)
+     < 640px  : mobile landscape / small tablet
+     < 768px  : tablet portrait
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Header mobile ────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  header {
+    padding: 8px 12px !important;
+    gap: 6px !important;
+  }
+
+  /* Hide secondary header items on mobile */
+  header .global-search-bar { display: none !important; }
+
+  /* Compact brand */
+  header span[style*="DataSphere"] {
+    font-size: .78rem !important;
+  }
+
+  /* Compact lang toggle */
+  header button[title*="langue"] span { display: none; }
+}
+
+/* ── Sidebar mobile ───────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Sidebar becomes bottom nav on mobile */
+  .app-sidebar {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    height: 60px !important;
+    width: 100% !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    padding: 0 8px !important;
+    border-top: 1px solid rgba(148,163,184,.1) !important;
+    border-right: none !important;
+    z-index: 150 !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .app-sidebar::-webkit-scrollbar { display: none; }
+
+  /* Nav items become icon+label stacked */
+  .app-sidebar button, .app-sidebar a {
+    min-width: 64px !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+    font-size: .58rem !important;
+    padding: 6px 8px !important;
+    white-space: nowrap !important;
+  }
+
+  /* Main content — add bottom padding for bottom nav */
+  .app-main, main.app-shell {
+    padding-bottom: 70px !important;
+  }
+}
+
+/* ── Dashboard KPIs ───────────────────────────────────────────── */
+@media (max-width: 640px) {
+  /* 2-column KPI grid on mobile */
+  .dashboard-kpis {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  /* Charts go full width */
+  .dashboard-charts {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── App shell panels ─────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .app-shell {
+    padding: 12px !important;
+    gap: 12px !important;
+  }
+
+  .panel {
+    padding: 14px !important;
+    border-radius: 12px !important;
+  }
+
+  /* Two-column grids → single column */
+  .app-shell > div[style*="grid-template-columns: 1fr 1fr"],
+  .app-shell > div[style*="gridTemplateColumns: \"1fr 1fr\""],
+  .app-shell section[style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Three-column → single */
+  .app-shell > div[style*="1fr 1fr 1fr"],
+  .app-shell > section[style*="1fr 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── Tables scroll horizontally ───────────────────────────────── */
+@media (max-width: 768px) {
+  table {
+    display: block !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+  }
+
+  /* Compact table cells */
+  td, th {
+    padding: 6px 8px !important;
+    font-size: .78rem !important;
+  }
+}
+
+/* ── Forms ────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  input, textarea, select {
+    font-size: 16px !important; /* prevents iOS zoom on focus */
+    border-radius: 8px !important;
+  }
+
+  /* Full width buttons on mobile */
+  .panel button[style*="facc15"],
+  .panel button[style*="0077b5"] {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
+
+/* ── CV Agent & LinkedIn ──────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Two-panel layouts → stack */
+  main.app-shell > div[style*="340px 1fr"],
+  main.app-shell > div[style*="grid-template-columns: 340px"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  main.app-shell > div[style*="1fr 1.4fr"],
+  main.app-shell > div[style*="1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── Kanban pipeline ──────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .kanban-board {
+    grid-template-columns: repeat(2, minmax(160px, 1fr)) !important;
+    overflow-x: auto !important;
+  }
+}
+
+/* ── Workflow steps ───────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .workflow-steps {
+    gap: 6px !important;
+  }
+
+  .workflow-step {
+    padding: 10px 12px !important;
+  }
+
+  /* Hide step descriptions on mobile */
+  .workflow-step .step-description {
+    display: none !important;
+  }
+}
+
+/* ── Modals & overlays ────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .modal-overlay > div {
+    margin: 12px !important;
+    max-height: calc(100vh - 80px) !important;
+    overflow-y: auto !important;
+    border-radius: 14px !important;
+  }
+}
+
+/* ── Typography mobile ────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .eyebrow { font-size: .65rem !important; }
+
+  h1 { font-size: clamp(1.2rem, 6vw, 1.6rem) !important; }
+
+  .subtitle {
+    font-size: .82rem !important;
+    line-height: 1.5 !important;
+  }
+
+  /* Compact action buttons */
+  button { font-size: .78rem !important; }
+}
+
+/* ── Touch targets ────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  button, a, [role="button"] {
+    min-height: 44px; /* Apple HIG minimum touch target */
+  }
+}
+
+/* ── Safe area for notched phones ────────────────────────────── */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .app-sidebar {
+    padding-bottom: calc(8px + env(safe-area-inset-bottom)) !important;
+  }
+}

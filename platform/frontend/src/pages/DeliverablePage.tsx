@@ -151,10 +151,18 @@ export default function DeliverablePage() {
                       <Download size={11} /> PDF
                     </a>
                     <a href={`${API_BASE}/deliverables/${d.id}/export/markdown`} target="_blank" rel="noopener noreferrer"
-                       title="Exporter Markdown"
-                       style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid rgba(148,163,184,.15)', background: 'none', color: '#64748b', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4, fontSize: '.72rem' }}>
+                       title="Télécharger Markdown"
+                       download
+                       style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid rgba(148,163,184,.15)', background: 'rgba(14,165,233,.06)', color: '#38bdf8', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4, fontSize: '.72rem' }}>
                       <Download size={11} /> MD
                     </a>
+                    <a href={`/api/v1/deliverables/${d.id}/export/docx`} target="_blank" rel="noopener noreferrer"
+                       title="Télécharger Word"
+                       download
+                       style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid rgba(37,99,235,.3)', background: 'rgba(37,99,235,.06)', color: '#93c5fd', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4, fontSize: '.72rem' }}>
+                      <Download size={11} /> DOCX
+                    </a>
+
                     {/* Edit */}
                     <button onClick={() => { setEditing(isEd ? null : d.id); setEditContent(d.content_markdown ?? ''); setExpanded(d.id); }}
                       style={{ padding: '5px 9px', borderRadius: 7, border: `1px solid ${isEd ? 'rgba(250,204,21,.3)' : 'rgba(148,163,184,.15)'}`, background: isEd ? 'rgba(250,204,21,.08)' : 'none', color: isEd ? '#facc15' : '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: '.72rem' }}>
