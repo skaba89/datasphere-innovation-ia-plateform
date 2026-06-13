@@ -1,4 +1,8 @@
 from sqlalchemy.orm import Session, selectinload
+try:
+    from app.services.cache_service import invalidate_dashboard as _invalidate_dash
+except Exception:
+    _invalidate_dash = lambda: None
 
 from app.models.tender import Tender, TenderRequirement
 from app.schemas.tender import (
@@ -24,6 +28,8 @@ def create_tender(db: Session, payload: TenderCreate) -> Tender:
     tender = Tender(**payload.model_dump())
     db.add(tender)
     db.commit()
+    try: _invalidate_dash()
+    except Exception: pass
     db.refresh(tender)
     return tender
 

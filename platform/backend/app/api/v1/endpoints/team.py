@@ -2,6 +2,7 @@
 Team management — admin-only user lifecycle: create, list, update role, deactivate.
 """
 
+from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -183,3 +184,97 @@ def admin_change_password(
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return change_password(db, user, payload.new_password)
+
+
+# ── Profile /me ───────────────────────────────────────────────────────────────
+
+class ProfileUpdate(BaseModel):
+    first_name:   str | None = None
+    last_name:    str | None = None
+    bio:          str | None = None
+    phone:        str | None = None
+    linkedin_url: str | None = None
+    avatar_url:   str | None = None
+    tjm:          int | None = None          # Taux journalier moyen (€)
+    skills:       list[str] | None = None    # Liste de compétences
+    location:     str | None = None
+    availability: str | None = None          # "immediate" | "2weeks" | "1month"
+
+
+@router.get("/me")
+def get_my_profile(current_user: User = Depends(get_current_user)):
+    """Return the current user's full profile."""
+    import json as _json
+    extra = {}
+    try:
+        extra = _json.loads(current_user.extra_data or "{}") if hasattr(current_user, "extra_data") and current_user.extra_data else {}
+    except Exception:
+        pass
+    return {
+        "id":           current_user.id,
+        "email":        current_user.email,
+        "first_name":   current_user.first_name,
+        "last_name":    current_user.last_name,
+        "role":         current_user.role,
+        "is_active":    current_user.is_active,
+        "created_at":   current_user.created_at.isoformat() if current_user.created_at else None,
+        # Extended profile from extra_data
+        "bio":          extra.get("bio"),
+        "phone":        extra.get("phone"),
+        "linkedin_url": extra.get("linkedin_url"),
+        "avatar_url":   extra.get("avatar_url"),
+        "tjm":          extra.get("tjm"),
+        "skills":       extra.get("skills", []),
+        "location":     extra.get("location"),
+        "availability": extra.get("availability"),
+    }
+
+
+@router.patch("/me")
+def update_my_profile(
+    payload: ProfileUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Update the current user's profile."""
+    import json as _json
+
+    # Update core fields
+    if payload.first_name is not None:
+        current_user.first_name = payload.first_name.strip()
+    if payload.last_name is not None:
+        current_user.last_name = payload.last_name.strip()
+
+    # Update extra_data for extended fields
+    extra = {}
+    try:
+        extra = _json.loads(current_user.extra_data or "{}") if hasattr(current_user, "extra_data") and current_user.extra_data else {}
+    except Exception:
+        pass
+
+    patch_fields = {
+        "bio": payload.bio, "phone": payload.phone,
+        "linkedin_url": payload.linkedin_url, "avatar_url": payload.avatar_url,
+        "tjm": payload.tjm, "skills": payload.skills,
+        "location": payload.location, "availability": payload.availability,
+    }
+    for key, val in patch_fields.items():
+        if val is not None:
+            extra[key] = val
+
+    if hasattr(current_user, "extra_data"):
+        current_user.extra_data = _json.dumps(extra)
+
+    db.commit()
+    db.refresh(current_user)
+
+    # Add to audit log
+    try:
+        from app.crud.audit_log import create_audit_log
+        create_audit_log(db, user_id=current_user.id, action="profile.update",
+                         entity_type="user", entity_id=current_user.id,
+                         details={"fields_updated": [k for k, v in patch_fields.items() if v is not None]})
+    except Exception:
+        pass
+
+    return {"success": True, "message": "Profil mis à jour"}

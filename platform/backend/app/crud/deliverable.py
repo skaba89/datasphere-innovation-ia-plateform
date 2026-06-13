@@ -1,5 +1,9 @@
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
+try:
+    from app.services.cache_service import invalidate_dashboard as _invalidate_dash
+except Exception:
+    _invalidate_dash = lambda: None
 
 from app.models.deliverable import Deliverable
 from app.schemas.deliverable import DeliverableCreate, DeliverableUpdate
@@ -17,6 +21,8 @@ def create_deliverable(db: Session, payload: DeliverableCreate) -> Deliverable:
     deliverable = Deliverable(**payload.model_dump())
     db.add(deliverable)
     db.commit()
+    try: _invalidate_dash()
+    except Exception: pass
     db.refresh(deliverable)
     return deliverable
 

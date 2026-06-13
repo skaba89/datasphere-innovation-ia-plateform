@@ -1,4 +1,8 @@
 from sqlalchemy.orm import Session
+try:
+    from app.services.cache_service import invalidate_dashboard as _invalidate_dash
+except Exception:
+    _invalidate_dash = lambda: None
 from sqlalchemy import or_
 
 from app.models.opportunity import Opportunity
@@ -22,6 +26,8 @@ def create_opportunity(db: Session, payload: OpportunityCreate) -> Opportunity:
     opportunity = Opportunity(**payload.model_dump())
     db.add(opportunity)
     db.commit()
+    try: _invalidate_dash()
+    except Exception: pass
     db.refresh(opportunity)
     return opportunity
 
