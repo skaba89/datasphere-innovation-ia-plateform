@@ -8,7 +8,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision = 'user_extra_data_001'
-down_revision = 'f6804d861268'
+down_revision = 'perf001'
 branch_labels = None
 depends_on = None
 

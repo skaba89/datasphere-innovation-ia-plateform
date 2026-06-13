@@ -74,7 +74,18 @@ def login(request: Request, payload: LoginRequest, db: Session = Depends(get_db)
         except Exception:
             pass  # Rate limiter failure must never block login
 
-    user = authenticate_user(db, payload.email, payload.password)
+    try:
+        user = authenticate_user(db, payload.email, payload.password)
+    except Exception as db_err:
+        import logging as _log
+        _log.getLogger("datasphere.auth").error("login DB error: %s", db_err)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=(
+                f"Erreur DB au login: {type(db_err).__name__}: {str(db_err)[:120]}. "
+                "Vérifiez /api/v1/auth/diagnose-login pour plus d'infos."
+            ),
+        )
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -197,3 +208,56 @@ def change_password(
 @router.get("/me", response_model=UserRead)
 def read_me(current_user: User = Depends(get_current_user)):
     return current_user
+
+
+@router.get("/diagnose-login")
+def diagnose_login(db: Session = Depends(get_db)):
+    """
+    Public diagnostic endpoint — checks login prerequisites.
+    Use when POST /auth/login returns 500.
+    """
+    checks = {}
+
+    # 1. DB connection
+    try:
+        from sqlalchemy import text
+        db.execute(text("SELECT 1")).scalar()
+        checks["db_connection"] = "ok"
+    except Exception as e:
+        checks["db_connection"] = f"ERROR: {e}"
+
+    # 2. users table exists
+    try:
+        from sqlalchemy import text
+        count = db.execute(text("SELECT count(*) FROM users")).scalar()
+        checks["users_table"] = f"ok ({count} users)"
+    except Exception as e:
+        checks["users_table"] = f"ERROR: {e}"
+
+    # 3. extra_data column exists
+    try:
+        from sqlalchemy import text
+        db.execute(text("SELECT extra_data FROM users LIMIT 1"))
+        checks["extra_data_column"] = "ok"
+    except Exception as e:
+        checks["extra_data_column"] = f"MISSING — run: alembic upgrade head"
+
+    # 4. Alembic current revision
+    try:
+        from sqlalchemy import text
+        rev = db.execute(text("SELECT version_num FROM alembic_version")).scalar()
+        checks["alembic_revision"] = rev or "unknown"
+        checks["expected_revision"] = "user_extra_data_001"
+        checks["migration_up_to_date"] = (rev == "user_extra_data_001")
+    except Exception as e:
+        checks["alembic_revision"] = f"ERROR: {e}"
+
+    # 5. Settings
+    checks["app_env"] = settings.app_env
+    checks["secret_key_set"] = len(settings.secret_key) >= 32
+
+    overall = all(
+        "ERROR" not in str(v) and "MISSING" not in str(v)
+        for v in checks.values() if isinstance(v, str)
+    )
+    return {"status": "ok" if overall else "error", "checks": checks}
