@@ -294,6 +294,7 @@ export default function AppRoot() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <GlobalSearchBar onNavigate={(tab) => setView(tab as RootView)} />
+          <ThemeToggle />
           <LangToggle />
           <NotificationsPanel />
           <NotificationBell />
@@ -433,3 +434,33 @@ export default function AppRoot() {
     </>
   );
 }
+// ── Theme toggle (dark/light) ─────────────────────────────────────────────────
+function useTheme() {
+  const [theme, setThemeState] = useState<'dark' | 'light'>(() => {
+    try { return (localStorage.getItem('datasphere_theme') as 'dark' | 'light') || 'dark'; } catch { return 'dark'; }
+  });
+  function setTheme(t: 'dark' | 'light') {
+    setThemeState(t);
+    document.documentElement.setAttribute('data-theme', t);
+    try { localStorage.setItem('datasphere_theme', t); } catch {}
+  }
+  useEffect(() => { document.documentElement.setAttribute('data-theme', theme); }, [theme]);
+  return { theme, setTheme };
+}
+
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme();
+  return (
+    <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+      title={theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'}
+      style={{
+        padding: '5px 10px', borderRadius: 8, border: '1px solid rgba(148,163,184,.15)',
+        background: 'rgba(255,255,255,.04)', color: '#94a3b8', cursor: 'pointer',
+        fontSize: '.75rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5,
+        transition: 'all .15s',
+      }}>
+      {theme === 'dark' ? '☀️' : '🌙'}
+    </button>
+  );
+}
+

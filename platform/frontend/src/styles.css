@@ -236,3 +236,59 @@ h2 { margin: 0 0 18px; }
   .root-switcher, .topbar { display: none !important; }
   body { background: #fff; color: #000; }
 }
+
+/* ── Light mode ──────────────────────────────────────────────────────────────
+   Activated via: document.documentElement.setAttribute('data-theme', 'light')
+   Toggle stored in localStorage under 'datasphere_theme'
+*/
+[data-theme="light"] {
+  --color-bg:      #f0f4f8;
+  --color-surface: rgba(255, 255, 255, 0.92);
+  --color-border:  rgba(59, 130, 246, 0.15);
+  --color-gold:    #d97706;
+  --color-text:    #0f172a;
+  --color-muted:   #475569;
+}
+
+[data-theme="light"] body {
+  background: linear-gradient(135deg, #e0e7f0 0%, #f0f4f8 50%, #e8eef5 100%) !important;
+}
+
+[data-theme="light"] .panel {
+  background: rgba(255, 255, 255, 0.88) !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+  color: #0f172a;
+}
+
+[data-theme="light"] .app-sidebar {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-right: 1px solid rgba(148, 163, 184, 0.2) !important;
+}
+
+[data-theme="light"] .app-sidebar button {
+  color: #334155 !important;
+}
+
+[data-theme="light"] .app-sidebar button:hover,
+[data-theme="light"] .app-sidebar button.active {
+  background: rgba(59, 130, 246, 0.08) !important;
+  color: #1e40af !important;
+}
+
+[data-theme="light"] header {
+  background: rgba(255, 255, 255, 0.96) !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15) !important;
+}
+
+[data-theme="light"] input,
+[data-theme="light"] textarea,
+[data-theme="light"] select {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .eyebrow { color: #64748b !important; }
+[data-theme="light"] .subtitle { color: #475569 !important; }
+
+[data-theme="light"] h1, [data-theme="light"] h2 { color: #0f172a !important; }
