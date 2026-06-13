@@ -87,11 +87,13 @@ def read_requirements(tender_id: int, skip: int = 0, limit: int = 200, db: Sessi
 
 @router.post("/{tender_id}/requirements", response_model=TenderRequirementRead, status_code=status.HTTP_201_CREATED)
 def create_new_requirement(tender_id: int, payload: TenderRequirementCreate, db: Session = Depends(get_db)):
+    """Create a requirement for a tender. tender_id in body is optional — auto-filled from URL."""
     tender = get_tender(db, tender_id)
     if tender is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tender not found")
+    # Auto-set tender_id from URL if not in payload or mismatched
     if payload.tender_id != tender_id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Payload tender_id does not match URL tender_id")
+        payload = payload.model_copy(update={"tender_id": tender_id})
     return create_tender_requirement(db, payload)
 
 

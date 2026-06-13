@@ -80,4 +80,5 @@ class DeliverableReviewRequest(BaseModel):
 
 
 class DeliverableApproveRequest(BaseModel):
-    approver_name: str = Field(..., min_length=2)
+    approver_name: str | None = Field(default=None, min_length=None)
+    """Nom ou email de l'approbateur. Si omis, utilise l'email du user connecté."""

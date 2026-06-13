@@ -84,9 +84,28 @@ PIPELINE_STATUSES = [
     "Abandonnée",
 ]
 
+# English aliases for API compatibility (frontend/API clients may send English)
+STATUS_ALIASES: dict[str, str] = {
+    "prospect":   "Prospect identifié",
+    "identified": "Besoin identifié",
+    "qualified":  "Besoin qualifié",
+    "proposal":   "Proposition envoyée",
+    "negotiation": "Négociation",
+    "won":        "Gagnée",
+    "lost":       "Perdue",
+    "abandoned":  "Abandonnée",
+    "open":       "Prospect identifié",
+    "closed":     "Gagnée",
+}
+
 
 class StatusMove(BaseModel):
     status: str
+
+    @property
+    def normalized_status(self) -> str:
+        """Resolve English alias to French pipeline status."""
+        return STATUS_ALIASES.get(self.status.lower(), self.status)
 
 
 @router.patch("/{opportunity_id}/status", response_model=OpportunityRead)
@@ -95,16 +114,19 @@ def move_opportunity_status(
     payload: StatusMove,
     db: Session = Depends(get_db),
 ):
-    """Move an opportunity to a new pipeline status (kanban card move)."""
+    """Move an opportunity to a new pipeline status (kanban card move).
+    Accepts both French values ('Gagnée') and English aliases ('won').
+    """
     opportunity = get_opportunity(db, opportunity_id)
     if opportunity is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Opportunity not found")
-    if payload.status not in PIPELINE_STATUSES:
+    resolved = payload.normalized_status
+    if resolved not in PIPELINE_STATUSES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid status. Allowed: {PIPELINE_STATUSES}",
+            detail=f"Invalid status '{payload.status}'. Allowed: {PIPELINE_STATUSES} or English aliases: {list(STATUS_ALIASES.keys())}",
         )
-    return update_opportunity(db, opportunity, OpportunityUpdate(status=payload.status))
+    return update_opportunity(db, opportunity, OpportunityUpdate(status=resolved))
 
 
 @router.get("/pipeline/board")
@@ -155,3 +177,16 @@ def get_pipeline_board(db: Session = Depends(get_db)):
         col["pipeline_value"] = round(col["pipeline_value"], 2)
 
     return list(columns.values())
+
+
+@router.get("/pipeline/statuses")
+def get_pipeline_statuses():
+    """
+    Return all valid pipeline statuses and their English aliases.
+    Both French values ('Gagnée') and English aliases ('won') are accepted by PATCH /status.
+    """
+    return {
+        "statuses": PIPELINE_STATUSES,
+        "aliases": STATUS_ALIASES,
+        "note": "PATCH /{id}/status accepts both French values and English aliases",
+    }

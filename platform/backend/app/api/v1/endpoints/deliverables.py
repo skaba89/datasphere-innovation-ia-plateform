@@ -161,7 +161,9 @@ def approve_deliverable_action(
     deliverable = get_deliverable(db, deliverable_id)
     if deliverable is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Deliverable not found")
-    result = approve_deliverable(db, deliverable, payload.approver_name)
+    # Default approver_name to current user email if not provided
+    approver = payload.approver_name or current_user.email or current_user.first_name or "admin"
+    result = approve_deliverable(db, deliverable, approver)
 
     # Fire-and-forget email to approver
     import threading

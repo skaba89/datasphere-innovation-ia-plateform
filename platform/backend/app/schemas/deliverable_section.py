@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class DeliverableSectionBase(BaseModel):
     deliverable_id: int
     title: str = Field(..., min_length=3, max_length=255)
-    section_key: str = Field(..., min_length=2, max_length=120)
+    section_key: str = Field(default="", min_length=0, max_length=120)
     position: int = 1
     status: str = "draft"
     content_markdown: str = ""
@@ -14,6 +14,13 @@ class DeliverableSectionBase(BaseModel):
     owner_agent_id: int | None = None
     reviewed_by: str | None = None
     approved_by: str | None = None
+
+    def model_post_init(self, __context) -> None:
+        """Auto-generate section_key from title if not provided."""
+        if not self.section_key:
+            import re
+            slug = re.sub(r'[^a-z0-9]+', '-', self.title.lower()).strip('-')[:80]
+            object.__setattr__(self, 'section_key', slug or 'section')
 
 
 class DeliverableSectionCreate(DeliverableSectionBase):

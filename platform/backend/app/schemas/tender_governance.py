@@ -4,7 +4,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class GoNoGoCriterionBase(BaseModel):
-    tender_id: int
+    tender_id: int | None = None  # Auto-injected from URL path
     name: str = Field(..., min_length=2, max_length=255)
     description: str | None = None
     score: int = Field(default=0, ge=0)
@@ -37,7 +37,7 @@ class GoNoGoCriterionRead(GoNoGoCriterionBase):
 
 
 class GoNoGoSummary(BaseModel):
-    tender_id: int
+    tender_id: int | None = None  # Auto-injected from URL path
     criteria_count: int
     weighted_score: float
     max_weighted_score: float
@@ -46,7 +46,7 @@ class GoNoGoSummary(BaseModel):
 
 
 class ComplianceMatrixItemBase(BaseModel):
-    tender_id: int
+    tender_id: int | None = None  # Auto-injected from URL path
     requirement_id: int | None = None
     requirement_code: str | None = None
     requirement_summary: str = Field(..., min_length=2)
@@ -87,7 +87,7 @@ class ComplianceMatrixItemRead(ComplianceMatrixItemBase):
 
 
 class ComplianceSummary(BaseModel):
-    tender_id: int
+    tender_id: int | None = None  # Auto-injected from URL path
     total_items: int
     compliant: int
     partial: int

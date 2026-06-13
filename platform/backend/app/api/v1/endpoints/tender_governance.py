@@ -43,8 +43,9 @@ def read_go_no_go_criteria(tender_id: int, db: Session = Depends(get_db)):
 def create_go_no_go(tender_id: int, payload: GoNoGoCriterionCreate, db: Session = Depends(get_db)):
     if get_tender(db, tender_id) is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tender not found")
+    # Auto-inject tender_id from URL (body tender_id is optional)
     if payload.tender_id != tender_id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Payload tender_id does not match URL tender_id")
+        payload = payload.model_copy(update={"tender_id": tender_id})
     return create_go_no_go_criterion(db, payload)
 
 
@@ -84,8 +85,9 @@ def read_compliance_items(tender_id: int, db: Session = Depends(get_db)):
 def create_compliance(tender_id: int, payload: ComplianceMatrixItemCreate, db: Session = Depends(get_db)):
     if get_tender(db, tender_id) is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tender not found")
+    # Auto-inject tender_id from URL (body tender_id is optional)
     if payload.tender_id != tender_id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Payload tender_id does not match URL tender_id")
+        payload = payload.model_copy(update={"tender_id": tender_id})
     if payload.requirement_id is not None and get_tender_requirement(db, payload.requirement_id) is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Requirement does not exist")
     return create_compliance_item(db, payload)
