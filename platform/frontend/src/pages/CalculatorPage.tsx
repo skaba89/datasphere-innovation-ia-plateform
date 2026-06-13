@@ -9,6 +9,7 @@
  *   - Comparaison de scénarios
  */
 
+import { useI18n } from '../i18n';
 import { useEffect, useState, useCallback } from 'react';
 import {
   AlertTriangle, CheckCircle, ChevronDown, ChevronRight,
@@ -52,6 +53,7 @@ const pct = (n: number) => `${n.toFixed(1)} %`;
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function CalculatorPage() {
+  const { t, lang } = useI18n();
   const token = tokenStorage.get();
   const [inp, setInp] = useState<SimInput>(DEFAULT_INPUT);
   const [result, setResult] = useState<SimResult | null>(null);
