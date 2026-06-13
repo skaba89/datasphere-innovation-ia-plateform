@@ -4,7 +4,7 @@ from app.api.v1.endpoints import (
     activity, agent_actions, agents, analytics, api_keys, audit_logs,
     csv_import,
     auth, billing, calculator, contact, contacts, data_mission, deliverables,
-    email_api, excel_export, export,
+    cv_generator, email_api, excel_export, export,
     health_monitor, linkedin, notifications, opportunities, organizations, pdf_ao,
     providers, scheduler, search, sector_templates, sse,
     staffing, suggestions, team, tender_governance, tender_templates,
@@ -21,6 +21,7 @@ router.include_router(setup.router)
 router.include_router(webhooks.router)
 router.include_router(workflow.router)
 router.include_router(calculator.router)
+router.include_router(cv_generator.router)
 router.include_router(email_api.router)
 router.include_router(linkedin.router)
 router.include_router(pdf_ao.router)
