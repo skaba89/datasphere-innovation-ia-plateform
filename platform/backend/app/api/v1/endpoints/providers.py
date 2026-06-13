@@ -12,7 +12,7 @@ POST /providers/config              — update API keys at runtime (writes to os
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
-from app.api.dependencies import get_current_user
+from app.api.dependencies import get_current_user, get_pagination, PaginationParams
 from app.models.user import User
 from app.services.llm_service import (
     list_providers,
