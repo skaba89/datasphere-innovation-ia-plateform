@@ -18,6 +18,7 @@ import {
   Clock, Loader, Play, RefreshCw, ThumbsDown, ThumbsUp, Zap,
 } from 'lucide-react';
 import { apiRequest, tokenStorage } from '../api/client';
+import WorkflowTimeline from './WorkflowTimeline';
 
 interface WorkflowStep {
   id:               number;
