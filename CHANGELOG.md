@@ -5,6 +5,23 @@ Format : [MAJOR.MINOR.PATCH] — YYYY-MM-DD
 
 ---
 
+## [2.3.1] — 2026-06-13 (Sprint 12)
+
+### Corrigé — CRITIQUE
+- **Alembic multiple heads** : 3 migrations orphelines (`perf001`, `user_extra_data_001`, `a1b2c3d4e5f6`) partaient de la même révision → `alembic upgrade head` échouait → fallback `create_all` → colonne `extra_data` absente → **500 au login**
+- Chaîne linéarisée : `...→ e5f6a7b8c9d0 → perf001 → user_extra_data_001`
+- Login endpoint : message d'erreur DB explicite au lieu de 500 muet
+
+### Ajouté
+- `GET /auth/diagnose-login` : endpoint public de diagnostic (DB, extra_data, révision Alembic)
+- `GET /analytics/tender/{id}/score-breakdown` : 5 critères pondérés (domain_match 30%, technical_requirements 25%, timeline_feasibility 20%, budget_adequacy 15%, strategic_fit 10%)
+- `ScoreBreakdown.tsx` : jauge circulaire + barres par critère + recommandation textuelle
+- `AgentLiveFeed.tsx` : flux temps réel actions agents (rafraîchissement 10s + filtres)
+- Batch select AOs : barre d'actions en masse (workflow multi-lancement, export CSV)
+- E2E `sprint-9-11-features.spec.ts` : 16 specs (health, gzip, score, webhook, pagination, diagnostic)
+
+---
+
 ## [2.3.0] — 2026-06-13 (Sprint 9)
 
 ### Ajouté

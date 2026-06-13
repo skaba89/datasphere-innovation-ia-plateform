@@ -3,7 +3,7 @@
 > Cabinet de conseil Data & IA augmenté par intelligence artificielle — France & Afrique Francophone
 
 [![CI Quality Gates](https://github.com/skaba89/datasphere-innovation-ia-plateform/actions/workflows/ci.yml/badge.svg)](https://github.com/skaba89/datasphere-innovation-ia-plateform/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-2.0.0-blue)](https://github.com/skaba89/datasphere-innovation-ia-plateform)
+[![Version](https://img.shields.io/badge/version-2.3.0-blue)](https://github.com/skaba89/datasphere-innovation-ia-plateform)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL_3.0-blue.svg)](LICENSE)
 
 ---
@@ -202,14 +202,17 @@ Documentation Swagger complète : `/api/v1/docs`
 
 ---
 
-## 📊 Métriques v2.0
+## 📊 Métriques v2.3.0
 
 ```
-Routes API    : 235     Tests unitaires  : 1 342
-Pages React   : 17      E2E Playwright   : 14 specs
-Composants    : 37      Migrations Alembic : 10
+Routes API    : 247     Tests unitaires  : 1 444
+Pages React   : 19      E2E Playwright   : 16 specs
+Composants    : 42+     Migrations Alembic : 11
 Bundle main   : 210 kB  Index DB         : 22 (perf001)
 i18n clés     : 120     Providers LLM    : 11
+Dark mode     : ✅      GZip             : ✅
+Cache 60s     : ✅      Health détaillé  : ✅
+Sprints       : 1→12   PRs              : #98→#112
 ```
 
 ---

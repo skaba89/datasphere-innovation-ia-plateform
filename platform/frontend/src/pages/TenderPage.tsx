@@ -40,6 +40,7 @@ export default function TenderPage() {
   const [showPDF,      setShowPDF]      = useState(false);
   const [showWorkflow, setShowWorkflow] = useState(false);
   const [page,    setPage]    = useState(1);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [perPage] = useState(20);
   const [total,   setTotal]   = useState(0);
   const [showBOAMP,    setShowBOAMP]    = useState(false);
@@ -97,6 +98,52 @@ export default function TenderPage() {
           </div>
         </div>
       </section>
+
+
+      {/* Batch action bar — appears when AOs are selected */}
+      {selectedIds.size > 0 && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+          padding: '10px 18px', borderRadius: 10,
+          background: 'rgba(250,204,21,.06)', border: '1px solid rgba(250,204,21,.2)',
+        }}>
+          <span style={{ fontWeight: 800, color: '#facc15', fontSize: '.82rem' }}>
+            {selectedIds.size} AO{selectedIds.size > 1 ? 's' : ''} sélectionné{selectedIds.size > 1 ? 's' : ''}
+          </span>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => {
+              selectedIds.forEach(async id => {
+                await apiRequest(`/workflow/${id}/start`, { method: 'POST', body: JSON.stringify({ force_reset: false }) }, accessKey);
+              });
+              setSelectedIds(new Set());
+              loadTenders();
+            }} style={{ padding: '5px 12px', borderRadius: 7, border: '1px solid rgba(59,130,246,.3)', background: 'rgba(59,130,246,.08)', color: '#93c5fd', cursor: 'pointer', fontWeight: 700, fontSize: '.75rem', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Zap size={12} /> Lancer workflows
+            </button>
+            <button onClick={() => {
+              Promise.all([...selectedIds].map(id =>
+                apiRequest(`/export/excel/tenders/csv`, {}, accessKey)
+              ));
+              setSelectedIds(new Set());
+            }} style={{ padding: '5px 12px', borderRadius: 7, border: '1px solid rgba(34,197,94,.25)', background: 'rgba(34,197,94,.06)', color: '#86efac', cursor: 'pointer', fontWeight: 700, fontSize: '.75rem', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <FileText size={12} /> Exporter CSV
+            </button>
+            <button onClick={() => setSelectedIds(new Set())}
+              style={{ padding: '5px 10px', borderRadius: 7, border: '1px solid rgba(148,163,184,.15)', background: 'none', color: '#64748b', cursor: 'pointer', fontSize: '.75rem' }}>
+              ✕ Désélectionner
+            </button>
+          </div>
+          <button onClick={() => {
+            if (tenders.every(t => selectedIds.has(t.id))) {
+              setSelectedIds(new Set());
+            } else {
+              setSelectedIds(new Set(tenders.map(t => t.id)));
+            }
+          }} style={{ marginLeft: 'auto', padding: '4px 10px', borderRadius: 6, border: '1px solid rgba(148,163,184,.12)', background: 'none', color: '#64748b', cursor: 'pointer', fontSize: '.72rem' }}>
+            {tenders.every(t => selectedIds.has(t.id)) ? 'Tout désélectionner' : 'Tout sélectionner'}
+          </button>
+        </div>
+      )}
 
       {/* BOAMP Search Panel */}
       {showBOAMP && (
