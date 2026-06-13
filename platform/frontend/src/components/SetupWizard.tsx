@@ -36,23 +36,35 @@ export function SetupWizard({ token, onDismiss }: { token: string | null; onDism
   const setStep = (key: string, patch: Partial<StepState>) =>
     setSteps(s => ({ ...s, [key]: { ...s[key], ...patch } }));
 
-  // Pre-check: load existing state
+  // Pre-check: load real onboarding state from API
   useEffect(() => {
     if (!token) return;
     (async () => {
       try {
-        const provs = await apiRequest<{providers:{configured:boolean}[]}>('/providers', {}, token);
-        if (provs?.providers?.some(p => p.configured)) setStep('provider', { done: true });
-
-        const agents = await apiRequest<any[]>('/agents', {}, token);
-        if (agents?.length >= 5) setStep('agents', { done: true });
-
-        const tenders = await apiRequest<any[]>('/tenders?limit=1', {}, token);
-        if (tenders?.length > 0) setStep('boamp', { done: true });
-
-        const team = await apiRequest<any[]>('/team', {}, token);
-        if (team?.length > 1) setStep('team', { done: true });
-      } catch {}
+        const status = await apiRequest<{
+          steps: Record<string, { done: boolean }>;
+          onboarding_complete: boolean;
+        }>('/setup/onboarding-status', {}, token);
+        if (status?.steps) {
+          Object.entries(status.steps).forEach(([key, s]) => {
+            if (s.done) setStep(key, { done: true });
+          });
+          if (status.onboarding_complete) {
+            markOnboardingDone();
+            onDismiss();
+          }
+        }
+      } catch {
+        // Fallback: individual checks
+        try {
+          const provs = await apiRequest<{providers:{configured:boolean}[]}>('/providers', {}, token);
+          if (provs?.providers?.some(p => p.configured)) setStep('provider', { done: true });
+          const agents = await apiRequest<unknown[]>('/agents', {}, token);
+          if (agents?.length >= 5) setStep('agents', { done: true });
+          const tenders = await apiRequest<unknown[]>('/tenders?limit=1', {}, token);
+          if (tenders?.length > 0) setStep('boamp', { done: true });
+        } catch {}
+      }
     })();
   }, [token]);
 

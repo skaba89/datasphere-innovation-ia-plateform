@@ -15,7 +15,7 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.api.dependencies import get_current_user
 from app.db.session import get_db, SessionLocal
@@ -228,7 +228,7 @@ def reset(
 ):
     """Remettre le workflow à zéro."""
     from app.models.workflow import WorkflowInstance
-    instance = db.query(WorkflowInstance).filter(
+    instance = db.query(WorkflowInstance).options(selectinload(WorkflowInstance.steps)).filter(
         WorkflowInstance.tender_id == tender_id
     ).first()
     if instance:

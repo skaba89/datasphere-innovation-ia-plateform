@@ -12,7 +12,11 @@ from __future__ import annotations
 import logging, os
 import pathlib
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from app.api.dependencies import get_current_user
+from app.db.session import get_db
+from app.models.user import User
 from pydantic import BaseModel
 
 log = logging.getLogger("datasphere.setup")
@@ -131,4 +135,63 @@ def setup_run(payload: SetupRequest):
         "success": ok,
         "results": results,
         "next_steps": [f"Login with {payload.admin_email}", "Set SETUP_ENABLED=false"] if ok else ["Check errors above"],
+    }
+
+
+@router.get("/onboarding-status")
+def get_onboarding_status(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Return the real onboarding state for the SetupWizard.
+    Replaces localStorage-based heuristics with actual DB state.
+    """
+    from app.models.agent import Agent
+    from app.models.tender import Tender
+    from app.models.user import User as UserModel
+    from app.services.llm_service import provider_label
+
+    # 1. Provider configured?
+    try:
+        lbl = provider_label()
+        has_provider = lbl not in ("simulation", "none", "", None)
+    except Exception:
+        has_provider = False
+
+    # 2. Agents installed?
+    agent_count = db.query(Agent).count()
+    has_agents = agent_count >= 5
+
+    # 3. At least one AO?
+    tender_count = db.query(Tender).count()
+    has_tender = tender_count > 0
+
+    # 4. Workflow started? (any WorkflowInstance)
+    workflow_started = False
+    try:
+        from app.models.workflow import WorkflowInstance
+        workflow_started = db.query(WorkflowInstance).count() > 0
+    except Exception:
+        pass
+
+    # 5. Team has more than 1 member?
+    user_count = db.query(UserModel).filter(UserModel.is_active == True).count()
+    has_team = user_count > 1
+
+    steps_done = sum([has_provider, has_agents, has_tender, workflow_started, has_team])
+
+    return {
+        "steps": {
+            "provider":  {"done": has_provider,      "label": "Provider IA configuré"},
+            "agents":    {"done": has_agents,         "label": f"{agent_count} agents installés"},
+            "boamp":     {"done": has_tender,         "label": f"{tender_count} AO(s) importé(s)"},
+            "workflow":  {"done": workflow_started,   "label": "Workflow lancé"},
+            "team":      {"done": has_team,           "label": f"{user_count} membre(s) actifs"},
+        },
+        "steps_done":  steps_done,
+        "total_steps": 5,
+        "progress_pct": round(steps_done / 5 * 100),
+        "onboarding_complete": steps_done >= 4,
+        "provider_label": provider_label() if has_provider else None,
     }
