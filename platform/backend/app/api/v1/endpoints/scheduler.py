@@ -70,3 +70,32 @@ def trigger_job(job_id: str):
 def get_scheduler_logs(job_id: str | None = None, limit: int = 50, db: Session = Depends(get_db)):
     """Return recent scheduler execution logs."""
     return list_logs(db, job_id=job_id, limit=limit)
+
+
+@router.get("/boamp-config")
+def get_boamp_config(current_user=Depends(get_current_user)):
+    """Return current BOAMP scan configuration."""
+    from app.core.config import get_settings
+    s = get_settings()
+    return {
+        "enabled":         s.boamp_scan_enabled,
+        "keywords":        s.boamp_keywords,
+        "score_threshold": s.boamp_score_threshold,
+        "daily_limit":     s.boamp_daily_limit,
+    }
+
+
+@router.post("/boamp-test")
+def run_boamp_test(
+    keywords: str = "data informatique",
+    limit: int = 5,
+    current_user=Depends(get_current_user),
+):
+    """Run a test BOAMP scan with custom keywords (no DB save)."""
+    try:
+        from app.services.boamp_client import fetch_boamp, boamp_to_watch_candidate
+        results = fetch_boamp(query=keywords, limit=limit, cpv_filter=True, timeout=10)
+        candidates = [boamp_to_watch_candidate(r) for r in results[:limit]]
+        return {"fetched": len(results), "shown": len(candidates), "candidates": candidates}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

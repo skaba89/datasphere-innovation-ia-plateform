@@ -14,8 +14,32 @@ import app.models  # noqa: F401
 
 settings = get_settings()
 
-# ── Rate limiter ──────────────────────────────────────────────────────────────
-limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
+# ── Rate limiter — per user (JWT sub) with IP fallback ────────────────────────
+def get_user_or_ip(request) -> str:
+    """Rate limit key: JWT user_id if authenticated, remote IP otherwise."""
+    try:
+        auth = request.headers.get("Authorization", "")
+        if auth.startswith("Bearer "):
+            import jose.jwt as _jwt
+            from app.core.config import get_settings
+            settings = get_settings()
+            payload = _jwt.decode(
+                auth.split(" ", 1)[1],
+                settings.secret_key,
+                algorithms=["HS256"],
+                options={"verify_exp": False},
+            )
+            sub = payload.get("sub")
+            if sub:
+                return f"user:{sub}"
+    except Exception:
+        pass
+    return get_remote_address(request)
+
+limiter = Limiter(
+    key_func=get_user_or_ip,
+    default_limits=["300/minute"],
+)
 
 
 @asynccontextmanager
