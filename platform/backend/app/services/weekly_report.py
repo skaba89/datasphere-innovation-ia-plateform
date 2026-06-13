@@ -185,7 +185,7 @@ def generate_weekly_report_html(db, week_start: datetime | None = None) -> str:
 def send_weekly_report(db) -> dict:
     """Generate and send the weekly report to all admins and managers."""
     from app.models.user import User
-    from app.services.email_service import send_html_email
+    from app.services.email_service import send_email
 
     # Get recipients
     recipients = db.query(User).filter(
@@ -204,7 +204,7 @@ def send_weekly_report(db) -> dict:
     errors = []
     for user in recipients:
         try:
-            send_html_email(to=user.email, subject=subject, html=html)
+            send_email(to=user.email, subject=subject, html_body=html)
             sent += 1
         except Exception as e:
             errors.append(f"{user.email}: {e}")
