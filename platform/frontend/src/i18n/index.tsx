@@ -1,20 +1,11 @@
 /**
- * Système i18n léger — FR / EN
- * Zero dependency — pas de lib externe requise.
- *
- * Usage :
- *   const { t, lang, setLang } = useI18n();
- *   <h1>{t('dashboard.title')}</h1>
- *
- * Ajout de clés : éditer les dictionnaires TRANSLATIONS ci-dessous.
- * La langue est persistée dans localStorage.
+ * Système i18n FR / EN — DataSphere Innovation
+ * Usage : const { t, lang, setLang } = useI18n();
  */
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 export type Lang = 'fr' | 'en';
-
-// ─── Dictionnaires ────────────────────────────────────────────────────────────
 
 const TRANSLATIONS: Record<Lang, Record<string, string>> = {
   fr: {
@@ -23,9 +14,9 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     'nav.organizations':  'Organisations',
     'nav.opportunities':  'Opportunités',
     'nav.tenders':        "Appels d'offres",
-    'nav.profiles':       'Profils',
+    'nav.profiles':       'Profils consultants',
     'nav.deliverables':   'Livrables',
-    'nav.commercial':     'CRM',
+    'nav.commercial':     'CRM Commercial',
     'nav.operations':     'Opérations',
     'nav.team':           'Équipe',
     'nav.audit':          'Audit',
@@ -35,14 +26,20 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     'nav.pricing':        'Plans & Tarifs',
     'nav.settings':       'Configuration',
     'nav.profile':        'Mon profil',
+    'nav.linkedin':       'Agent LinkedIn',
+    'nav.cv_consultant':  'Agent CV Consultant',
 
     // Dashboard
     'dashboard.title':      'Tableau de bord',
-    'dashboard.subtitle':   'Vue d\'ensemble de votre activité',
+    'dashboard.subtitle':   "Vue d'ensemble de votre activité",
     'dashboard.pipeline':   'Pipeline commercial',
     'dashboard.tenders':    "Appels d'offres",
     'dashboard.agents':     'Agents IA',
     'dashboard.deliverables': 'Livrables',
+    'dashboard.kpi_tenders':  'AOs en cours',
+    'dashboard.kpi_go':       'Décisions GO',
+    'dashboard.kpi_delivered':'Livrables générés',
+    'dashboard.kpi_providers':'Providers actifs',
 
     // CRM
     'crm.organizations':  'Organisations',
@@ -55,39 +52,43 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     'crm.cancel':         'Annuler',
 
     // Tenders
-    'tenders.title':      "Appels d'offres",
-    'tenders.import_pdf': 'Importer depuis PDF',
-    'tenders.new':        'Nouvel AO',
+    'tenders.title':            "Appels d'offres",
+    'tenders.import_pdf':       'Importer depuis PDF',
+    'tenders.new':              'Nouvel AO',
     'tenders.status.go':        'Go',
     'tenders.status.no_go':     'No Go',
     'tenders.status.draft':     'Brouillon',
     'tenders.status.submitted': 'Soumis',
-    'tenders.score':      'Score de correspondance',
+    'tenders.score':            'Score de correspondance',
+    'tenders.workflow':         'Workflow IA',
+    'tenders.boamp':            'Rechercher BOAMP',
 
     // Deliverables
-    'deliverables.title':         'Livrables',
-    'deliverables.export_pdf':    'Exporter PDF',
-    'deliverables.export_html':   'Exporter HTML',
-    'deliverables.export_md':     'Exporter Markdown',
-    'deliverables.approve':       'Approuver',
-    'deliverables.review':        'En révision',
-    'deliverables.versions':      'Historique des versions',
-    'deliverables.snapshot':      'Créer un snapshot',
+    'deliverables.title':       'Livrables',
+    'deliverables.export_pdf':  'Exporter PDF',
+    'deliverables.export_html': 'Exporter HTML',
+    'deliverables.export_md':   'Exporter Markdown',
+    'deliverables.approve':     'Approuver',
+    'deliverables.review':      'En révision',
+    'deliverables.versions':    'Historique des versions',
+    'deliverables.snapshot':    'Créer un snapshot',
+    'deliverables.new':         'Nouveau livrable',
 
     // Auth
-    'auth.login':         'Se connecter',
-    'auth.logout':        'Se déconnecter',
-    'auth.email':         'Email',
-    'auth.password':      'Mot de passe',
-    'auth.forgot':        'Mot de passe oublié ?',
+    'auth.login':    'Se connecter',
+    'auth.logout':   'Se déconnecter',
+    'auth.email':    'Email',
+    'auth.password': 'Mot de passe',
+    'auth.forgot':   'Mot de passe oublié ?',
 
     // Calculator
-    'calc.title':         'Calculateur de rentabilité',
-    'calc.tjm':           'Taux journalier moyen HT',
-    'calc.days':          'Jours facturés / an',
-    'calc.net_annual':    'Revenu net / an',
-    'calc.net_monthly':   'Net / mois moyen',
-    'calc.presets':       'Presets',
+    'calc.title':      'Calculateur de rentabilité',
+    'calc.tjm':        'Taux journalier moyen HT',
+    'calc.days':       'Jours facturés / an',
+    'calc.net_annual': 'Revenu net / an',
+    'calc.net_monthly':'Net / mois moyen',
+    'calc.presets':    'Presets',
+    'calc.simulate':   'Simuler',
 
     // Settings
     'settings.title':     'Configuration',
@@ -96,6 +97,36 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     'settings.email':     'Email SMTP',
     'settings.stripe':    'Stripe Billing',
     'settings.security':  'Sécurité',
+    'settings.api_keys':  'Clés API',
+    'settings.webhooks':  'Webhooks',
+
+    // Team
+    'team.title':   'Gestion Équipe',
+    'team.invite':  'Inviter un membre',
+    'team.roles':   'Rôles',
+    'team.members': 'Membres',
+    'team.active':  'Actif',
+    'team.inactive':'Inactif',
+
+    // Agents
+    'agent.cv_title':       'Agent CV Consultant',
+    'agent.cv_subtitle':    "Entrez le nom du consultant — l'IA génère un CV complet",
+    'agent.cv_generate':    'Générer le CV',
+    'agent.cv_regenerate':  'Régénérer',
+    'agent.linkedin_title': 'Agent LinkedIn',
+    'agent.generate':       'Générer',
+    'agent.regenerate':     'Régénérer',
+    'agent.domain':         'Domaine de compétence',
+    'agent.experience':     "Années d'expérience",
+
+    // Workflow
+    'workflow.title':    'Workflow IA',
+    'workflow.start':    'Démarrer le workflow',
+    'workflow.approve':  'Valider',
+    'workflow.reject':   'Rejeter',
+    'workflow.pending':  'En attente de validation',
+    'workflow.done':     'Terminé',
+    'workflow.running':  'En cours',
 
     // Common
     'common.loading':     'Chargement…',
@@ -126,16 +157,31 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     'common.refresh':     'Actualiser',
     'common.filter':      'Filtrer',
     'common.sort':        'Trier',
+    'common.copy':        'Copier',
+    'common.copied':      'Copié !',
+    'common.export':      'Exporter',
+    'common.import':      'Importer',
+    'common.required':    'Obligatoire',
+    'common.optional':    'Optionnel',
+    'common.preview':     'Aperçu',
+    'common.history':     'Historique',
 
     // Pricing
-    'pricing.title':      'Plans & Tarifs',
-    'pricing.monthly':    'Mensuel',
-    'pricing.yearly':     'Annuel',
-    'pricing.current':    'Plan actuel',
-    'pricing.upgrade':    'Passer au',
-    'pricing.contact':    'Nous contacter',
-    'pricing.free_forever': 'gratuit pour toujours',
-    'pricing.unlimited':  '∞',
+    'pricing.title':       'Plans & Tarifs',
+    'pricing.monthly':     'Mensuel',
+    'pricing.yearly':      'Annuel',
+    'pricing.current':     'Plan actuel',
+    'pricing.upgrade':     'Passer au',
+    'pricing.contact':     'Nous contacter',
+    'pricing.free_forever':'gratuit pour toujours',
+    'pricing.unlimited':   '∞',
+
+    // Audit
+    'audit.title':   'Logs d\'audit',
+    'audit.action':  'Action',
+    'audit.user':    'Utilisateur',
+    'audit.date':    'Date',
+    'audit.export':  'Exporter les logs',
   },
 
   en: {
@@ -144,7 +190,7 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     'nav.organizations':  'Organizations',
     'nav.opportunities':  'Opportunities',
     'nav.tenders':        'Tenders',
-    'nav.profiles':       'Profiles',
+    'nav.profiles':       'Consultant Profiles',
     'nav.deliverables':   'Deliverables',
     'nav.commercial':     'CRM',
     'nav.operations':     'Operations',
@@ -156,6 +202,8 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     'nav.pricing':        'Pricing',
     'nav.settings':       'Settings',
     'nav.profile':        'My Profile',
+    'nav.linkedin':       'LinkedIn Agent',
+    'nav.cv_consultant':  'CV Agent',
 
     // Dashboard
     'dashboard.title':      'Dashboard',
@@ -164,6 +212,10 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     'dashboard.tenders':    'Tenders',
     'dashboard.agents':     'AI Agents',
     'dashboard.deliverables': 'Deliverables',
+    'dashboard.kpi_tenders':  'Active tenders',
+    'dashboard.kpi_go':       'GO decisions',
+    'dashboard.kpi_delivered':'Generated deliverables',
+    'dashboard.kpi_providers':'Active providers',
 
     // CRM
     'crm.organizations':  'Organizations',
@@ -176,39 +228,43 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     'crm.cancel':         'Cancel',
 
     // Tenders
-    'tenders.title':      'Tenders',
-    'tenders.import_pdf': 'Import from PDF',
-    'tenders.new':        'New Tender',
+    'tenders.title':            'Tenders',
+    'tenders.import_pdf':       'Import from PDF',
+    'tenders.new':              'New Tender',
     'tenders.status.go':        'Go',
     'tenders.status.no_go':     'No Go',
     'tenders.status.draft':     'Draft',
     'tenders.status.submitted': 'Submitted',
-    'tenders.score':      'Match score',
+    'tenders.score':            'Match score',
+    'tenders.workflow':         'AI Workflow',
+    'tenders.boamp':            'Search BOAMP',
 
     // Deliverables
-    'deliverables.title':         'Deliverables',
-    'deliverables.export_pdf':    'Export PDF',
-    'deliverables.export_html':   'Export HTML',
-    'deliverables.export_md':     'Export Markdown',
-    'deliverables.approve':       'Approve',
-    'deliverables.review':        'In review',
-    'deliverables.versions':      'Version history',
-    'deliverables.snapshot':      'Create snapshot',
+    'deliverables.title':       'Deliverables',
+    'deliverables.export_pdf':  'Export PDF',
+    'deliverables.export_html': 'Export HTML',
+    'deliverables.export_md':   'Export Markdown',
+    'deliverables.approve':     'Approve',
+    'deliverables.review':      'In review',
+    'deliverables.versions':    'Version history',
+    'deliverables.snapshot':    'Create snapshot',
+    'deliverables.new':         'New deliverable',
 
     // Auth
-    'auth.login':         'Sign in',
-    'auth.logout':        'Sign out',
-    'auth.email':         'Email',
-    'auth.password':      'Password',
-    'auth.forgot':        'Forgot password?',
+    'auth.login':    'Sign in',
+    'auth.logout':   'Sign out',
+    'auth.email':    'Email',
+    'auth.password': 'Password',
+    'auth.forgot':   'Forgot password?',
 
     // Calculator
-    'calc.title':         'Profitability Calculator',
-    'calc.tjm':           'Daily rate (excl. VAT)',
-    'calc.days':          'Billed days / year',
-    'calc.net_annual':    'Annual net income',
-    'calc.net_monthly':   'Avg. monthly net',
-    'calc.presets':       'Presets',
+    'calc.title':      'Profitability Calculator',
+    'calc.tjm':        'Daily rate (excl. VAT)',
+    'calc.days':       'Billed days / year',
+    'calc.net_annual': 'Annual net income',
+    'calc.net_monthly':'Avg. monthly net',
+    'calc.presets':    'Presets',
+    'calc.simulate':   'Simulate',
 
     // Settings
     'settings.title':     'Settings',
@@ -217,6 +273,36 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     'settings.email':     'SMTP Email',
     'settings.stripe':    'Stripe Billing',
     'settings.security':  'Security',
+    'settings.api_keys':  'API Keys',
+    'settings.webhooks':  'Webhooks',
+
+    // Team
+    'team.title':   'Team Management',
+    'team.invite':  'Invite member',
+    'team.roles':   'Roles',
+    'team.members': 'Members',
+    'team.active':  'Active',
+    'team.inactive':'Inactive',
+
+    // Agents
+    'agent.cv_title':       'CV Agent',
+    'agent.cv_subtitle':    'Enter consultant name — AI generates a complete CV',
+    'agent.cv_generate':    'Generate CV',
+    'agent.cv_regenerate':  'Regenerate',
+    'agent.linkedin_title': 'LinkedIn Agent',
+    'agent.generate':       'Generate',
+    'agent.regenerate':     'Regenerate',
+    'agent.domain':         'Domain',
+    'agent.experience':     'Years of experience',
+
+    // Workflow
+    'workflow.title':    'AI Workflow',
+    'workflow.start':    'Start workflow',
+    'workflow.approve':  'Approve',
+    'workflow.reject':   'Reject',
+    'workflow.pending':  'Awaiting approval',
+    'workflow.done':     'Done',
+    'workflow.running':  'Running',
 
     // Common
     'common.loading':     'Loading…',
@@ -247,16 +333,31 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     'common.refresh':     'Refresh',
     'common.filter':      'Filter',
     'common.sort':        'Sort',
+    'common.copy':        'Copy',
+    'common.copied':      'Copied!',
+    'common.export':      'Export',
+    'common.import':      'Import',
+    'common.required':    'Required',
+    'common.optional':    'Optional',
+    'common.preview':     'Preview',
+    'common.history':     'History',
 
     // Pricing
-    'pricing.title':      'Plans & Pricing',
-    'pricing.monthly':    'Monthly',
-    'pricing.yearly':     'Yearly',
-    'pricing.current':    'Current plan',
-    'pricing.upgrade':    'Upgrade to',
-    'pricing.contact':    'Contact us',
-    'pricing.free_forever': 'free forever',
-    'pricing.unlimited':  '∞',
+    'pricing.title':       'Plans & Pricing',
+    'pricing.monthly':     'Monthly',
+    'pricing.yearly':      'Yearly',
+    'pricing.current':     'Current plan',
+    'pricing.upgrade':     'Upgrade to',
+    'pricing.contact':     'Contact us',
+    'pricing.free_forever':'free forever',
+    'pricing.unlimited':   '∞',
+
+    // Audit
+    'audit.title':   'Audit logs',
+    'audit.action':  'Action',
+    'audit.user':    'User',
+    'audit.date':    'Date',
+    'audit.export':  'Export logs',
   },
 };
 
@@ -283,8 +384,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     try {
       const stored = localStorage.getItem(LS_KEY) as Lang | null;
       if (stored === 'en' || stored === 'fr') return stored;
-    } catch { /* localStorage unavailable */ }
-    // Auto-detect from browser
+    } catch { /* ignore */ }
     return navigator.language.startsWith('en') ? 'en' : 'fr';
   });
 
@@ -298,9 +398,9 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   function t(key: string, fallback?: string): string {
     return TRANSLATIONS[lang][key]
-      ?? TRANSLATIONS['fr'][key]   // FR fallback
+      ?? TRANSLATIONS['fr'][key]
       ?? fallback
-      ?? key;                       // key as last resort
+      ?? key;
   }
 
   return <Ctx.Provider value={{ lang, setLang, t }}>{children}</Ctx.Provider>;
@@ -312,26 +412,42 @@ export function useI18n() {
   return useContext(Ctx);
 }
 
-// ─── Lang toggle component ────────────────────────────────────────────────────
+// ─── Lang Toggle ──────────────────────────────────────────────────────────────
 
 export function LangToggle() {
   const { lang, setLang } = useI18n();
   return (
-    <div style={{ display: 'flex', gap: 2 }}>
+    <div
+      title="Changer la langue / Switch language"
+      style={{
+        display: 'flex', alignItems: 'center', gap: 1,
+        background: 'rgba(255,255,255,.04)',
+        border: '1px solid rgba(148,163,184,.12)',
+        borderRadius: 8, padding: '2px',
+      }}
+    >
       {(['fr', 'en'] as Lang[]).map(l => (
         <button
           key={l}
           onClick={() => setLang(l)}
-          title={l === 'fr' ? 'Français' : 'English'}
+          title={l === 'fr' ? 'Passer en Français' : 'Switch to English'}
           style={{
-            padding: '4px 9px', borderRadius: 7, border: 'none', cursor: 'pointer',
-            fontWeight: 700, fontSize: '.72rem', fontFamily: 'monospace',
-            background: lang === l ? 'rgba(250,204,21,.15)' : 'transparent',
-            color: lang === l ? '#facc15' : '#475569',
+            padding: '4px 10px',
+            borderRadius: 6,
+            border: 'none',
+            cursor: 'pointer',
+            fontWeight: 800,
+            fontSize: '.72rem',
+            letterSpacing: '.04em',
             transition: 'all .15s',
+            background: lang === l
+              ? 'linear-gradient(135deg,rgba(250,204,21,.2),rgba(245,158,11,.15))'
+              : 'transparent',
+            color: lang === l ? '#facc15' : '#475569',
+            boxShadow: lang === l ? '0 1px 4px rgba(250,204,21,.15)' : 'none',
           }}
         >
-          {l.toUpperCase()}
+          {l === 'fr' ? '🇫🇷 FR' : '🇬🇧 EN'}
         </button>
       ))}
     </div>

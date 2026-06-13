@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n';
 import { useEffect, useState, useCallback } from 'react';
 import { API_BASE } from '../api/config';
 import {
@@ -45,6 +46,7 @@ function fmt(iso: string) {
 const PAGE_SIZE = 50;
 
 export default function AuditLogPage() {
+  const { t, lang } = useI18n();
   const token = tokenStorage.get();
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [total, setTotal] = useState(0);

@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n';
 import { useEffect, useState } from 'react';
 import {
   Activity, AlertTriangle, Bot, Building2, CheckCircle2,
@@ -98,6 +99,7 @@ function StatusBar({
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
+  const { t, lang } = useI18n();
   const [data, setData] = useState<PipelineAnalytics | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

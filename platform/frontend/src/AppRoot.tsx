@@ -22,7 +22,7 @@ import DataExportPage from './pages/DataExportPage';
 import LinkedInAgentPage from './pages/LinkedInAgentPage';
 import OnboardingWizard, { shouldShowOnboarding, markOnboardingDone } from './components/OnboardingWizard';
 import ToastContainer from './components/ToastContainer';
-import { LangToggle } from './i18n';
+import { LangToggle, useI18n } from './i18n';
 import { useRealtimeToasts } from './hooks/useRealtimeToasts';
 import type { ToastEvent } from './hooks/useRealtimeToasts';
 import { CrmWorkspace } from './components/CrmWorkspace';
@@ -210,22 +210,24 @@ export default function AppRoot() {
     );
   }
 
+  const { t } = useI18n();
+
   const tabs: NavTab[] = [
-    { key: 'dashboard',     label: 'Dashboard',            permission: 'dashboard:read' },
-    { key: 'tenders',       label: 'Appels d\'offres',     permission: 'tenders:read' },
-    { key: 'profiles',      label: 'Profils consultants',  permission: 'profiles:read' },
-    { key: 'deliverables',  label: 'Livrables',            permission: 'deliverables:read' },
-    { key: 'commercial',    label: 'Commercial',           permission: 'commercial:read' },
-    { key: 'organizations', label: 'Organisations',        permission: 'crm:read' },
-    { key: 'opportunities', label: 'Opportunités',         permission: 'crm:read' },
-    { key: 'operations',    label: 'Opérations',           permission: 'operations:read' },
-    { key: 'data-export',   label: 'Export données',       permission: 'audit:read' },
-    { key: 'linkedin',      label: 'Agent LinkedIn',        permission: 'deliverables:write' },
-    { key: 'consultant-profiles', label: 'Agent CV Consultant',  permission: 'deliverables:write' },
-    { key: 'team',          label: 'Équipe',               permission: 'team:read' },
-    { key: 'audit',         label: 'Audit',                permission: 'audit:read' },
-    { key: 'workspaces',    label: 'Workspaces',           permission: 'workspaces:read' },
-    { key: 'profile',       label: 'Mon profil',           permission: 'profile:read' },
+    { key: 'dashboard',     label: t('nav.dashboard'),            permission: 'dashboard:read' },
+    { key: 'tenders',       label: t('nav.tenders'),     permission: 'tenders:read' },
+    { key: 'profiles',      label: t('nav.profiles'),  permission: 'profiles:read' },
+    { key: 'deliverables',  label: t('nav.deliverables'),            permission: 'deliverables:read' },
+    { key: 'commercial',    label: t('nav.commercial'),           permission: 'commercial:read' },
+    { key: 'organizations', label: t('nav.organizations'),        permission: 'crm:read' },
+    { key: 'opportunities', label: t('nav.opportunities'),         permission: 'crm:read' },
+    { key: 'operations',    label: t('nav.operations'),           permission: 'operations:read' },
+    { key: 'data-export',   label: t('nav.data_export'),       permission: 'audit:read' },
+    { key: 'linkedin',      label: t('nav.linkedin'),        permission: 'deliverables:write' },
+    { key: 'consultant-profiles', label: t('nav.cv_consultant'),  permission: 'deliverables:write' },
+    { key: 'team',          label: t('nav.team'),               permission: 'team:read' },
+    { key: 'audit',         label: t('nav.audit'),                permission: 'audit:read' },
+    { key: 'workspaces',    label: t('nav.workspaces'),           permission: 'workspaces:read' },
+    { key: 'profile',       label: t('nav.profile'),           permission: 'profile:read' },
   ];
 
   const userRole = user?.role;

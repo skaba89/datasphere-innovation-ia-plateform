@@ -3,6 +3,7 @@
  * Liste, lecture, édition inline, export PDF/HTML/MD, versioning
  */
 
+import { useI18n } from '../i18n';
 import { useCallback, useEffect, useState } from 'react';
 import {
   CheckCircle, ChevronDown, ChevronUp, Download,
@@ -27,6 +28,7 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export default function DeliverablePage() {
+  const { t, lang } = useI18n();
   const token = tokenStorage.get();
   const [deliverables, setDeliverables] = useState<Deliverable[]>([]);
   const [loading, setLoading]   = useState(true);
@@ -74,7 +76,7 @@ export default function DeliverablePage() {
   }
 
   if (!token) return (
-    <main className="app-shell"><section className="panel"><h1>Livrables</h1><p>Connecte-toi d'abord.</p></section></main>
+    <main className="app-shell"><section className="panel"><h1>{t('deliverables.title')}</h1><p>Connecte-toi d'abord.</p></section></main>
   );
 
   const byStatus = (s: string) => deliverables.filter(d => d.status === s);

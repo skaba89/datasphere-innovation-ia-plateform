@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n';
 import { useEffect, useState, useCallback } from 'react';
 import { FileText, Search, Zap, Plus, RefreshCw } from 'lucide-react';
 import { apiRequest, tokenStorage } from '../api/client';
@@ -19,6 +20,7 @@ const S = {
 };
 
 export default function TenderPage() {
+  const { t, lang } = useI18n();
   const accessKey = tokenStorage.get();
   const [user, setUser]       = useState<CurrentUser|null>(null);
   const [tenders, setTenders] = useState<TenderOption[]>([]);
@@ -45,7 +47,7 @@ export default function TenderPage() {
   const activeTender = tenders.find(t => t.id === activeTenderId);
 
   if (!accessKey) return (
-    <main className="app-shell"><section className="panel"><h1>Appels d'offres</h1><p>Connecte-toi d'abord.</p></section></main>
+    <main className="app-shell"><section className="panel"><h1>{t('tenders.title')}</h1><p>Connecte-toi d'abord.</p></section></main>
   );
 
   return (
@@ -65,7 +67,7 @@ export default function TenderPage() {
         <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',flexWrap:'wrap',gap:12}}>
           <div>
             <p className="eyebrow">Module stratégique</p>
-            <h1>Appels d'offres</h1>
+            <h1>{t('tenders.title')}</h1>
             <p className="subtitle">Veille BOAMP · Qualification IA · Workflow automatisé · Livrable</p>
           </div>
           <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center',marginTop:8}}>

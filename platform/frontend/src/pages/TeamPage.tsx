@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n';
 import { useEffect, useState } from 'react';
 import { CheckCircle2, Crown, Plus, RefreshCw, Shield, UserCheck, UserX, Users, X } from 'lucide-react';
 import { apiRequest, tokenStorage } from '../api/client';
@@ -15,6 +16,7 @@ function fmtDate(iso: string) {
 }
 
 export default function TeamPage() {
+  const { t, lang } = useI18n();
   const [members, setMembers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [showInvite, setShowInvite] = useState(false);

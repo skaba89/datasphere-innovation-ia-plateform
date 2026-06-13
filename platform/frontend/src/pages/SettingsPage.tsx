@@ -11,6 +11,7 @@
  * Cette page affiche le statut et permet de déclencher des tests.
  */
 
+import { useI18n } from '../i18n';
 import { useEffect, useState } from 'react';
 import {
   Activity, AlertTriangle, Check, CheckCircle,
@@ -65,6 +66,7 @@ const S = {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
+  const { t, lang } = useI18n();
   const token = tokenStorage.get();
   const [providers, setProviders] = useState<ProvidersData | null>(null);
   const [health, setHealth] = useState<HealthData | null>(null);
@@ -131,7 +133,7 @@ export default function SettingsPage() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
         <Settings size={22} color="#facc15" />
         <div>
-          <h1 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 900, fontSize: '1.4rem', margin: 0, letterSpacing: '-.03em' }}>Configuration</h1>
+          <h1 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 900, fontSize: '1.4rem', margin: 0, letterSpacing: '-.03em' }}>{t('settings.title')}</h1>
           <p style={{ color: '#64748b', fontSize: '.82rem', margin: '2px 0 0' }}>Statut des services et paramètres de la plateforme</p>
         </div>
         <button onClick={handleRefreshHealth} style={{ ...S.btn(), marginLeft: 'auto' }} disabled={refreshing}>
@@ -144,7 +146,7 @@ export default function SettingsPage() {
       <div style={S.section}>
         <div style={S.header}>
           <Activity size={16} color="#facc15" />
-          <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: '.9rem' }}>Santé système</span>
+          <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: '.9rem' }}>{t('settings.health')}</span>
           {health && (
             <span style={{ ...S.badge(health.overall === 'ok'), marginLeft: 'auto' }}>
               {health.overall === 'ok' ? <Check size={11} /> : <AlertTriangle size={11} />}
@@ -311,6 +313,7 @@ interface ApiKeyItem {
 interface ApiKeyCreated extends ApiKeyItem { secret: string }
 
 function ApiKeysSection({ token }: { token: string | null }) {
+  const { t } = useI18n();
   const [keys, setKeys] = useState<ApiKeyItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -485,6 +488,7 @@ const PROVIDER_LINKS: Record<string, string> = {
 };
 
 function ProvidersSection({ token }: { token: string | null }) {
+  const { t } = useI18n();
   const [providers, setProviders] = useState<ProviderData[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -545,7 +549,7 @@ function ProvidersSection({ token }: { token: string | null }) {
     <div style={Ps.wrap}>
       <div style={Ps.hdr}>
         <Cpu size={16} color="#8b5cf6" />
-        <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: '.9rem', flex: 1 }}>Providers IA</span>
+        <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: '.9rem', flex: 1 }}>{t('settings.providers')}</span>
         <span style={{ fontSize: '.74rem', color: configuredCount > 0 ? '#86efac' : '#fde68a' }}>
           {configuredCount}/{providers.length} configurés
           {configuredCount === 0 && <span style={{ marginLeft: 6, color: '#fde68a' }}>· Mode simulation actif</span>}
