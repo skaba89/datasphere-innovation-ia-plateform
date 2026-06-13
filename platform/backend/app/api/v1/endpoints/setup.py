@@ -195,3 +195,48 @@ def get_onboarding_status(
         "onboarding_complete": steps_done >= 4,
         "provider_label": provider_label() if has_provider else None,
     }
+
+
+@router.post("/fix-db")
+def emergency_fix_db(db: Session = Depends(get_db)):
+    """
+    Emergency endpoint — adds missing columns without Alembic.
+    Safe to call multiple times (IF NOT EXISTS).
+    """
+    from sqlalchemy import text
+    results = []
+
+    fixes = [
+        ("extra_data on users",
+         "ALTER TABLE users ADD COLUMN IF NOT EXISTS extra_data TEXT"),
+        ("workspace_id on tenders",
+         "ALTER TABLE tenders ADD COLUMN IF NOT EXISTS workspace_id INTEGER"),
+        ("workspace_id on deliverables",
+         "ALTER TABLE deliverables ADD COLUMN IF NOT EXISTS workspace_id INTEGER"),
+        ("workspace_id on opportunities",
+         "ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS workspace_id INTEGER"),
+    ]
+
+    for name, sql in fixes:
+        try:
+            db.execute(text(sql))
+            db.commit()
+            results.append({"fix": name, "status": "ok"})
+        except Exception as e:
+            db.rollback()
+            results.append({"fix": name, "status": "skipped", "detail": str(e)[:80]})
+
+    # Update alembic_version to head so Alembic doesn't try to re-apply
+    try:
+        # Check current revision
+        rev = db.execute(text("SELECT version_num FROM alembic_version")).scalar()
+        if rev != "user_extra_data_001":
+            db.execute(text(
+                "UPDATE alembic_version SET version_num = 'user_extra_data_001'"
+            ))
+            db.commit()
+            results.append({"fix": "alembic_version", "status": "ok", "detail": f"updated from {rev}"})
+    except Exception as e:
+        results.append({"fix": "alembic_version", "status": "error", "detail": str(e)[:80]})
+
+    return {"status": "done", "results": results}

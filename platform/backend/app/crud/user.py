@@ -10,7 +10,26 @@ def get_user(db: Session, user_id: int) -> User | None:
 
 
 def get_user_by_email(db: Session, email: str) -> User | None:
-    return db.query(User).filter(User.email == email.lower()).first()
+    try:
+        return db.query(User).filter(User.email == email.lower()).first()
+    except Exception as e:
+        # Fallback si une colonne manque (ex: extra_data avant migration)
+        if "extra_data" in str(e) or "UndefinedColumn" in str(e) or "does not exist" in str(e):
+            from sqlalchemy import text
+            row = db.execute(
+                text("SELECT id, first_name, last_name, email, password_hash, role, is_active, created_at FROM users WHERE email = :email LIMIT 1"),
+                {"email": email.lower()}
+            ).fetchone()
+            if row is None:
+                return None
+            # Reconstruct minimal User object
+            user = User()
+            user.id = row[0]; user.first_name = row[1]; user.last_name = row[2]
+            user.email = row[3]; user.password_hash = row[4]; user.role = row[5]
+            user.is_active = row[6]; user.created_at = row[7]
+            user.extra_data = None  # Column not yet in DB
+            return user
+        raise
 
 
 def count_users(db: Session) -> int:
