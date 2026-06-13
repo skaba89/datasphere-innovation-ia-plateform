@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.models.tender import Tender, TenderRequirement
 from app.schemas.tender import (
@@ -17,7 +17,7 @@ def list_tenders(db: Session, skip: int = 0, limit: int = 100, include_pending: 
 
 
 def get_tender(db: Session, tender_id: int) -> Tender | None:
-    return db.query(Tender).filter(Tender.id == tender_id).first()
+    return db.query(Tender).options(selectinload(Tender.opportunity)).filter(Tender.id == tender_id).first()
 
 
 def create_tender(db: Session, payload: TenderCreate) -> Tender:
