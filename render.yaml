@@ -79,10 +79,13 @@ services:
         value: "false"
 
       # Scheduler BOAMP
+      # Sentry error tracking (optionnel — https://sentry.io)
+      - key: SENTRY_DSN
+        value: ""
       - key: SCHEDULER_ENABLED
-        value: "false"
+        value: "true"   # Activé — jobs: BOAMP scan 6h, rapport 7h, hebdo lundi 8h
       - key: BOAMP_SCAN_ENABLED
-        value: "false"
+        value: "true"   # Scan BOAMP quotidien 6h du matin
 
       # LLM (optionnel — au moins un recommandé)
       - key: OPENAI_API_KEY
