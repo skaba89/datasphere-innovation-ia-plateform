@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends
+from app.services.cache_service import cache_get, cache_set, invalidate_dashboard
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user
@@ -98,7 +99,12 @@ def dashboard_kpis(db: Session = Depends(get_db)):
     """
     Comprehensive dashboard KPIs — all metrics in one call.
     Covers CRM, AO, deliverables, agents, suggestions, team.
+    Cached 60s in-memory.
     """
+    cached = cache_get("analytics:dashboard_kpis")
+    if cached is not None:
+        return cached
+
     from datetime import datetime, timedelta, timezone
     from sqlalchemy import func
 

@@ -164,3 +164,46 @@ def export_opportunities_csv(db: Session = Depends(get_db)):
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
+
+
+@router.get("/tenders/csv")
+def export_tenders_csv(db: Session = Depends(get_db)):
+    """Export all validated tenders as CSV."""
+    from app.models.tender import Tender
+    import csv, io
+    from fastapi.responses import StreamingResponse
+    items = db.query(Tender).filter(Tender.validation_status == "validated").order_by(Tender.created_at.desc()).limit(1000).all()
+    output = io.StringIO()
+    w = csv.writer(output)
+    w.writerow(["ID", "Titre", "Acheteur", "Statut", "Go/No-Go", "Score", "Deadline", "Référence", "Créé"])
+    for t in items:
+        w.writerow([t.id, t.title, t.buyer_name or "", t.status, t.go_no_go_decision or "",
+                    t.go_no_go_score or "",
+                    t.submission_deadline.strftime("%Y-%m-%d") if t.submission_deadline else "",
+                    t.reference or "",
+                    t.created_at.strftime("%Y-%m-%d") if t.created_at else ""])
+    output.seek(0)
+    fn = f"appels_offres_{datetime.now(timezone.utc).strftime('%Y%m%d')}.csv"
+    return StreamingResponse(iter([output.getvalue()]), media_type="text/csv; charset=utf-8",
+                             headers={"Content-Disposition": f"attachment; filename={fn}"})
+
+
+@router.get("/deliverables/csv")
+def export_deliverables_csv(db: Session = Depends(get_db)):
+    """Export all deliverables as CSV."""
+    from app.models.deliverable import Deliverable
+    import csv, io
+    from fastapi.responses import StreamingResponse
+    items = db.query(Deliverable).order_by(Deliverable.created_at.desc()).limit(1000).all()
+    output = io.StringIO()
+    w = csv.writer(output)
+    w.writerow(["ID", "Titre", "Type", "Statut", "Version", "AO ID", "Créé", "Modifié"])
+    for d in items:
+        w.writerow([d.id, d.title, d.deliverable_type, d.status, d.version or 1,
+                    d.tender_id or "",
+                    d.created_at.strftime("%Y-%m-%d") if d.created_at else "",
+                    d.updated_at.strftime("%Y-%m-%d") if d.updated_at else ""])
+    output.seek(0)
+    fn = f"livrables_{datetime.now(timezone.utc).strftime('%Y%m%d')}.csv"
+    return StreamingResponse(iter([output.getvalue()]), media_type="text/csv; charset=utf-8",
+                             headers={"Content-Disposition": f"attachment; filename={fn}"})

@@ -22,7 +22,128 @@ import SuggestionsValidationPanel from '../components/SuggestionsValidationPanel
 
 // ────────────────────────────────────────────────────────────────────────────
 
-type Tab = 'suggestions' | 'approvals' | 'scheduler' | 'gantt' | 'exports' | 'activity' | 'health' | 'providers';
+type Tab = 'suggestions' | 'approvals' | 'scheduler' | 'boamp' | 'gantt' | 'exports' | 'activity' | 'health' | 'providers';
+
+
+
+// ── BOAMP Config Panel ────────────────────────────────────────────────────────
+function BOAMPConfigPanel({ token }: { token: string | null }) {
+  const [config, setConfig] = useState<{
+    enabled: boolean; keywords: string; score_threshold: number; daily_limit: number;
+  } | null>(null);
+  const [keywords,   setKeywords]   = useState('');
+  const [threshold,  setThreshold]  = useState(70);
+  const [limit,      setLimit]      = useState(50);
+  const [saving,     setSaving]     = useState(false);
+  const [testResult, setTestResult] = useState<any>(null);
+  const [testing,    setTesting]    = useState(false);
+  const [saved,      setSaved]      = useState(false);
+
+  useEffect(() => {
+    if (!token) return;
+    apiRequest<typeof config>('/scheduler/boamp-config', {}, token).then(d => {
+      if (!d) return;
+      setConfig(d);
+      setKeywords(d.keywords);
+      setThreshold(d.score_threshold);
+      setLimit(d.daily_limit);
+    });
+  }, [token]);
+
+  async function save() {
+    setSaving(true);
+    // Config saved via env vars on Render — just show info
+    setTimeout(() => { setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 3000); }, 500);
+  }
+
+  async function runTest() {
+    setTesting(true); setTestResult(null);
+    try {
+      const r = await apiRequest<any>(`/scheduler/boamp-test?keywords=${encodeURIComponent(keywords)}&limit=3`, {}, token);
+      setTestResult(r);
+    } catch (e) {
+      setTestResult({ error: String(e) });
+    } finally {
+      setTesting(false);
+    }
+  }
+
+  if (!config) return <div style={{ color: '#64748b', fontSize: '.82rem' }}>Chargement config BOAMP…</div>;
+
+  return (
+    <div style={{ display: 'grid', gap: 16 }}>
+      {/* Status */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ width: 10, height: 10, borderRadius: '50%', background: config.enabled ? '#22c55e' : '#64748b', boxShadow: config.enabled ? '0 0 8px #22c55e' : 'none' }} />
+        <span style={{ fontWeight: 700, fontSize: '.85rem', color: config.enabled ? '#22c55e' : '#64748b' }}>
+          {config.enabled ? 'Scan actif (6h00 chaque matin)' : 'Scan désactivé'}
+        </span>
+      </div>
+
+      {/* Keywords */}
+      <div>
+        <label style={{ fontSize: '.75rem', color: '#64748b', fontWeight: 700, display: 'block', marginBottom: 6 }}>
+          MOTS-CLÉS DE RECHERCHE
+        </label>
+        <textarea value={keywords} onChange={e => setKeywords(e.target.value)} rows={3}
+          placeholder="data informatique numérique IA machine learning"
+          style={{ width: '100%', padding: '8px 10px', background: 'rgba(255,255,255,.05)', border: '1px solid rgba(148,163,184,.15)', borderRadius: 8, color: '#e2e8f0', fontSize: '.82rem', resize: 'vertical', boxSizing: 'border-box' as const }} />
+        <p style={{ fontSize: '.72rem', color: '#475569', margin: '4px 0 0' }}>
+          Séparés par espaces. Variable Render : <code style={{ background: 'rgba(255,255,255,.08)', padding: '0 4px', borderRadius: 3 }}>BOAMP_KEYWORDS</code>
+        </p>
+      </div>
+
+      {/* Score + Limit */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <div>
+          <label style={{ fontSize: '.75rem', color: '#64748b', fontWeight: 700, display: 'block', marginBottom: 6 }}>
+            SCORE MINIMUM : {threshold}/100
+          </label>
+          <input type="range" min={40} max={95} value={threshold} onChange={e => setThreshold(Number(e.target.value))} style={{ width: '100%' }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.68rem', color: '#475569' }}>
+            <span>40 (large)</span><span>95 (strict)</span>
+          </div>
+        </div>
+        <div>
+          <label style={{ fontSize: '.75rem', color: '#64748b', fontWeight: 700, display: 'block', marginBottom: 6 }}>
+            AOS PAR SCAN : {limit}
+          </label>
+          <input type="range" min={10} max={100} step={10} value={limit} onChange={e => setLimit(Number(e.target.value))} style={{ width: '100%' }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.68rem', color: '#475569' }}>
+            <span>10</span><span>100</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <button onClick={runTest} disabled={testing}
+          style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '8px 14px', borderRadius: 8, border: '1px solid rgba(59,130,246,.3)', background: 'rgba(59,130,246,.08)', color: '#93c5fd', cursor: 'pointer', fontWeight: 700, fontSize: '.78rem' }}>
+          {testing ? '⏳ Test…' : '🔍 Tester les mots-clés'}
+        </button>
+        <div style={{ flex: 1, fontSize: '.72rem', color: '#475569', lineHeight: 1.4 }}>
+          Mettez à jour BOAMP_KEYWORDS dans Render puis redéployez pour appliquer.
+        </div>
+      </div>
+
+      {/* Test results */}
+      {testResult && (
+        <div style={{ padding: '12px 16px', borderRadius: 10, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(148,163,184,.08)' }}>
+          <div style={{ fontWeight: 700, fontSize: '.8rem', color: '#e2e8f0', marginBottom: 8 }}>
+            Résultats test : {testResult.fetched ?? 0} AO(s) trouvés
+          </div>
+          {(testResult.candidates ?? []).slice(0, 3).map((c: any, i: number) => (
+            <div key={i} style={{ padding: '6px 0', borderBottom: '1px solid rgba(148,163,184,.06)', fontSize: '.78rem', color: '#94a3b8' }}>
+              <span style={{ color: '#e2e8f0', fontWeight: 600 }}>{c.title?.slice(0, 60)}</span>
+              {c.buyer_name && <span style={{ marginLeft: 8, color: '#64748b' }}>· {c.buyer_name}</span>}
+            </div>
+          ))}
+          {testResult.error && <p style={{ color: '#fca5a5', margin: 0, fontSize: '.78rem' }}>{testResult.error}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function OperationsPage() {
   const [tab, setTab] = useState<Tab>('suggestions');
@@ -250,6 +371,7 @@ export default function OperationsPage() {
         {tab === 'suggestions' && <SuggestionsValidationPanel />}
         {tab === 'approvals' && <PendingApprovalsPanel />}
         {tab === 'scheduler' && <SchedulerPanel />}
+        {tab === 'boamp' && <BOAMPConfigPanel token={token} />}
         {tab === 'gantt' && <GanttChart />}
         {tab === 'exports' && <ExportsPanel />}
         {tab === 'activity' && <ActivityFeed days={14} limit={40} />}

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   User, Lock, Shield, Eye, EyeOff, CheckCircle, AlertCircle,
-  Save, RefreshCw,
+  Save, RefreshCw, Briefcase, MapPin, Phone, Globe, Star,
 } from 'lucide-react';
 import { apiRequest, tokenStorage } from '../api/client';
 import type { CurrentUser } from '../api/authTypes';
@@ -18,6 +18,17 @@ export default function UserProfilePage() {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Extended profile state
+  const [bio,          setBio]          = useState('');
+  const [phone,        setPhone]        = useState('');
+  const [linkedin,     setLinkedin]     = useState('');
+  const [location,     setLocation]     = useState('');
+  const [tjm,          setTjm]          = useState('');
+  const [availability, setAvailability] = useState('');
+  const [skills,       setSkills]       = useState('');
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileMsg,    setProfileMsg]    = useState<{ok:boolean;text:string}|null>(null);
+
   // Change password state
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
@@ -27,8 +38,19 @@ export default function UserProfilePage() {
   const [pwdMsg, setPwdMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   useEffect(() => {
-    apiRequest<CurrentUser>('/auth/me', {}, token)
-      .then(u => { setUser(u); setLoading(false); })
+    apiRequest<any>('/team/me', {}, token).then(profile => {
+        if (profile) {
+          setUser(profile as any);
+          setBio(profile.bio || '');
+          setPhone(profile.phone || '');
+          setLinkedin(profile.linkedin_url || '');
+          setLocation(profile.location || '');
+          setTjm(profile.tjm ? String(profile.tjm) : '');
+          setAvailability(profile.availability || '');
+          setSkills((profile.skills || []).join(', '));
+        }
+        setLoading(false);
+      })
       .catch(() => setLoading(false));
   }, []);
 
@@ -39,6 +61,29 @@ export default function UserProfilePage() {
     { label: 'Caractère spécial', ok: /[^A-Za-z0-9]/.test(next) },
   ];
   const pwdStrength = pwdChecks.filter(c => c.ok).length;
+
+  async function handleSaveProfile() {
+    setProfileSaving(true); setProfileMsg(null);
+    try {
+      await apiRequest('/team/me', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          bio: bio.trim() || null,
+          phone: phone.trim() || null,
+          linkedin_url: linkedin.trim() || null,
+          location: location.trim() || null,
+          tjm: tjm ? parseInt(tjm) : null,
+          availability: availability || null,
+          skills: skills ? skills.split(',').map(s => s.trim()).filter(Boolean) : null,
+        }),
+      }, token);
+      setProfileMsg({ ok: true, text: 'Profil mis à jour ✓' });
+    } catch (e) {
+      setProfileMsg({ ok: false, text: 'Erreur lors de la sauvegarde' });
+    } finally {
+      setProfileSaving(false);
+    }
+  }
 
   async function handleChangePwd(e: React.FormEvent) {
     e.preventDefault();
