@@ -1,272 +1,227 @@
 # DataSphere Innovation IA Platform
 
-> **Cabinet de conseil augmenté par IA** — Missions Data, IT, IA et réponse aux appels d'offres  
-> France & Afrique francophone
+> Cabinet de conseil Data & IA augmenté par intelligence artificielle — France & Afrique Francophone
 
-![Version](https://img.shields.io/badge/version-1.9.0-facc15?style=flat-square)
-![Tests](https://img.shields.io/badge/tests-1010%20✅-22c55e?style=flat-square)
-![Build](https://img.shields.io/badge/build-481kB-3b82f6?style=flat-square)
-![Routes](https://img.shields.io/badge/routes-182-8b5cf6?style=flat-square)
-
-[![CI](https://github.com/skaba89/datasphere-innovation-ia-plateform/actions/workflows/ci.yml/badge.svg)](https://github.com/skaba89/datasphere-innovation-ia-plateform/actions)
-[![Python 3.12](https://img.shields.io/badge/Python-3.12-blue)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green)](https://fastapi.tiangolo.com)
-[![React 18](https://img.shields.io/badge/React-18-61dafb)](https://react.dev)
-[![Tests](https://img.shields.io/badge/Tests-200%2B%20passing-brightgreen)]()
-[![Version](https://img.shields.io/badge/Version-1.8.0-yellow)]()
+[![CI Quality Gates](https://github.com/skaba89/datasphere-innovation-ia-plateform/actions/workflows/ci.yml/badge.svg)](https://github.com/skaba89/datasphere-innovation-ia-plateform/actions/workflows/ci.yml)
+[![Version](https://img.shields.io/badge/version-2.0.0-blue)](https://github.com/skaba89/datasphere-innovation-ia-plateform)
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL_3.0-blue.svg)](LICENSE)
 
 ---
 
-## Démarrage en 5 minutes
+## 🎯 Pitch
 
-### Prérequis
-- Docker Desktop 4.x
-- Git
+DataSphere Innovation IA Platform automatise la réponse aux appels d'offres data :
+**détection BOAMP → Go/No-Go IA → mémoire technique → livrable Word/PDF**
+Le tout en 8 étapes, avec validation humaine aux points clés.
 
-### Lancement local (Docker)
+## ✨ Fonctionnalités principales
+
+| Feature | Détail |
+|---|---|
+| **Workflow IA 8 étapes** | Analyse → Go/No-Go → Exigences → Conformité → Staffing → Plan → Génération → Revue |
+| **5 Agents IA** | Data Architect, Expert AO, Gouvernance, Business Analyst, Documentation |
+| **RAG** | Les livrables approuvés améliorent les suivants (TF-IDF → pgvector) |
+| **5 Templates** | Mémoire Technique, Proposition Commerciale, Note de Synthèse, Plan Projet, Présentation |
+| **Export** | Markdown · HTML · PDF (WeasyPrint) · **Word DOCX** (python-docx) |
+| **BOAMP Auto** | Scan quotidien 6h → AOs data scoring → notifications email |
+| **Rapport hebdo** | Email HTML lundi 8h → KPIs, deadlines 14j, provider actif |
+| **LinkedIn Agent** | Génération posts data engineering + OAuth2 publication directe |
+| **Agent CV** | CV consultant complet (6+ ans XP, projets alignés mission) |
+| **Multi-tenant** | Isolation workspace niveau DB (X-Workspace-ID header) |
+| **i18n** | FR / EN — 120 clés, toggle dans le header |
+| **Mobile** | Bottom nav, grilles adaptatives, touch targets 44px |
+| **SSE temps réel** | Workflow events → toasts instantanés (plus de polling) |
+| **Onboarding** | Wizard 5 étapes, état synchronisé depuis `/setup/onboarding-status` |
+
+---
+
+## 🏗️ Stack technique
+
+```
+Backend  : FastAPI 0.115 + SQLAlchemy 2.0 + PostgreSQL 16 + Alembic
+Frontend : React 18 + TypeScript + Vite 6 + 10 chunks (bundle 210 kB)
+IA       : Groq (Llama 3.3 70B) · Gemini · OpenAI · Mistral · OpenRouter
+Infra    : Docker multi-stage · Gunicorn 2 workers · Render Blueprint
+Tests    : 1 342 tests pytest · 14 E2E specs Playwright · CI GitHub Actions
+```
+
+---
+
+## 🚀 Démarrage rapide
+
+### Développement local
 
 ```bash
+# 1. Cloner
 git clone https://github.com/skaba89/datasphere-innovation-ia-plateform.git
 cd datasphere-innovation-ia-plateform
 
-# 1. Copier et configurer l'environnement
+# 2. Variables d'environnement
 cp .env.example .env
-# Éditer .env : définir SECRET_KEY et POSTGRES_PASSWORD au minimum
-# ⚠️  DATABASE_URL dans .env.example utilise déjà "postgres" (service Docker)
-#     NE PAS changer "postgres" en "localhost" — localhost = intérieur du container
+# Editer .env : DATABASE_URL, SECRET_KEY, GROQ_API_KEY
 
-# 2. Démarrer les services
-docker compose up -d
+# 3. Lancer (Docker Compose)
+docker compose up --build
 
-# 3. Vérifier que le backend est up
-docker compose logs backend --tail=20
+# 4. Initialiser la DB
+curl http://localhost:8000/api/v1/setup/bootstrap?token=YOUR_SETUP_TOKEN
 
-# 4. Créer l'admin initial (une seule fois)
-curl -X POST http://localhost:8000/api/v1/auth/bootstrap-admin \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@datasphere.fr","password":"Admin123456!","first_name":"Admin","last_name":"DataSphere","role":"admin","is_active":true}'
-
-# 5. Ouvrir l'application
+# 5. Ouvrir
 open http://localhost:5173
 ```
 
-> **Docker networking** : en Docker Compose, les services communiquent par leur **nom de service**.
-> Le backend joindra PostgreSQL via `postgres:5432` (nom du service), jamais `localhost:5432`.
-> Le `docker-compose.yml` injecte automatiquement la bonne `DATABASE_URL` — même si votre `.env`
-> local contient `localhost`, il sera surchargé par la valeur correcte.
+### Production (Render)
 
-### Lancement dev (sans Docker)
-
-```bash
-# Terminal 1 — PostgreSQL
-docker run -d --name pg -p 5432:5432 \
-  -e POSTGRES_DB=datasphere_platform \
-  -e POSTGRES_USER=datasphere \
-  -e POSTGRES_PASSWORD=devpassword \
-  postgres:16-alpine
-
-# Terminal 2 — Backend
-cd platform/backend
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-cp ../../.env.example .env
-# Modifier DATABASE_URL avec les credentials ci-dessus
-python scripts/migrate.py upgrade   # Apply migrations
-uvicorn app.main:app --reload
-
-# Terminal 3 — Frontend
-cd platform/frontend
-npm install
-npm run dev
-```
+1. Fork le repo sur GitHub
+2. Render → New Blueprint → connecter le repo (détecte `render.yaml`)
+3. Renseigner dans Render Dashboard :
+   ```
+   GROQ_API_KEY   = gsk_...
+   GEMINI_API_KEY = AIza...
+   CORS_ORIGINS   = https://datasphere-frontend-xxxx.onrender.com
+   ```
+4. Render déploie automatiquement backend + frontend + PostgreSQL
+5. Activer `SETUP_ENABLED=true` → appeler `/api/v1/setup/bootstrap` → remettre `false`
+6. Suivre `PRODUCTION_CHECKLIST.md`
 
 ---
 
-## Architecture
+## 📁 Structure du projet
 
 ```
 datasphere-innovation-ia-plateform/
 ├── platform/
-│   ├── backend/                 # FastAPI + SQLAlchemy + PostgreSQL
+│   ├── backend/                    # FastAPI
 │   │   ├── app/
-│   │   │   ├── api/v1/endpoints/  # 27 modules d'endpoints (156 routes)
-│   │   │   ├── models/            # 22 tables SQLAlchemy
-│   │   │   ├── schemas/           # Pydantic v2 schemas
-│   │   │   ├── crud/              # Couche d'accès données
-│   │   │   ├── services/          # Logique métier (LLM, CV, analytics...)
-│   │   │   └── core/              # Config, security, settings
-│   │   ├── alembic/versions/      # 4 migrations
-│   │   ├── tests/                 # 200+ tests pytest
+│   │   │   ├── api/v1/endpoints/   # 235 routes
+│   │   │   ├── models/             # SQLAlchemy ORM
+│   │   │   ├── services/           # Logique métier IA
+│   │   │   │   ├── workflow_service.py   # Workflow 8 étapes
+│   │   │   │   ├── rag_service.py        # RAG TF-IDF
+│   │   │   │   ├── docx_export.py        # Export Word
+│   │   │   │   ├── deliverable_templates.py  # 5 templates
+│   │   │   │   ├── weekly_report.py      # Rapport hebdo HTML
+│   │   │   │   ├── cv_agent.py           # Agent CV
+│   │   │   │   ├── linkedin_agent.py     # Agent LinkedIn
+│   │   │   │   └── scheduler_service.py  # BOAMP + rapports
+│   │   │   └── crud/              # Database operations
+│   │   ├── alembic/               # 10 migrations
+│   │   ├── tests/                 # 1 342 tests pytest
 │   │   └── requirements.txt
-│   └── frontend/                # React 18 + TypeScript + Vite
+│   └── frontend/                  # React + TypeScript
 │       ├── src/
-│       │   ├── pages/           # 12 pages (Dashboard, Tenders, Workspaces...)
-│       │   ├── components/      # 27 composants réutilisables
-│       │   └── api/             # Client API + types + userContext
-│       ├── e2e/                 # 18 tests Playwright
-│       └── package.json
-├── ops/
-│   └── backup.sh                # Script backup PostgreSQL
-├── .github/workflows/ci.yml     # CI GitHub Actions
-├── docker-compose.yml           # Dev
-├── docker-compose.prod.yml      # Production (Gunicorn + Nginx + backup)
-├── .env.example                 # Template variables d'environnement
-└── .env.prod.example            # Template production
+│       │   ├── pages/             # 17 pages
+│       │   ├── components/        # 37 composants
+│       │   ├── hooks/             # useWorkflowSSE, useRealtimeToasts
+│       │   └── i18n/              # FR/EN 120 clés
+│       ├── e2e/                   # 14 specs Playwright
+│       └── vite.config.ts         # Code splitting 10 chunks
+├── .github/workflows/
+│   ├── ci.yml                     # Backend + Frontend + Docker + Security + E2E
+│   └── e2e.yml                    # Playwright complet
+├── render.yaml                    # Infrastructure as Code
+├── docker-compose.yml             # Dev local
+├── docker-compose.prod.yml        # Production
+└── PRODUCTION_CHECKLIST.md        # Go-live en 10 étapes
 ```
 
 ---
 
-## Stack technique
+## 🔑 Variables d'environnement
 
-| Couche | Technologie | Version |
+| Variable | Requis | Description |
 |---|---|---|
-| API | FastAPI | 0.115 |
-| ORM | SQLAlchemy | 2.0 |
-| Migrations | Alembic | 1.x |
-| Base de données | PostgreSQL | 16 |
-| Auth | JWT (python-jose) + bcrypt | — |
-| Scheduler | APScheduler | 3.x |
-| Frontend | React + TypeScript | 18 + 5.x |
-| Build | Vite | 5.x |
-| Tests backend | pytest | 8.x |
-| Tests E2E | Playwright | 1.x |
-| CI | GitHub Actions | — |
-| Containers | Docker + Compose | — |
+| `DATABASE_URL` | ✅ | PostgreSQL connection string |
+| `SECRET_KEY` | ✅ | JWT signing (32 chars min) |
+| `GROQ_API_KEY` | ✅ | LLM principal (gratuit) |
+| `GEMINI_API_KEY` | ⚡ | LLM secondaire |
+| `CORS_ORIGINS` | ✅ | URL frontend production |
+| `SMTP_HOST` | 📧 | Email (Brevo, Gmail) |
+| `STRIPE_SECRET_KEY` | 💳 | Billing (optionnel) |
+| `SENTRY_DSN` | 📊 | Error tracking (optionnel) |
+| `LINKEDIN_CLIENT_ID` | 🔗 | OAuth2 LinkedIn (optionnel) |
+| `SETUP_ENABLED` | 🔒 | `false` en prod |
+| `SCHEDULER_ENABLED` | ⏰ | `true` en prod (BOAMP 6h) |
 
 ---
 
-## Configuration LLM — 11 providers (coût-first)
-
-| Tier | Provider | Coût | Clé requise |
-|---|---|---|---|
-| **Gratuit** | GLM-4-Flash (ZhipuAI) | 0 € | `GLM_API_KEY` |
-| **Quasi-gratuit** | Groq (Llama 3.3 70B) | ~0 € | `GROQ_API_KEY` |
-| **Quasi-gratuit** | Gemini Flash | ~0 € | `GEMINI_API_KEY` |
-| **Budget** | Together AI | ~0.18$/M tokens | `TOGETHER_API_KEY` |
-| **Budget** | Qwen Turbo | très peu cher | `QWEN_API_KEY` |
-| **Standard** | OpenRouter | variable | `OPENROUTER_API_KEY` |
-| **Standard** | Mistral small | ~0.2$/M tokens | `MISTRAL_API_KEY` |
-| **Standard** | Cohere R | standard | `COHERE_API_KEY` |
-| **Standard** | Perplexity Sonar | ~0.001$/req | `PERPLEXITY_API_KEY` |
-| **Premium** | OpenAI GPT | ~1$/M tokens | `OPENAI_API_KEY` |
-| **Premium** | Anthropic Claude | ~1.25$/M tokens | `ANTHROPIC_API_KEY` |
-
-**Configuration minimale 0 €/mois** : définir `GLM_API_KEY` + `GROQ_API_KEY` + `GEMINI_API_KEY`.
-
----
-
-## Endpoints API (156 routes)
-
-Documentation interactive : `http://localhost:8000/docs` (Swagger UI)  
-Documentation alternative : `http://localhost:8000/redoc`
-
-### Groupes principaux
-
-| Préfixe | Description | Auth |
-|---|---|---|
-| `/auth` | Login, refresh, reset password | Mixte |
-| `/team` | Gestion équipe (admin) | ✓ Requis |
-| `/organizations` | CRM — Organismes | ✓ Requis |
-| `/opportunities` | CRM — Opportunités | ✓ Requis |
-| `/tenders` | Appels d'offres | ✓ Requis |
-| `/deliverables` | Livrables + workflow | ✓ Requis |
-| `/agents` | Agents IA + affectations | ✓ Requis |
-| `/agent-actions` | Actions gouvernées | ✓ Requis |
-| `/analytics` | KPIs + Gantt + Dashboard | ✓ Requis |
-| `/suggestions` | Suggestions IA + validation | ✓ Requis |
-| `/workspaces` | Multi-tenant | ✓ Requis |
-| `/uploads` | Pièces jointes | ✓ Requis |
-| `/providers` | Statut LLM providers | ✓ Requis |
-| `/audit-logs` | Journal d'audit | ✓ Requis |
-| `/notifications` | Notifications + SSE | ✓ Requis |
-| `/contact` | Formulaire contact public | Public |
-| `/health` | Santé application | Public |
-
----
-
-## Gouvernance IA (règle immuable)
-
-Toute action d'agent avec `requires_human_approval=True` **ne s'exécute jamais automatiquement**.  
-Elle attend une validation explicite via `POST /agent-actions/{id}/approve`.
-
-Toute entité suggérée par l'IA (BOAMP, import texte) a `validation_status="pending"` et est **invisible dans le CRM normal** jusqu'à validation humaine via le panel "Suggestions IA".
-
----
-
-## Tests
+## 🧪 Tests
 
 ```bash
-# Tests backend (unitaires + intégration)
+# Backend (pytest)
 cd platform/backend
-python -m pytest tests/ -v
+pip install -r requirements.txt
+pytest -q                          # 1 342 tests
+pytest tests/test_sprint2_services.py  # Services Sprint 2
 
-# Tests spécifiques
-python -m pytest tests/test_rbac.py -v          # RBAC
-python -m pytest tests/test_api_hardening.py -v  # Hardening
-python -m pytest tests/test_auth.py -v           # Auth
+# Frontend (build)
+cd platform/frontend
+npm ci && npm run build
 
-# Tests E2E Playwright (frontend + backend)
+# E2E (Playwright)
 cd platform/frontend
 npx playwright install chromium
-npm run test:e2e
+npx playwright test                # 14 specs
 ```
 
 ---
 
-## CI/CD
+## 🛣️ API — Endpoints principaux
 
-Le pipeline GitHub Actions vérifie à chaque PR :
-1. Lint (ruff)
-2. Tests backend (pytest, 200+ tests)
-3. Build frontend (tsc + vite)
-4. Tests E2E Playwright (sur PR vers main)
+```
+POST /auth/login                   → JWT token
+GET  /health                       → Santé système
+
+# Workflow IA
+GET  /tenders                      → Liste AOs
+POST /tenders/{id}/workflow/start  → Lancer le workflow
+POST /tenders/{id}/workflow/steps/{key}/approve  → Valider une étape
+
+# Livrables
+GET  /deliverables/templates       → 5 templates disponibles
+POST /deliverables/from-template/{key}?tender_id=N  → Créer depuis template
+GET  /deliverables/{id}/export/docx    → Télécharger Word
+GET  /deliverables/{id}/export/pdf     → Télécharger PDF
+GET  /deliverables/similar?title=      → RAG: livrables similaires
+
+# Agents IA
+GET  /cv/domains                   → 4 domaines CV
+POST /cv/generate                  → Générer CV complet
+GET  /linkedin/topics              → Sujets posts LinkedIn
+
+# Rapports
+GET  /reports/weekly/preview       → Aperçu rapport hebdo HTML
+POST /reports/weekly/send          → Envoyer (admin)
+
+# Onboarding
+GET  /setup/onboarding-status      → État réel depuis DB
+GET  /notifications/stream         → SSE temps réel
+```
+
+Documentation Swagger complète : `/api/v1/docs`
 
 ---
 
-## Déploiement production
+## 📊 Métriques v2.0
 
-```bash
-# Variables obligatoires en prod
-cp .env.prod.example .env.prod
-# Définir : SECRET_KEY, POSTGRES_PASSWORD, GLM_API_KEY, GROQ_API_KEY, GEMINI_API_KEY
-
-# Démarrage
-docker compose -f docker-compose.prod.yml up -d
-
-# Backup quotidien automatique dans ./backups/
-# Rotation : 14 jours
+```
+Routes API    : 235     Tests unitaires  : 1 342
+Pages React   : 17      E2E Playwright   : 14 specs
+Composants    : 37      Migrations Alembic : 10
+Bundle main   : 210 kB  Index DB         : 22 (perf001)
+i18n clés     : 120     Providers LLM    : 11
 ```
 
 ---
 
-## Variables d'environnement requises
+## 👤 Auteur
 
-| Variable | Requis | Default | Description |
-|---|---|---|---|
-| `DATABASE_URL` | ✓ | — | PostgreSQL connection string |
-| `SECRET_KEY` | ✓ | — | JWT signing key (min 32 chars) |
-| `POSTGRES_PASSWORD` | ✓ | — | DB password |
-| `GLM_API_KEY` | Recommandé | — | Gratuit — open.bigmodel.ai |
-| `GROQ_API_KEY` | Recommandé | — | Gratuit — console.groq.com |
-| `GEMINI_API_KEY` | Recommandé | — | Gratuit — aistudio.google.com |
-| `SMTP_HOST` | Optionnel | — | Désactivé = mode preview uniquement |
-| `SCHEDULER_ENABLED` | Non | `true` | Désactiver pour tests |
-| `BOAMP_SCAN_ENABLED` | Non | `true` | Veille BOAMP quotidienne |
-
-Voir `.env.example` pour la liste complète documentée.
+**Cheickna KABA** — Co-Fondateur DataSphere Innovation
+Senior Data Engineer / Tech Lead Data Architect
+Paris, France | [LinkedIn](https://linkedin.com/in/cheickna-kaba)
 
 ---
 
-## Sécurité
+## 📄 Licence
 
-- **Auth** : JWT (access 60min + refresh 30j), bcrypt pour les passwords
-- **RBAC** : 4 rôles (admin / manager / consultant / viewer), enforced sur toutes les routes
-- **Rate limiting** : SlowAPI sur login (10/min) et contact (5/10min)
-- **File uploads** : extension whitelist + MIME check + 20MB limit
-- **CORS** : origines explicites depuis `CORS_ORIGINS` env var
-- **SQL** : SQLAlchemy ORM (pas de raw SQL dans l'app)
-- **Secrets** : aucun secret hardcodé (`.env` gitignorés)
-
----
-
-*DataSphere Innovation — v1.8.0 — Dernière mise à jour : juin 2026*
+AGPL-3.0 — Voir [LICENSE](LICENSE)

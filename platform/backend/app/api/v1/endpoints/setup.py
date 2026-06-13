@@ -147,9 +147,9 @@ def get_onboarding_status(
     Return the real onboarding state for the SetupWizard.
     Replaces localStorage-based heuristics with actual DB state.
     """
-    from app.models.agent import Agent
+    from app.models.agent import AgentProfile as Agent
     from app.models.tender import Tender
-    from app.models.user import User as UserModel
+    
     from app.services.llm_service import provider_label
 
     # 1. Provider configured?
@@ -160,7 +160,7 @@ def get_onboarding_status(
         has_provider = False
 
     # 2. Agents installed?
-    agent_count = db.query(Agent).count()
+    agent_count = db.query(Agent).count()  # AgentProfile
     has_agents = agent_count >= 5
 
     # 3. At least one AO?
@@ -176,7 +176,7 @@ def get_onboarding_status(
         pass
 
     # 5. Team has more than 1 member?
-    user_count = db.query(UserModel).filter(UserModel.is_active == True).count()
+    user_count = db.query(User).filter(User.is_active == True).count()
     has_team = user_count > 1
 
     steps_done = sum([has_provider, has_agents, has_tender, workflow_started, has_team])

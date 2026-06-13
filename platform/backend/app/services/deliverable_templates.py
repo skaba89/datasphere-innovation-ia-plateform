@@ -532,6 +532,8 @@ def apply_template(key: str, tender_title: str | None = None,
     # Replace common placeholders if context is provided
     if tender_title:
         full_markdown = full_markdown.replace("[[MISSION]]", tender_title)
+        full_markdown = full_markdown.replace("[[AO]]", tender_title)
+        full_markdown = full_markdown.replace("[[TITRE_AO]]", tender_title)
     if buyer_name:
         full_markdown = full_markdown.replace("[[ACHETEUR]]", buyer_name)
         full_markdown = full_markdown.replace("[[NOM_ORGANISATION]]", buyer_name)

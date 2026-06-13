@@ -88,6 +88,97 @@ def create_new_deliverable(payload: DeliverableCreate, db: Session = Depends(get
     return create_deliverable(db, payload)
 
 
+
+
+# ── Templates ─────────────────────────────────────────────────────────────────
+
+@router.get("/templates")
+def list_deliverable_templates(current_user: User = Depends(get_current_user)):
+    """List all available deliverable templates."""
+    from app.services.deliverable_templates import list_templates
+    return list_templates()
+
+
+@router.get("/templates/{template_key}")
+def get_deliverable_template(
+    template_key: str,
+    tender_id: int | None = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Get a template ready to apply. Optionally pre-fill with tender context."""
+    from app.services.deliverable_templates import apply_template, get_template
+    from app.crud.tender import get_tender as get_tender_crud
+
+    if not get_template(template_key):
+        raise HTTPException(status_code=404, detail=f"Template '{template_key}' not found")
+
+    tender_title = None
+    buyer_name   = None
+    if tender_id:
+        tender = get_tender_crud(db, tender_id)
+        if tender:
+            tender_title = tender.title
+            buyer_name   = tender.buyer_name
+
+    return apply_template(template_key, tender_title=tender_title, buyer_name=buyer_name)
+
+
+@router.post("/from-template/{template_key}")
+def create_deliverable_from_template(
+    template_key: str,
+    tender_id:    int,
+    opportunity_id: int | None = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Create a new deliverable pre-filled from a template."""
+    from app.services.deliverable_templates import apply_template, get_template
+    from app.crud.tender import get_tender as get_tender_crud
+    from app.schemas.deliverable import DeliverableCreate
+
+    if not get_template(template_key):
+        raise HTTPException(status_code=404, detail=f"Template '{template_key}' not found")
+
+    tender = get_tender_crud(db, tender_id)
+    if not tender:
+        raise HTTPException(status_code=404, detail="Tender not found")
+
+    tpl_data = apply_template(
+        template_key,
+        tender_title=tender.title,
+        buyer_name=tender.buyer_name,
+    )
+
+    payload = DeliverableCreate(
+        tender_id=tender_id,
+        opportunity_id=opportunity_id or tender.opportunity_id,
+        title=tpl_data["title"],
+        deliverable_type=tpl_data["deliverable_type"],
+        status="draft",
+        content_markdown=tpl_data["content_markdown"],
+        version=1,
+    )
+    deliverable = create_deliverable(db, payload)
+    return deliverable
+
+
+# ── RAG — Similar deliverables ────────────────────────────────────────────────
+
+@router.get("/similar")
+def find_similar_deliverables(
+    title:   str,
+    type:    str | None = None,
+    limit:   int = 3,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Find similar approved deliverables (RAG context retrieval)."""
+    from app.services.rag_service import find_similar_deliverables as find_sim
+    return find_sim(db, query_title=title, query_content="",
+                    deliverable_type=type, limit=limit)
+
+
 @router.get("/{deliverable_id}", response_model=DeliverableRead)
 def read_deliverable(deliverable_id: int, db: Session = Depends(get_db)):
     deliverable = get_deliverable(db, deliverable_id)
@@ -405,95 +496,6 @@ def restore_deliverable_version(
         raise HTTPException(status_code=404, detail=f"Version {payload.version_number} not found")
 
     return restore_version(db, d, v, restored_by=payload.restored_by)
-
-
-# ── Templates ─────────────────────────────────────────────────────────────────
-
-@router.get("/templates")
-def list_deliverable_templates(current_user: User = Depends(get_current_user)):
-    """List all available deliverable templates."""
-    from app.services.deliverable_templates import list_templates
-    return list_templates()
-
-
-@router.get("/templates/{template_key}")
-def get_deliverable_template(
-    template_key: str,
-    tender_id: int | None = None,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    """Get a template ready to apply. Optionally pre-fill with tender context."""
-    from app.services.deliverable_templates import apply_template, get_template
-    from app.crud.tender import get_tender as get_tender_crud
-
-    if not get_template(template_key):
-        raise HTTPException(status_code=404, detail=f"Template '{template_key}' not found")
-
-    tender_title = None
-    buyer_name   = None
-    if tender_id:
-        tender = get_tender_crud(db, tender_id)
-        if tender:
-            tender_title = tender.title
-            buyer_name   = tender.buyer_name
-
-    return apply_template(template_key, tender_title=tender_title, buyer_name=buyer_name)
-
-
-@router.post("/from-template/{template_key}")
-def create_deliverable_from_template(
-    template_key: str,
-    tender_id:    int,
-    opportunity_id: int | None = None,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    """Create a new deliverable pre-filled from a template."""
-    from app.services.deliverable_templates import apply_template, get_template
-    from app.crud.tender import get_tender as get_tender_crud
-    from app.schemas.deliverable import DeliverableCreate
-
-    if not get_template(template_key):
-        raise HTTPException(status_code=404, detail=f"Template '{template_key}' not found")
-
-    tender = get_tender_crud(db, tender_id)
-    if not tender:
-        raise HTTPException(status_code=404, detail="Tender not found")
-
-    tpl_data = apply_template(
-        template_key,
-        tender_title=tender.title,
-        buyer_name=tender.buyer_name,
-    )
-
-    payload = DeliverableCreate(
-        tender_id=tender_id,
-        opportunity_id=opportunity_id or tender.opportunity_id,
-        title=tpl_data["title"],
-        deliverable_type=tpl_data["deliverable_type"],
-        status="draft",
-        content_markdown=tpl_data["content_markdown"],
-        version=1,
-    )
-    deliverable = create_deliverable(db, payload)
-    return get_deliverable_read(db, deliverable.id)
-
-
-# ── RAG — Similar deliverables ────────────────────────────────────────────────
-
-@router.get("/similar")
-def find_similar_deliverables(
-    title:   str,
-    type:    str | None = None,
-    limit:   int = 3,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    """Find similar approved deliverables (RAG context retrieval)."""
-    from app.services.rag_service import find_similar_deliverables as find_sim
-    return find_sim(db, query_title=title, query_content="",
-                    deliverable_type=type, limit=limit)
 
 
 @router.get("/{deliverable_id}/export/docx")
