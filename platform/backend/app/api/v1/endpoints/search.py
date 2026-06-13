@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
-from app.api.dependencies import get_current_user
+from app.api.dependencies import get_current_user, get_pagination, PaginationParams
 from app.db.session import get_db
 from app.models.agent import AgentAction
 from app.models.contact import Contact

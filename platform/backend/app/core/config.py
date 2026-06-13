@@ -1,5 +1,5 @@
 from functools import lru_cache
-from pydantic import validator
+from pydantic import Field, validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -73,6 +73,7 @@ class Settings(BaseSettings):
     llm_task_commercial_proposal: str = ""
 
     # ── Scheduler ─────────────────────────────────────────────────────────────
+    sentry_dsn: str = Field(default="", description="Sentry DSN pour le monitoring prod")
     scheduler_enabled: bool = True
     scheduler_timezone: str = "Europe/Paris"
     scheduler_auto_execute_interval_minutes: int = 5

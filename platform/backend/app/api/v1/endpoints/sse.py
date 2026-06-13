@@ -22,7 +22,7 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from app.api.dependencies import get_current_user
+from app.api.dependencies import get_current_user, get_pagination, PaginationParams
 from app.db.session import get_db
 from app.models.notification import Notification
 from app.models.user import User

@@ -484,6 +484,24 @@ def _notify_boamp_matches(db, matches: list[dict]) -> None:
         logger.warning("BOAMP notification email failed: %s", e)
 
 
+
+
+def _weekly_report_job() -> None:
+    """Send the weekly report every Monday at 8:00 Paris time."""
+    from app.services.weekly_report import send_weekly_report
+    from app.db.session import SessionLocal
+    started = datetime.now()
+    db = SessionLocal()
+    try:
+        result = send_weekly_report(db)
+        _log(db, "weekly_report", "Rapport hebdomadaire", "ok",
+             result.get("sent", 0), None, started)
+        logger.info("Weekly report sent: %s", result)
+    except Exception as e:
+        logger.error("Weekly report failed: %s", e)
+    finally:
+        db.close()
+
 def start() -> None:
     """Start the scheduler and register all jobs."""
     if _scheduler.running:
@@ -547,6 +565,17 @@ def start() -> None:
             replace_existing=True,
         )
 
+    _scheduler.add_job(
+        _weekly_report_job,
+        trigger="cron",
+        day_of_week="mon",
+        hour=8,
+        minute=0,
+        id="weekly_report",
+        name="Rapport hebdomadaire — envoi lundi 8h",
+        timezone=tz,
+        replace_existing=True,
+    )
     _scheduler.start()
     logger.info(
         "Scheduler started — %d jobs registered (provider: %s)",

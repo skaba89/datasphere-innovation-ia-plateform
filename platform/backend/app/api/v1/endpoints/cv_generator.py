@@ -15,7 +15,7 @@ from fastapi.responses import PlainTextResponse, HTMLResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from app.api.dependencies import get_current_user
+from app.api.dependencies import get_current_user, get_pagination, PaginationParams
 from app.db.session import get_db
 from app.models.user import User
 from app.services.cv_agent import MISSION_DOMAINS, cv_to_markdown

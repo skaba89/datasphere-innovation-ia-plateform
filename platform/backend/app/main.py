@@ -76,6 +76,24 @@ async def lifespan(app: FastAPI):
     scheduler_service.stop()
 
 
+# ── Sentry error tracking (prod) ──────────────────────────────────────────────
+import os as _os
+_sentry_dsn = _os.getenv("SENTRY_DSN", "")
+if _sentry_dsn:
+    import sentry_sdk
+    from sentry_sdk.integrations.fastapi import FastApiIntegration
+    from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+    sentry_sdk.init(
+        dsn=_sentry_dsn,
+        integrations=[FastApiIntegration(), SqlalchemyIntegration()],
+        traces_sample_rate=0.1,        # 10% des requêtes tracées
+        profiles_sample_rate=0.05,     # 5% des requêtes profilées
+        environment=_os.getenv("APP_ENV", "development"),
+        release=f"datasphere@{_os.getenv('RENDER_GIT_COMMIT', 'local')[:7]}",
+        send_default_pii=False,        # RGPD — pas de données perso dans Sentry
+    )
+
+
 app = FastAPI(
     title="DataSphere Innovation IA Platform",
     description="""

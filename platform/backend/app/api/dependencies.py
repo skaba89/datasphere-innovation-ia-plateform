@@ -35,3 +35,19 @@ def require_admin(current_user: User = Depends(get_current_user)) -> User:
     if current_user.role != "admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin privileges required")
     return current_user
+
+
+# ── Pagination ──────────────────────────────────────────────────────────────────
+
+from fastapi import Query
+from dataclasses import dataclass
+
+@dataclass
+class PaginationParams:
+    """Standard pagination parameters for list endpoints."""
+    skip:  int = Query(default=0,    ge=0,      description="Nombre d'éléments à sauter")
+    limit: int = Query(default=50,   ge=1, le=500, description="Nombre max d'éléments retournés")
+
+def get_pagination(skip: int = Query(0, ge=0), limit: int = Query(50, ge=1, le=500)) -> PaginationParams:
+    """FastAPI dependency for pagination."""
+    return PaginationParams(skip=skip, limit=limit)
