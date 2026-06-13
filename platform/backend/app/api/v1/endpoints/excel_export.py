@@ -183,7 +183,8 @@ def export_tenders_csv(db: Session = Depends(get_db)):
                     t.reference or "",
                     t.created_at.strftime("%Y-%m-%d") if t.created_at else ""])
     output.seek(0)
-    fn = f"appels_offres_{datetime.now(timezone.utc).strftime('%Y%m%d')}.csv"
+    from datetime import datetime as _dt, timezone as _tz
+    fn = f"appels_offres_{_dt.now(_tz.utc).strftime('%Y%m%d')}.csv"
     return StreamingResponse(iter([output.getvalue()]), media_type="text/csv; charset=utf-8",
                              headers={"Content-Disposition": f"attachment; filename={fn}"})
 
@@ -204,6 +205,7 @@ def export_deliverables_csv(db: Session = Depends(get_db)):
                     d.created_at.strftime("%Y-%m-%d") if d.created_at else "",
                     d.updated_at.strftime("%Y-%m-%d") if d.updated_at else ""])
     output.seek(0)
-    fn = f"livrables_{datetime.now(timezone.utc).strftime('%Y%m%d')}.csv"
+    from datetime import datetime as _dt, timezone as _tz
+    fn = f"livrables_{_dt.now(_tz.utc).strftime('%Y%m%d')}.csv"
     return StreamingResponse(iter([output.getvalue()]), media_type="text/csv; charset=utf-8",
                              headers={"Content-Disposition": f"attachment; filename={fn}"})

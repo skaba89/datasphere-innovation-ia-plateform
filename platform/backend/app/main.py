@@ -176,7 +176,7 @@ ou paramètre `?workspace_id=42`.
 - Upload PDF : **25 MB** max
 - Tokens JWT : **60 min** (access) / **30 jours** (refresh)
 """,
-    version="2.0.0",
+    version="2.3.0",
     debug=settings.app_debug,
     lifespan=lifespan,
     docs_url="/docs" if settings.app_env != "production" else None,
@@ -294,6 +294,6 @@ def root() -> dict[str, str]:
     return {
         "message": "Welcome to DataSphere Innovation IA Platform API",
         "docs":    "/docs",
-        "version": "2.0.0",
+        "version": "2.3.0",
         "health":  f"{settings.api_v1_prefix}/health",
     }
