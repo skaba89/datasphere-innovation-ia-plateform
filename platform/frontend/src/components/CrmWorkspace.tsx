@@ -5,6 +5,7 @@ import { apiRequest } from '../api/client';
 import type { Opportunity, Organization } from '../api/domainTypes';
 import { OpportunityForm, OpportunitiesList } from './OpportunityForm';
 import { OrganizationForm, OrganizationsList } from './OrganizationForm';
+import CrmAutomationPanel from './CrmAutomationPanel';
 
 type View = 'dashboard' | 'organizations' | 'opportunities';
 
@@ -125,11 +126,33 @@ export function CrmWorkspace({ token, view }: Props) {
     }
   }
 
+  const [autoTab, setAutoTab] = useState(false);
+
   return (
     <>
       {error && <p className="error">{error}</p>}
       {success && <p className="success">{success}</p>}
 
+      {/* Barre d'onglets Données / Automatisation IA */}
+      {(view === 'organizations' || view === 'opportunities') && (
+        <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+          <button onClick={() => setAutoTab(false)} style={{ padding: '7px 14px', borderRadius: 8, fontWeight: 700, fontSize: '.78rem', cursor: 'pointer', border: `1px solid ${!autoTab ? 'rgba(250,204,21,.3)' : 'rgba(148,163,184,.12)'}`, background: !autoTab ? 'rgba(250,204,21,.07)' : 'transparent', color: !autoTab ? '#facc15' : '#64748b' }}>
+            {view === 'organizations' ? '🏢 Organisations' : '📊 Opportunités'}
+          </button>
+          <button onClick={() => setAutoTab(true)} style={{ padding: '7px 14px', borderRadius: 8, fontWeight: 700, fontSize: '.78rem', cursor: 'pointer', border: `1px solid ${autoTab ? 'rgba(250,204,21,.3)' : 'rgba(148,163,184,.12)'}`, background: autoTab ? 'rgba(250,204,21,.07)' : 'transparent', color: autoTab ? '#facc15' : '#64748b' }}>
+            🤖 Automatisation IA
+          </button>
+        </div>
+      )}
+
+      {/* Panel automatisation IA */}
+      {autoTab && (view === 'organizations' || view === 'opportunities') && (
+        <div style={{ background: 'rgba(15,23,42,.7)', border: '1px solid rgba(148,163,184,.12)', borderRadius: 14, padding: '20px 24px' }}>
+          <CrmAutomationPanel token={token} />
+        </div>
+      )}
+
+      {/* Données CRM */}
       {view === 'dashboard' && (
         <>
           <section className="stats">
@@ -146,14 +169,14 @@ export function CrmWorkspace({ token, view }: Props) {
         </>
       )}
 
-      {view === 'organizations' && (
+      {!autoTab && view === 'organizations' && (
         <section className="split-layout">
           <OrganizationForm form={organizationForm} setForm={setOrganizationForm} onSubmit={createOrganization} />
           <OrganizationsList organizations={organizations} />
         </section>
       )}
 
-      {view === 'opportunities' && (
+      {!autoTab && view === 'opportunities' && (
         <section className="split-layout">
           <OpportunityForm form={opportunityForm} setForm={setOpportunityForm} organizations={organizations} onSubmit={createOpportunity} />
           <OpportunitiesList opportunities={opportunities} />
