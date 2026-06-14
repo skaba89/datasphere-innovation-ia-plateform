@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 
 from app.api.v1.endpoints import (
+    settings_admin,
     consultant_experiences,
     crm_automation,
     activity, agent_actions, agents, analytics, api_keys, audit_logs,
@@ -56,6 +57,7 @@ router.include_router(activity.router)
 router.include_router(notifications.router)
 router.include_router(crm_automation.router)
 router.include_router(consultant_experiences.router)
+router.include_router(settings_admin.router)
 router.include_router(sse.router)
 router.include_router(suggestions.router)
 router.include_router(health_monitor.router)
