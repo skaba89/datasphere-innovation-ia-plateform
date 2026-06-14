@@ -3,6 +3,7 @@ import { useWorkflowSSE } from '../hooks/useWorkflowSSE';
 import { useEffect, useState, useCallback } from 'react';
 import { FileText, Search, Zap, Plus, RefreshCw } from 'lucide-react';
 import { apiRequest, tokenStorage } from '../api/client';
+import ScoreBreakdown from '../components/ScoreBreakdown';
 import type { CurrentUser } from '../api/authTypes';
 import { TenderWorkspace } from '../components/TenderWorkspace';
 import TenderPDFUpload from '../components/TenderPDFUpload';
@@ -41,6 +42,7 @@ export default function TenderPage() {
   const [showWorkflow, setShowWorkflow] = useState(false);
   const [page,    setPage]    = useState(1);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [expandedScore, setExpandedScore] = useState<number | null>(null);
   const [perPage] = useState(20);
   const [total,   setTotal]   = useState(0);
   const [showBOAMP,    setShowBOAMP]    = useState(false);

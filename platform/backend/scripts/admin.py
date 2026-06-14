@@ -322,6 +322,7 @@ def main():
         "install-agents": cmd_install_agents,
         "export-data":    cmd_export_data,
         "run-report":     cmd_run_report,
+        "test-smtp":      cmd_test_smtp,
     }
 
     if not args.command or args.command not in commands:
@@ -333,3 +334,42 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+# ── Commande: test-smtp ──────────────────────────────────────────────────────
+
+def cmd_test_smtp(args):
+    """Test la configuration SMTP en envoyant un email de test."""
+    from app.core.config import get_settings
+    settings = get_settings()
+
+    if not settings.smtp_host:
+        print("❌ SMTP_HOST non configuré dans les variables d'environnement")
+        print("   Guide : https://github.com/skaba89/datasphere-innovation-ia-plateform/blob/main/PRODUCTION_CHECKLIST.md")
+        return
+
+    print(f"  SMTP Host     : {settings.smtp_host}")
+    print(f"  SMTP Port     : {settings.smtp_port}")
+    print(f"  SMTP User     : {settings.smtp_user}")
+    print(f"  SMTP From     : {getattr(settings, 'smtp_from', '?')}")
+
+    try:
+        import smtplib
+        from email.mime.text import MIMEText
+        to = args.to or settings.smtp_user
+        msg = MIMEText("<h1>✅ DataSphere SMTP Test</h1><p>Configuration email fonctionnelle !</p>", "html", "utf-8")
+        msg["Subject"] = "[DataSphere] Test SMTP — Configuration OK"
+        msg["From"]    = getattr(settings, 'smtp_from', settings.smtp_user)
+        msg["To"]      = to
+
+        with smtplib.SMTP(settings.smtp_host, settings.smtp_port or 587) as s:
+            s.starttls()
+            if settings.smtp_user and settings.smtp_password:
+                s.login(settings.smtp_user, settings.smtp_password)
+            s.send_message(msg)
+
+        print(f"✅ Email de test envoyé à {to}")
+    except Exception as e:
+        print(f"❌ Erreur SMTP : {e}")
+        print("   Vérifiez SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD dans Render")
+
