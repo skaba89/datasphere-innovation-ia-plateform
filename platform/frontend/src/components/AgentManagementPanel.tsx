@@ -46,9 +46,17 @@ export default function AgentManagementPanel({ token }: { token: string | null }
   async function load() {
     setLoading(true);
     try {
-      const data = await apiRequest<Agent[]>('/agents', {}, token);
-      setAgents(data ?? []);
-    } finally { setLoading(false); }
+      const raw = await apiRequest<unknown>('/agents', {}, token);
+      // Defensive: API may return [] directly or { items: [], data: [], agents: [] }
+      const list: Agent[] = Array.isArray(raw)
+        ? (raw as Agent[])
+        : Array.isArray((raw as any)?.items)   ? (raw as any).items
+        : Array.isArray((raw as any)?.data)    ? (raw as any).data
+        : Array.isArray((raw as any)?.agents)  ? (raw as any).agents
+        : [];
+      setAgents(list);
+    } catch { setAgents([]); }
+    finally { setLoading(false); }
   }
 
   useEffect(() => { load(); }, [token]);
