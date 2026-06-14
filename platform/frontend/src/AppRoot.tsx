@@ -11,6 +11,7 @@ import CommercialPage from './pages/CommercialPage';
 import ConsultantProfilesPage from './pages/ConsultantProfilesPage';
 import NotificationsPage from './pages/NotificationsPage';
 import SearchPage from './pages/SearchPage';
+import AIProvidersPage from './pages/AIProvidersPage';
 import DashboardPage from './pages/DashboardPage';
 import DeliverablePage from './pages/DeliverablePage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
@@ -54,6 +55,7 @@ type RootView =
   | 'consultant-profiles'
   | 'notifications'
   | 'search'
+  | 'ai-providers'
   | 'calculator'
   | 'pricing'
   | 'settings';
@@ -248,6 +250,7 @@ export default function AppRoot() {
     { key: 'consultant-profiles', label: t('nav.cv_consultant'),  permission: 'deliverables:write' },
     { key: 'notifications',       label: t('nav.notifications'),    permission: 'deliverables:read'  },
     { key: 'search',              label: t('nav.search'),           permission: 'deliverables:read'  },
+    { key: 'ai-providers',        label: t('nav.ai_providers'),     permission: 'operations:read'              },
     { key: 'team',          label: t('nav.team'),               permission: 'team:read' },
     { key: 'audit',         label: t('nav.audit'),                permission: 'audit:read' },
     { key: 'workspaces',    label: t('nav.workspaces'),           permission: 'workspaces:read' },
@@ -426,6 +429,7 @@ export default function AppRoot() {
       {activeView === 'consultant-profiles' && <ConsultantProfilesPage />}
       {activeView === 'notifications'        && <NotificationsPage />}
       {activeView === 'search'               && <SearchPage />}
+      {activeView === 'ai-providers'        && <AIProvidersPage />}
       {activeView === 'team'          && <TeamPage />}
       {activeView === 'audit'         && <AuditLogPage />}
       {activeView === 'workspaces'    && <WorkspacesPage />}

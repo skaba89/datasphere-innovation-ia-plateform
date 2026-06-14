@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { apiRequest, tokenStorage } from '../api/client';
 import WorkflowTimeline from './WorkflowTimeline';
+import AgentLiveFeed from './AgentLiveFeed';
 
 interface WorkflowStep {
   id:               number;

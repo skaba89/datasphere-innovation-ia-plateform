@@ -528,10 +528,10 @@ def tender_score_breakdown(
     domain_score = min(100, 60 + data_matches * 8)
 
     # Heuristics
-    has_requirements = bool(tender.requirements_count) if hasattr(tender, 'requirements_count') else False
-    technical_score  = min(100, domain_score - 5 + (10 if has_requirements else 0))
+    has_requirements = False
+    technical_score  = min(100, domain_score - 5)
     timeline_score   = min(100, 75 + (10 if tender.submission_deadline else 0))
-    budget_score     = min(100, 70 + (15 if tender.estimated_budget else 0))
+    budget_score     = min(100, 70 + (15 if getattr(tender, "estimated_budget", None) else 0))
     strategic_score  = min(100, 65 + (overall - 70) * 0.5 if overall > 70 else 65)
 
     if overall > 0:
