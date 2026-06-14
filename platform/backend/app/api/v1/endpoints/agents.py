@@ -161,3 +161,54 @@ def run_assignment_action(payload: AgentRunRequest, db: Session = Depends(get_db
 
     result_summary, next_step = simulate_action_execution(action.action_type)
     return mark_action_executed(db, action, result_summary=result_summary, next_step=next_step)
+
+
+@router.post("/quick-assign/{tender_id}")
+def quick_assign_agent(
+    tender_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+) -> dict:
+    """
+    Assigne automatiquement le meilleur agent à un AO en 1 clic.
+    Choisit l'agent 'expert-reponse-ao' par défaut (AO specialist).
+    Crée l'assignment + planifie les actions.
+    """
+    from app.crud.agent import list_agents, create_assignment, build_default_actions_for_assignment, create_action
+    from app.schemas.agent import AgentAssignmentCreate
+
+    tender = get_tender(db, tender_id)
+    if not tender:
+        raise HTTPException(status_code=404, detail="AO non trouvé")
+
+    # Find best agent for tender response
+    agents = list_agents(db, limit=50)
+    target_slugs = ["expert-reponse-ao", "data-architect-senior", "consultant-data-strategy"]
+    agent = None
+    for slug in target_slugs:
+        agent = next((a for a in agents if a.slug == slug and a.is_active), None)
+        if agent:
+            break
+    if not agent and agents:
+        agent = next((a for a in agents if a.is_active), None)
+    if not agent:
+        return {"error": "Aucun agent actif. Installez les agents d'abord via Opérations → Agents."}
+
+    # Create assignment
+    payload = AgentAssignmentCreate(
+        agent_id=agent.id,
+        tender_id=tender_id,
+        objective=f"Analyser et préparer la réponse à l'AO : {(tender.title or '')[:100]}",
+        status="active",
+    )
+    assignment = create_assignment(db, payload)
+    for action_payload in build_default_actions_for_assignment(assignment):
+        create_action(db, action_payload)
+
+    return {
+        "success": True,
+        "agent": {"id": agent.id, "name": agent.name, "slug": agent.slug},
+        "assignment_id": assignment.id,
+        "actions_created": len(build_default_actions_for_assignment(assignment)),
+        "message": f"Agent '{agent.name}' assigné à l'AO. {len(build_default_actions_for_assignment(assignment))} actions planifiées.",
+    }

@@ -43,6 +43,8 @@ export default function TenderPage() {
   const [page,    setPage]    = useState(1);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [expandedScore, setExpandedScore] = useState<number | null>(null);
+  const [assigning, setAssigning] = useState<number | null>(null);
+  const [assignedIds, setAssignedIds] = useState<Set<number>>(new Set());
   const [perPage] = useState(20);
   const [total,   setTotal]   = useState(0);
   const [showBOAMP,    setShowBOAMP]    = useState(false);
