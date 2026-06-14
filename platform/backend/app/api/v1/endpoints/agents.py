@@ -212,3 +212,155 @@ def quick_assign_agent(
         "actions_created": len(build_default_actions_for_assignment(assignment)),
         "message": f"Agent '{agent.name}' assigné à l'AO. {len(build_default_actions_for_assignment(assignment))} actions planifiées.",
     }
+
+
+# ────────────────────────────────────────────────────────────
+# Pipeline endpoints — bout en bout
+# ────────────────────────────────────────────────────────────
+
+@router.post("/pipeline/start/{tender_id}")
+def start_full_pipeline(
+    tender_id: int,
+    mode: str = "supervised",
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+) -> dict:
+    """
+    Démarre le pipeline complet d'un agent sur un AO.
+    
+    Modes :
+      manual     → l'utilisateur déclenche chaque action manuellement
+      supervised → auto-run + pause aux étapes critiques (GoNoGo, revue finale)
+      autonomous → tout s'exécute sans validation humaine
+    """
+    from app.services.agent_pipeline import (
+        RunMode, create_pipeline_actions, run_auto_actions
+    )
+    from app.crud.agent import list_agents, create_assignment, build_default_actions_for_assignment
+    from app.schemas.agent import AgentAssignmentCreate
+    from app.models.tender import Tender as TenderModel
+
+    tender = db.query(TenderModel).filter(TenderModel.id == tender_id).first()
+    if not tender:
+        raise HTTPException(status_code=404, detail="AO non trouvé")
+
+    # Find best agent
+    agents = list_agents(db, limit=50)
+    target_slugs = ["expert-reponse-ao", "data-architect-senior", "consultant-data-strategy"]
+    agent = None
+    for slug in target_slugs:
+        agent = next((a for a in agents if a.slug == slug and a.is_active), None)
+        if agent: break
+    if not agent and agents:
+        agent = next((a for a in agents if a.is_active), None)
+    if not agent:
+        return {"error": "Aucun agent actif. Installez les agents d'abord."}
+
+    # Create assignment
+    assignment_payload = AgentAssignmentCreate(
+        agent_id=agent.id,
+        tender_id=tender_id,
+        objective=f"Pipeline complet : {(tender.title or '')[:100]}",
+        status="active",
+    )
+    assignment = create_assignment(db, assignment_payload)
+
+    # Create pipeline actions
+    run_mode = RunMode(mode) if mode in ("manual", "supervised", "autonomous") else RunMode.SUPERVISED
+    actions = create_pipeline_actions(db, assignment, run_mode)
+
+    # Auto-run first batch of actions
+    result = run_auto_actions(db, assignment.id)
+
+    return {
+        "success": True,
+        "assignment_id": assignment.id,
+        "agent": {"id": agent.id, "name": agent.name, "slug": agent.slug},
+        "mode": mode,
+        "pipeline_steps": len(actions),
+        "auto_run_result": result,
+    }
+
+
+@router.get("/pipeline/{assignment_id}/status")
+def get_pipeline_status(
+    assignment_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+) -> dict:
+    """Retourne l'état complet du pipeline d'un assignment."""
+    from app.services.agent_pipeline import get_pipeline_status as _get_status
+    return _get_status(db, assignment_id)
+
+
+@router.post("/pipeline/{assignment_id}/run-next")
+def run_next_action(
+    assignment_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+) -> dict:
+    """Exécute manuellement la prochaine action auto_ready du pipeline."""
+    from app.services.agent_pipeline import run_auto_actions
+    return run_auto_actions(db, assignment_id, max_steps=1)
+
+
+@router.post("/pipeline/action/{action_id}/approve")
+def approve_pipeline_action(
+    action_id: int,
+    comment: str | None = None,
+    auto_continue: bool = True,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+) -> dict:
+    """Approuve une action en attente et continue le pipeline automatiquement."""
+    from app.services.agent_pipeline import approve_and_continue
+    return approve_and_continue(
+        db, action_id,
+        approved_by=current_user.email,
+        comment=comment,
+        auto_continue=auto_continue,
+    )
+
+
+@router.post("/pipeline/action/{action_id}/reject")
+def reject_pipeline_action(
+    action_id: int,
+    reason: str = "",
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+) -> dict:
+    """Rejette une action en attente et stoppe le pipeline."""
+    from app.services.agent_pipeline import reject_action
+    return reject_action(db, action_id, rejected_by=current_user.email, reason=reason)
+
+
+@router.get("/pipeline/pending-approvals")
+def get_pending_approvals(
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+) -> list:
+    """Retourne toutes les actions en attente de validation humaine."""
+    from app.models.agent import AgentAction, AgentAssignment
+    actions = (
+        db.query(AgentAction, AgentAssignment)
+        .join(AgentAssignment, AgentAction.assignment_id == AgentAssignment.id)
+        .filter(AgentAction.status == "awaiting")
+        .order_by(AgentAction.created_at.desc())
+        .limit(20)
+        .all()
+    )
+    return [
+        {
+            "action_id":    a.id,
+            "action_type":  a.action_type,
+            "title":        a.title,
+            "description":  a.description,
+            "result_summary": a.result_summary,
+            "assignment_id": a.assignment_id,
+            "objective":    asgn.objective,
+            "tender_id":    asgn.tender_id,
+            "created_at":   a.created_at.isoformat(),
+            "requires_human_approval": a.requires_human_approval,
+        }
+        for a, asgn in actions
+    ]

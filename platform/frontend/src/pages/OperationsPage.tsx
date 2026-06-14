@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { API_BASE } from '../api/config';
 import {
   Activity,
@@ -19,11 +19,12 @@ import LLMProvidersPanel from '../components/LLMProvidersPanel';
 import PendingApprovalsPanel from '../components/PendingApprovalsPanel';
 import SchedulerPanel from '../components/SchedulerPanel';
 import AgentManagementPanel from '../components/AgentManagementPanel';
+import AgentLiveFeed from '../components/AgentLiveFeed';
 import SuggestionsValidationPanel from '../components/SuggestionsValidationPanel';
 
 // ────────────────────────────────────────────────────────────────────────────
 
-type Tab = 'agents' | 'suggestions' | 'approvals' | 'scheduler' | 'boamp' | 'gantt' | 'exports' | 'activity' | 'health' | 'providers';
+type Tab = 'validations' | 'agents' | 'suggestions' | 'approvals' | 'scheduler' | 'boamp' | 'gantt' | 'exports' | 'activity' | 'health' | 'providers';
 
 
 
@@ -146,8 +147,82 @@ function BOAMPConfigPanel({ token }: { token: string | null }) {
   );
 }
 
+
+function PendingValidationsPanel({ token }: { token: string | null }) {
+  const [actions, setActions] = useState<Record<string,unknown>[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [approving, setApproving] = useState<number | null>(null);
+
+  async function load() {
+    setLoading(true);
+    try {
+      const raw = await apiRequest<unknown>('/agents/pipeline/pending-approvals', {}, token);
+      setActions(Array.isArray(raw) ? raw as Record<string,unknown>[] : []);
+    } catch { setActions([]); } finally { setLoading(false); }
+  }
+
+  async function approve(id: number) {
+    setApproving(id);
+    try {
+      await apiRequest(`/agents/pipeline/action/${id}/approve?auto_continue=true`, { method: 'POST' }, token);
+      load();
+    } finally { setApproving(null); }
+  }
+
+  async function reject(id: number) {
+    const reason = window.prompt('Raison du rejet :') || 'Rejeté';
+    await apiRequest(`/agents/pipeline/action/${id}/reject?reason=${encodeURIComponent(reason)}`, { method: 'POST' }, token);
+    load();
+  }
+
+  useEffect(() => {
+    load();
+    const t = setInterval(load, 15_000);
+    return () => clearInterval(t);
+  }, [token]);
+
+  if (loading) return <div style={{ padding: 30, textAlign: 'center', color: '#64748b' }}>Chargement…</div>;
+
+  if (actions.length === 0) return (
+    <div style={{ padding: '40px 24px', textAlign: 'center' }}>
+      <div style={{ fontSize: '2rem', marginBottom: 10 }}>✅</div>
+      <p style={{ margin: 0, fontWeight: 700, color: '#94a3b8' }}>Aucune validation en attente</p>
+      <p style={{ margin: '6px 0 0', fontSize: '.78rem', color: '#64748b' }}>Les agents travaillent de façon autonome.</p>
+    </div>
+  );
+
+  return (
+    <div style={{ display: 'grid', gap: 10 }}>
+      <p style={{ margin: 0, fontSize: '.78rem', color: '#64748b' }}>
+        {actions.length} action{actions.length > 1 ? 's' : ''} en attente de ta validation
+      </p>
+      {actions.map((a) => (
+        <div key={String(a.action_id)} style={{ padding: '14px 16px', borderRadius: 12, border: '2px solid rgba(250,204,21,.25)', background: 'rgba(250,204,21,.03)' }}>
+          <div style={{ fontWeight: 800, fontSize: '.85rem', color: '#facc15', marginBottom: 4 }}>{String(a.title ?? '')}</div>
+          <div style={{ fontSize: '.74rem', color: '#64748b', marginBottom: 8 }}>{String((a.objective ?? '')).slice(0, 100)}</div>
+          {a.result_summary != null && (
+            <div style={{ fontSize: '.73rem', color: '#94a3b8', padding: '8px 10px', borderRadius: 7, background: 'rgba(15,23,42,.5)', marginBottom: 10, lineHeight: 1.6 }}>
+              {String((a.result_summary ?? '')).slice(0, 300)}…
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button onClick={() => approve(a.action_id as number)} disabled={approving === (a.action_id as number)}
+              style={{ flex: 1, padding: '8px', borderRadius: 8, border: '1px solid rgba(34,197,94,.3)', background: 'rgba(34,197,94,.08)', color: '#22c55e', cursor: 'pointer', fontWeight: 700, fontSize: '.8rem' }}>
+              {approving === (a.action_id as number) ? '…' : '✅ Valider et continuer'}
+            </button>
+            <button onClick={() => reject(a.action_id as number)}
+              style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(239,68,68,.2)', background: 'rgba(239,68,68,.05)', color: '#fca5a5', cursor: 'pointer', fontWeight: 700, fontSize: '.8rem' }}>
+              ❌ Rejeter
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function OperationsPage() {
-  const [tab, setTab] = useState<Tab>('agents');
+  const [tab, setTab] = useState<Tab>('validations');
   const [quickStatus, setQuickStatus] = useState<SchedulerStatus | null>(null);
   const token = tokenStorage.get();
 
@@ -371,6 +446,7 @@ export default function OperationsPage() {
 
         {tab === 'suggestions' && <SuggestionsValidationPanel />}
         {tab === 'approvals' && <PendingApprovalsPanel />}
+        {tab === 'validations' && <PendingValidationsPanel token={token} />}
         {tab === 'agents'    && <AgentManagementPanel token={token} />}
         {tab === 'scheduler' && <SchedulerPanel />}
         {tab === 'boamp' && <BOAMPConfigPanel token={token} />}
