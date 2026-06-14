@@ -4,6 +4,7 @@ import {
   FileText, GraduationCap, Globe, Loader2, Sparkles, User, X, Zap
 } from 'lucide-react';
 import { apiRequest, tokenStorage } from '../api/client';
+import ExperienceManager from '../components/ExperienceManager';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -30,7 +31,7 @@ interface CV {
 }
 interface CVResult {
   id: number; cv: CV; domain: string; domain_label: string;
-  provider: string; generated_at: string; years_experience: number;
+  provider: string; generated_at: string; years_experience: number; real_experiences_used?: number;
 }
 interface Domain { key: string; label: string; roles: string[]; stack: string[]; }
 
@@ -49,6 +50,7 @@ const pillSlate = pill('148,163,184');
 // ── Main Component ─────────────────────────────────────────────────────────────
 export default function ConsultantProfilesPage() {
   const token = tokenStorage.get();
+  const [cvTab, setCvTab] = useState<'generate' | 'experiences'>('experiences');
 
   // Form state
   const [firstName,       setFirstName]       = useState('');
@@ -181,8 +183,33 @@ export default function ConsultantProfilesPage() {
     <main className="app-shell"><section className="panel"><p>Connecte-toi d'abord.</p></section></main>
   );
 
+  const hasExperiences = true; // Will be determined by ExperienceManager
+
   return (
     <main className="app-shell">
+      {/* Tab bar */}
+      <section className="panel" style={{ padding: '8px 12px' }}>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button onClick={() => setCvTab('experiences')}
+            style={{ padding: '7px 16px', borderRadius: 8, fontWeight: 700, fontSize: '.8rem', cursor: 'pointer', border: `1px solid ${cvTab === 'experiences' ? 'rgba(250,204,21,.3)' : 'rgba(148,163,184,.1)'}`, background: cvTab === 'experiences' ? 'rgba(250,204,21,.07)' : 'transparent', color: cvTab === 'experiences' ? '#facc15' : '#64748b', display: 'flex', alignItems: 'center', gap: 6 }}>
+            📁 Mes expériences
+          </button>
+          <button onClick={() => setCvTab('generate')}
+            style={{ padding: '7px 16px', borderRadius: 8, fontWeight: 700, fontSize: '.8rem', cursor: 'pointer', border: `1px solid ${cvTab === 'generate' ? 'rgba(250,204,21,.3)' : 'rgba(148,163,184,.1)'}`, background: cvTab === 'generate' ? 'rgba(250,204,21,.07)' : 'transparent', color: cvTab === 'generate' ? '#facc15' : '#64748b', display: 'flex', alignItems: 'center', gap: 6 }}>
+            ✨ Générer CV IA
+          </button>
+        </div>
+      </section>
+
+      {/* Experiences tab */}
+      {cvTab === 'experiences' && (
+        <section className="panel">
+          <ExperienceManager token={token} />
+        </section>
+      )}
+
+      {/* CV Generation tab */}
+      {cvTab === 'generate' && <>
       {/* Header */}
       <section className="panel">
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
@@ -408,7 +435,7 @@ export default function ConsultantProfilesPage() {
                   </div>
                 </div>
                 <div style={{ marginTop: 10, fontSize: '.72rem', color: '#475569' }}>
-                  Généré via <strong style={{ color: '#94a3b8' }}>{cvResult.provider}</strong> · {cvResult.domain_label} · {cvResult.years_experience}+ ans
+                  Généré via <strong style={{ color: '#94a3b8' }}>{cvResult.provider}</strong> · {cvResult.domain_label} · {cvResult.years_experience}+ ans{cvResult.real_experiences_used ? <> · <strong style={{ color: '#22c55e' }}>{cvResult.real_experiences_used} vraie{cvResult.real_experiences_used > 1 ? 's' : ''} expérience{cvResult.real_experiences_used > 1 ? 's' : ''}</strong></> : <> · <span style={{ color: '#64748b' }}>expériences générées</span></>}
                 </div>
               </div>
 
@@ -591,8 +618,8 @@ export default function ConsultantProfilesPage() {
         )}
       </div>
       <style>{`@keyframes ds-spin{to{transform:rotate(360deg)}}`}</style>
+      </>
+    }
     </main>
   );
-
-
 }
