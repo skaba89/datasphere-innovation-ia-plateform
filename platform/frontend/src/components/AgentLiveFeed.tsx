@@ -80,8 +80,9 @@ export default function AgentLiveFeed({
   async function load() {
     try {
       const params = tenderId ? `?tender_id=${tenderId}&limit=20` : '?limit=20';
-      const data = await apiRequest<AgentAction[]>(`/agents/actions/list${params}`, {}, token);
-      setActions(data ?? []);
+      const raw = await apiRequest<unknown>(`/agents/actions/list${params}`, {}, token);
+      const data: AgentAction[] = Array.isArray(raw) ? (raw as AgentAction[]) : [];
+      setActions(data);
     } catch {
       setActions([]);
     } finally {
@@ -105,14 +106,15 @@ export default function AgentLiveFeed({
     }
   }
 
-  const filtered = actions.filter(a => {
+  const safeActions = Array.isArray(actions) ? actions : [];
+  const filtered = safeActions.filter(a => {
     if (filter === 'active')   return ['executing', 'auto_ready'].includes(a.status);
     if (filter === 'awaiting') return a.status === 'awaiting';
     return true;
   });
 
-  const awaitingCount = actions.filter(a => a.status === 'awaiting').length;
-  const activeCount   = actions.filter(a => ['executing', 'auto_ready'].includes(a.status)).length;
+  const awaitingCount = safeActions.filter(a => a.status === 'awaiting').length;
+  const activeCount   = safeActions.filter(a => ['executing', 'auto_ready'].includes(a.status)).length;
 
   return (
     <div>

@@ -78,8 +78,9 @@ export default function AIProvidersPage() {
     <main className="app-shell"><section className="panel"><p>Connecte-toi d'abord.</p></section></main>
   );
 
-  const free    = providers.filter(p => p.free);
-  const premium = providers.filter(p => !p.free);
+  const safeProviders = Array.isArray(providers) ? providers : [];
+  const free    = safeProviders.filter(p => p.free);
+  const premium = safeProviders.filter(p => !p.free);
 
   return (
     <main className="app-shell">
@@ -93,7 +94,7 @@ export default function AIProvidersPage() {
               Providers LLM
             </h1>
             <p style={{ color: '#64748b', fontSize: '.82rem', margin: '4px 0 0' }}>
-              {providers.filter(p => p.configured).length}/{providers.length} configurés — Provider actif : <strong style={{ color: '#facc15' }}>{active || 'simulation'}</strong>
+              {safeProviders.filter(p => p.configured).length}/{safeProviders.length} configurés — Provider actif : <strong style={{ color: '#facc15' }}>{active || 'simulation'}</strong>
             </p>
           </div>
           <button onClick={load} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 8, border: '1px solid rgba(148,163,184,.15)', background: 'none', color: '#64748b', cursor: 'pointer', fontSize: '.78rem' }}>

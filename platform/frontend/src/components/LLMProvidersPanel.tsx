@@ -130,8 +130,9 @@ export default function LLMProvidersPanel() {
   );
 
   const { providers, summary } = data;
-  const configured = providers.filter(p => p.configured);
-  const unconfigured = providers.filter(p => !p.configured);
+  const safeP = Array.isArray(providers) ? providers : [];
+  const configured = safeP.filter(p => p.configured);
+  const unconfigured = safeP.filter(p => !p.configured);
 
   return (
     <div style={{ display: 'grid', gap: 18 }}>

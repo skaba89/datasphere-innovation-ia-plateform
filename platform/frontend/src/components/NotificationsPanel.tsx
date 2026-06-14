@@ -37,8 +37,9 @@ export default function NotificationsPanel() {
     setLoading(true);
     try {
       const data = await apiRequest<AppNotification[]>('/notifications?limit=30', {}, token);
-      setNotifications(data);
-      setUnread(data.filter(n => !n.is_read).length);
+      const list = Array.isArray(data) ? data : [];
+      setNotifications(list);
+      setUnread(list.filter(n => !n.is_read).length);
     } finally { setLoading(false); }
   }
 

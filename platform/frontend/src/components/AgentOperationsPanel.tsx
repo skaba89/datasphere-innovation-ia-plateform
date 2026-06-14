@@ -140,7 +140,7 @@ export function AgentOperationsPanel({ token }: Props) {
   }
 
   const filteredActions = selectedAssignmentId
-    ? actions.filter((action) => action.assignment_id === Number(selectedAssignmentId))
+    ? (Array.isArray(actions) ? actions : []).filter((action) => action.assignment_id === Number(selectedAssignmentId))
     : actions;
 
   return (
