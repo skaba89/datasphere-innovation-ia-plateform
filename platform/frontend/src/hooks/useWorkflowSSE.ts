@@ -32,7 +32,11 @@ interface UseWorkflowSSEResult {
   reconnect:  () => void;
 }
 
-const SSE_URL = '/api/v1/notifications/stream';
+// URL SSE absolue — doit pointer vers le BACKEND, pas le frontend
+// En prod : VITE_API_BASE_URL = https://datasphere-backend-zl3v.onrender.com/api/v1
+const _API_BASE = import.meta.env.VITE_API_BASE_URL as string
+  ?? 'http://localhost:8000/api/v1';
+const SSE_URL = _API_BASE.replace(/\/api\/v1$/, '') + '/api/v1/notifications/stream';
 
 export function useWorkflowSSE({
   token,
