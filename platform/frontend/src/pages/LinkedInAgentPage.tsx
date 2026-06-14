@@ -49,7 +49,7 @@ export default function LinkedInAgentPage() {
   useEffect(() => {
     if (!token) return;
     apiRequest<{id:number;title:string}[]>('/tenders?limit=30', {}, token)
-      .then(list => setTenders(list?.filter(t => t.title) ?? []))
+      .then(list => setTenders(Array.isArray(list) ? list.filter(t => t.title) : []))
       .catch(() => {});
   }, [token]);
 

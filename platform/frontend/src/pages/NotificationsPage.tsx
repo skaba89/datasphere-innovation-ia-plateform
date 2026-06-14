@@ -41,7 +41,7 @@ export default function NotificationsPage() {
       const params = filter === 'unread' ? '?is_read=false' :
                      filter === 'high'   ? '?priority=high&priority=urgent' : '';
       const data = await apiRequest<Notification[]>(`/notifications${params}&limit=50`, {}, token);
-      setNotifications(data ?? []);
+      setNotifications(Array.isArray(data) ? data : []);
     } catch {
       setNotifications([]);
     } finally {
@@ -71,8 +71,9 @@ export default function NotificationsPage() {
     }
   }
 
-  const unreadCount = notifications.filter(n => !n.is_read).length;
-  const filtered    = notifications.filter(n => {
+  const safeNotifs = Array.isArray(notifications) ? notifications : [];
+  const unreadCount = safeNotifs.filter(n => !n.is_read).length;
+  const filtered    = safeNotifs.filter(n => {
     if (filter === 'unread') return !n.is_read;
     if (filter === 'high')   return n.priority === 'high' || n.priority === 'urgent';
     return true;
@@ -163,7 +164,7 @@ export default function NotificationsPage() {
           </div>
         ) : (
           <div>
-            {filtered.map((n, idx) => (
+            {(Array.isArray(filtered) ? filtered : []).map((n, idx) => (
               <div key={n.id} style={{
                 display: 'flex', alignItems: 'flex-start', gap: 14,
                 padding: '14px 20px',

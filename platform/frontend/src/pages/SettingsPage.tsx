@@ -537,7 +537,8 @@ function ProvidersSection({ token }: { token: string | null }) {
     } finally { setSaving(null); }
   }
 
-  const configuredCount = providers.filter(p => p.configured).length;
+  const safeSettings = Array.isArray(providers) ? providers : [];
+  const configuredCount = safeSettings.filter(p => p.configured).length;
 
   const Ps = {
     wrap: { background: 'rgba(12,20,37,.92)', border: '1px solid rgba(148,163,184,.1)', borderRadius: 16, marginBottom: 20, overflow: 'hidden' } as React.CSSProperties,
@@ -726,7 +727,7 @@ function ProvidersSection({ token }: { token: string | null }) {
         {configuredCount > 0 && (
           <div style={{ marginTop: 14, padding: '10px 14px', background: 'rgba(0,0,0,.2)', borderRadius: 9, fontSize: '.74rem', color: '#475569', lineHeight: 1.7 }}>
             <strong style={{ color: '#94a3b8' }}>Chaîne de fallback active :</strong>{' '}
-            {providers.filter(p => p.configured).map(p => p.name).join(' → ')}{' '}→ simulation
+            {safeSettings.filter(p => p.configured).map(p => p.name).join(' → ')}{' '}→ simulation
           </div>
         )}
       </div>
