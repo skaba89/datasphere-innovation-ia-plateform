@@ -59,8 +59,8 @@ export function CrmWorkspace({ token, view }: Props) {
         apiRequest<Organization[]>('/organizations', {}, token),
         apiRequest<Opportunity[]>('/opportunities', {}, token),
       ]);
-      setOrganizations(orgs);
-      setOpportunities(opps);
+      setOrganizations(Array.isArray(orgs) ? orgs : []);
+      setOpportunities(Array.isArray(opps) ? opps : []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur de chargement');
     } finally {
@@ -158,7 +158,7 @@ export function CrmWorkspace({ token, view }: Props) {
           <section className="stats">
             <article><strong>{organizations.length}</strong><span>Organisations</span></article>
             <article><strong>{opportunities.length}</strong><span>Opportunites</span></article>
-            <article><strong>{opportunities.filter((item) => item.priority === 'Haute').length}</strong><span>Priorite haute</span></article>
+            <article><strong>{(Array.isArray(opportunities) ? opportunities : []).filter((item) => item.priority === 'Haute').length}</strong><span>Priorite haute</span></article>
           </section>
           <section className="grid">
             {cards.map((card) => {
