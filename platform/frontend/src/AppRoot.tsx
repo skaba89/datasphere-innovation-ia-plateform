@@ -79,8 +79,6 @@ type RootView =
   | 'notifications'
   | 'search'
   | 'ai-providers'
-  | 'calculator'
-  | 'pricing'
   | 'settings';
 
 type NavTab = {
@@ -299,6 +297,7 @@ export default function AppRoot() {
     audit:                <Shield size={16} />,
     workspaces:           <Layers size={16} />,
     profile:              <UserCircle size={16} />,
+    settings:             <Settings size={16} />,
   };
 
   // ── Navigation groups ────────────────────────────────────────
@@ -308,7 +307,7 @@ export default function AppRoot() {
     { label: 'IA',        keys: ['ai-providers', 'consultant-profiles', 'linkedin'] },
     { label: 'Opérations',keys: ['operations', 'data-export'] },
     { label: 'Admin',     keys: ['team', 'audit', 'workspaces'] },
-    { label: 'Personnel', keys: ['notifications', 'search', 'profile'] },
+    { label: 'Personnel', keys: ['notifications', 'search', 'profile', 'settings'] },
   ];
 
   // Bottom bar items (mobile) — top 5 most used
@@ -335,6 +334,7 @@ export default function AppRoot() {
     { key: 'audit',         label: t('nav.audit'),                permission: 'audit:read' },
     { key: 'workspaces',    label: t('nav.workspaces'),           permission: 'workspaces:read' },
     { key: 'profile',       label: t('nav.profile'),           permission: 'profile:read' },
+    { key: 'settings',      label: t('nav.settings'),          permission: 'profile:read' },
   ];
 
   const userRole = user?.role;
@@ -534,6 +534,7 @@ export default function AppRoot() {
             {activeView === 'notifications'      && <NotificationsPage />}
             {activeView === 'search'             && <SearchPage />}
             {activeView === 'ai-providers'       && <AIProvidersPage />}
+            {activeView === 'settings'           && <OperationsPage />}
           </ErrorBoundary>
         </main>
 
