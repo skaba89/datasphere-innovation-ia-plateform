@@ -59,13 +59,13 @@ PROVIDER_REGISTRY: dict[str, ProviderInfo] = {
     "glm": ProviderInfo(
         name="glm",
         label="ZhipuAI GLM-4 Flash",
-        url="https://open.bigmodel.ai",
+        url="https://open.bigmodel.cn",
         models=["glm-4-flash", "glm-4-flash-250414", "glm-4-air", "glm-4", "glm-4-0520"],
-        default_model="glm-4-flash",
+        default_model="glm-4-flash-250414",  # Version la plus récente et rapide
         tier="free",
         context_window=128_000,
         strengths=["100% GRATUIT (glm-4-flash)", "multilingual", "français correct", "API OpenAI-compatible"],
-        notes="glm-4-flash : zéro coût, zéro carte bancaire. Premier recours systématique.",
+        notes="glm-4-flash : 100% GRATUIT, zéro carte bancaire. Clé API sur bigmodel.cn (inscription en 2 min). Premier recours systématique avant Groq.",
     ),
     # ── TIER 2 : QUASI-GRATUIT (free tier généreux) ───────────────────────────
     "groq": ProviderInfo(
@@ -366,7 +366,7 @@ def _call_groq(system: str, prompt: str, settings) -> str:
 def _call_glm(system: str, prompt: str, settings) -> str:
     """ZhipuAI GLM-4 (OpenAI-compatible endpoint)."""
     model = getattr(settings, "llm_model_glm", None) or PROVIDER_REGISTRY["glm"].default_model
-    return _openai_compat("https://open.bigmodel.ai/api/paas", settings.glm_api_key, model, system, prompt, settings.llm_max_tokens, settings.llm_timeout_seconds)
+    return _openai_compat("https://open.bigmodel.cn/api/paas", settings.glm_api_key, model, system, prompt, settings.llm_max_tokens, settings.llm_timeout_seconds)
 
 
 def _call_qwen(system: str, prompt: str, settings) -> str:
@@ -451,7 +451,9 @@ _PROVIDER_MAP: dict[str, tuple[str, Callable]] = {
 }
 
 # Default provider priority order
-_DEFAULT_ORDER = ["anthropic", "openai", "gemini", "groq", "glm", "qwen", "mistral", "openrouter", "together", "cohere", "perplexity"]
+# Ordre de priorité : GLM (100% gratuit) → Groq (quasi-gratuit) → Gemini → ...
+# GLM-4-Flash est PREMIER car zéro coût, zéro carte. Groq en backup rapide.
+_DEFAULT_ORDER = ["glm", "groq", "gemini", "together", "qwen", "mistral", "openrouter", "anthropic", "openai", "cohere", "perplexity"]
 
 
 def _get_active_providers(settings) -> list[tuple[str, Callable]]:

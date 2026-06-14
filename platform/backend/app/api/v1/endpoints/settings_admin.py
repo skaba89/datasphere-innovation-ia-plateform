@@ -32,18 +32,20 @@ def get_settings_status(current_user: User = Depends(get_current_user)) -> dict:
             "status":     "✅ Configuré" if (s.smtp_host and s.smtp_user and s.smtp_password) else "❌ Non configuré",
         },
         "llm": {
+            "glm":       bool(getattr(s, 'glm_api_key', '')),
             "groq":      bool(getattr(s, 'groq_api_key', '')),
             "openai":    bool(getattr(s, 'openai_api_key', '')),
             "anthropic": bool(getattr(s, 'anthropic_api_key', '')),
             "gemini":    bool(getattr(s, 'gemini_api_key', '')),
             "mistral":   bool(getattr(s, 'mistral_api_key', '')),
             "active_provider": (
+                "glm"       if getattr(s, 'glm_api_key', '') else
                 "groq"      if getattr(s, 'groq_api_key', '') else
                 "openai"    if getattr(s, 'openai_api_key', '') else
                 "gemini"    if getattr(s, 'gemini_api_key', '') else
                 "simulation"
             ),
-            "status": "✅ Configuré" if getattr(s, 'groq_api_key', '') else "❌ Aucun provider LLM actif — mode simulation",
+            "status": "✅ Configuré" if (getattr(s, 'glm_api_key', '') or getattr(s, 'groq_api_key', '')) else "❌ Aucun provider LLM actif — mode simulation",
         },
         "stripe": {
             "configured": s.stripe_enabled,

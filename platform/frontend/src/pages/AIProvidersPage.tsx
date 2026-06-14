@@ -114,7 +114,7 @@ export default function AIProvidersPage() {
             <section className="panel" style={{ padding: 0, overflow: 'hidden' }}>
               <div style={{ padding: '12px 20px', borderBottom: '1px solid rgba(148,163,184,.06)', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontWeight: 800, fontSize: '.82rem', color: '#22c55e' }}>✨ Gratuits</span>
-                <span style={{ fontSize: '.7rem', color: '#64748b' }}>Recommandés pour démarrer</span>
+                <span style={{ fontSize: '.7rem', color: '#64748b' }}>GLM-4-Flash 100% gratuit + Groq quasi-gratuit</span>
               </div>
               {free.map(p => <ProviderCard key={p.name} p={p} active={active} testing={testing} testResult={testResults[p.name]} onTest={testProvider} />)}
             </section>
@@ -145,7 +145,7 @@ export default function AIProvidersPage() {
               <div><span style={{ color: '#34d399' }}>MISTRAL_API_KEY</span>=...    <span style={{ color: '#475569' }}># Français · Payant</span></div>
             </div>
             <p style={{ margin: '10px 0 0', fontSize: '.73rem', color: '#475569' }}>
-              Le provider actif est sélectionné automatiquement dans l'ordre de priorité (Groq → Gemini → OpenAI → ...).
+              Le provider actif est sélectionné automatiquement dans l'ordre de priorité : <strong style={{color:'#22c55e'}}>GLM-4-Flash</strong> (gratuit) → Groq → Gemini → OpenAI → ...
             </p>
           </section>
         </>
