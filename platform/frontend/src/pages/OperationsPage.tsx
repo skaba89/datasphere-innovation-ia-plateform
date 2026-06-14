@@ -18,11 +18,12 @@ import HealthMonitorPanel from '../components/HealthMonitorPanel';
 import LLMProvidersPanel from '../components/LLMProvidersPanel';
 import PendingApprovalsPanel from '../components/PendingApprovalsPanel';
 import SchedulerPanel from '../components/SchedulerPanel';
+import AgentManagementPanel from '../components/AgentManagementPanel';
 import SuggestionsValidationPanel from '../components/SuggestionsValidationPanel';
 
 // ────────────────────────────────────────────────────────────────────────────
 
-type Tab = 'suggestions' | 'approvals' | 'scheduler' | 'boamp' | 'gantt' | 'exports' | 'activity' | 'health' | 'providers';
+type Tab = 'agents' | 'suggestions' | 'approvals' | 'scheduler' | 'boamp' | 'gantt' | 'exports' | 'activity' | 'health' | 'providers';
 
 
 
@@ -146,7 +147,7 @@ function BOAMPConfigPanel({ token }: { token: string | null }) {
 }
 
 export default function OperationsPage() {
-  const [tab, setTab] = useState<Tab>('suggestions');
+  const [tab, setTab] = useState<Tab>('agents');
   const [quickStatus, setQuickStatus] = useState<SchedulerStatus | null>(null);
   const token = tokenStorage.get();
 
@@ -370,6 +371,7 @@ export default function OperationsPage() {
 
         {tab === 'suggestions' && <SuggestionsValidationPanel />}
         {tab === 'approvals' && <PendingApprovalsPanel />}
+        {tab === 'agents'    && <AgentManagementPanel token={token} />}
         {tab === 'scheduler' && <SchedulerPanel />}
         {tab === 'boamp' && <BOAMPConfigPanel token={token} />}
         {tab === 'gantt' && <GanttChart />}
