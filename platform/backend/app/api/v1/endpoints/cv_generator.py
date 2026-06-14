@@ -15,10 +15,13 @@ from fastapi.responses import PlainTextResponse, HTMLResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from app.api.dependencies import get_current_user, get_pagination, PaginationParams
+from app.api.dependencies import get_current_user
+from app.db.session import get_db
+from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.user import User
 from app.services.cv_agent import MISSION_DOMAINS, cv_to_markdown
+from app.models.consultant_experience import ConsultantExperience
 
 router = APIRouter(prefix="/cv", tags=["cv-generator"])
 
@@ -51,10 +54,47 @@ def list_domains(current_user: User = Depends(get_current_user)):
 @router.post("/generate")
 def generate_cv(
     payload: CVGenerateRequest,
-    current_user: User = Depends(get_current_user),
+    db:           Session = Depends(get_db),
+    current_user: User    = Depends(get_current_user),
 ):
-    """Generate a complete consultant CV using AI."""
+    """Generate a complete consultant CV using AI.
+    Injecte automatiquement les vraies expériences du consultant si elles existent.
+    """
     global _cv_counter
+
+    # Charger les vraies expériences du consultant (marquées is_highlight)
+    real_exps = (
+        db.query(ConsultantExperience)
+        .filter(
+            ConsultantExperience.owner_email == current_user.email,
+            ConsultantExperience.is_highlight == True,
+        )
+        .order_by(ConsultantExperience.display_order, ConsultantExperience.id.desc())
+        .all()
+    )
+
+    # Convertir en dict pour le service
+    real_experiences = None
+    if real_exps:
+        real_experiences = [
+            {
+                "company":       exp.company,
+                "client_name":   exp.client_name,
+                "role":          exp.role,
+                "sector":        exp.sector,
+                "location":      exp.location,
+                "project_type":  exp.project_type,
+                "start_date":    exp.start_date,
+                "end_date":      exp.end_date,
+                "is_current":    exp.is_current,
+                "context":       exp.context,
+                "description":   exp.description,
+                "achievements":  exp.achievements,
+                "technologies":  exp.technologies,
+                "methodologies": exp.methodologies,
+            }
+            for exp in real_exps
+        ]
 
     from app.services.cv_agent import generate_cv as gen
     try:
@@ -64,6 +104,7 @@ def generate_cv(
             domain=payload.domain,
             mission_context=payload.mission_context,
             years_experience=payload.years_experience,
+            real_experiences=real_experiences,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur génération CV : {e}")
@@ -73,6 +114,7 @@ def generate_cv(
     cv_id = _cv_counter
     _cv_store[cv_id] = result
     result["id"] = cv_id
+    result["real_experiences_used"] = len(real_experiences) if real_experiences else 0
 
     return result
 

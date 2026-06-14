@@ -85,8 +85,12 @@ def _build_cv_prompt(
     domain: str,
     mission_context: str | None,
     years_experience: int,
+    real_experiences: list | None = None,
 ) -> str:
-    """Build the LLM prompt for CV generation."""
+    """Build the LLM prompt for CV generation.
+    Si real_experiences est fourni, les vraies expériences sont injectées
+    au lieu de laisser le LLM en inventer.
+    """
     domain_info = MISSION_DOMAINS.get(domain, MISSION_DOMAINS[DEFAULT_DOMAIN])
     stack_sample = ", ".join(domain_info["stack"][:8])
     roles_sample = ", ".join(domain_info["roles"][:3])
@@ -101,6 +105,42 @@ CONTEXTE DE LA MISSION CIBLE :
 Le CV doit mettre en valeur les compétences et expériences directement pertinentes pour cette mission.
 """
 
+    # Bloc expériences réelles — injectées si le consultant les a saisies
+    experiences_block = ""
+    if real_experiences:
+        exp_lines = []
+        for i, exp in enumerate(real_experiences, 1):
+            techs = exp.get("technologies", "") or ""
+            achievements = exp.get("achievements", "") or ""
+            ach_lines = [f"  • {a.strip()}" for a in achievements.split("\n") if a.strip()]
+            exp_lines.append(f"""
+Expérience {i} :
+  Entreprise    : {exp.get('company', '')}
+  Client final  : {exp.get('client_name', '') or exp.get('company', '')}
+  Rôle          : {exp.get('role', '')}
+  Secteur       : {exp.get('sector', '') or 'Non précisé'}
+  Localisation  : {exp.get('location', '') or 'Non précisé'}
+  Période       : {exp.get('start_date', '')} → {'En cours' if exp.get('is_current') else exp.get('end_date', '')}
+  Type projet   : {exp.get('project_type', '') or 'Non précisé'}
+  Contexte      : {exp.get('context', '') or ''}
+  Description   : {exp.get('description', '')}
+  Réalisations  :
+{chr(10).join(ach_lines) if ach_lines else '  • Non précisées'}
+  Technologies  : {techs}
+  Méthodologies : {exp.get('methodologies', '') or ''}""")
+
+        experiences_block = f"""
+⚠️ EXPÉRIENCES RÉELLES DU CONSULTANT (À UTILISER TELLES QUELLES — NE PAS INVENTER) :
+Ces expériences sont les vraies expériences du consultant. Tu dois les utiliser EXACTEMENT
+dans le JSON de sortie (company, role, start_date, end_date, achievements).
+Tu peux reformuler légèrement pour améliorer la présentation mais SANS changer les faits,
+les technologies, les entreprises ou les dates.
+{''.join(exp_lines)}
+
+INSTRUCTION : Utilise ces {len(real_experiences)} expérience(s) dans le champ "experiences" du JSON.
+Si la mission cible requiert une adaptation, mets en avant les aspects pertinents dans les réalisations.
+"""
+
     return f"""Tu es un expert RH spécialisé en profils data/tech. Génère un CV professionnel complet en FRANÇAIS pour un consultant.
 
 IDENTITÉ DU CONSULTANT :
@@ -111,12 +151,12 @@ IDENTITÉ DU CONSULTANT :
 - Rôles possibles : {roles_sample}
 - Stack principale : {stack_sample}
 - Secteurs d'intervention : {sectors_sample}
-{mission_block}
+{mission_block}{experiences_block}
 
 INSTRUCTIONS STRICTES :
 1. Le CV doit être RÉALISTE et PROFESSIONNEL — données cohérentes et crédibles
 2. {years_experience} ans d'expérience minimum — les dates doivent être cohérentes
-3. Générer 3 à 4 expériences professionnelles sur des projets variés
+3. {"⚠️ UTILISER LES EXPÉRIENCES RÉELLES FOURNIES — ne pas en inventer d'autres" if real_experiences else "Générer 3 à 4 expériences professionnelles sur des projets variés"}
 4. Chaque expérience doit avoir : entreprise, dates, titre, 4-5 réalisations concrètes
 5. Les compétences techniques doivent être organisées par catégorie
 6. Inclure des certifications réalistes (AWS, Google Cloud, Databricks, dbt, etc.)
@@ -207,6 +247,7 @@ def generate_cv(
         domain=domain,
         mission_context=mission_context,
         years_experience=years_experience,
+        real_experiences=real_experiences,
     )
 
     raw, provider = complete(
