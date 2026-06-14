@@ -44,6 +44,18 @@ MISSION_DOMAINS = {
                   "Lead Data Scientist", "Research Scientist"],
         "sectors": ["Finance", "Assurance", "E-commerce", "Santé", "Marketing"],
     },
+    "mlops_dataops": {
+        "key": "mlops_dataops",
+        "label": "MLOps & DataOps",
+        "roles": ["Ingénieur MLOps Senior", "DataOps Engineer", "ML Platform Engineer"],
+        "stack": ["MLflow", "Airflow", "dbt", "Kubernetes", "Docker", "Great Expectations", "Prefect", "Weights & Biases"],
+    },
+    "cloud_data": {
+        "key": "cloud_data",
+        "label": "Cloud & Infrastructure Data",
+        "roles": ["Architecte Cloud Data", "Cloud Data Engineer", "Infrastructure Data Senior"],
+        "stack": ["AWS", "Azure", "GCP", "Terraform", "Snowflake", "BigQuery", "Redshift", "Databricks"],
+    },
     "bi_analytics": {
         "label": "Business Intelligence / Analytics",
         "stack": ["Power BI", "Tableau", "Qlik Sense", "Looker", "DAX", "SQL",
