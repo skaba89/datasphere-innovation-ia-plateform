@@ -215,10 +215,12 @@ def sync_opportunities_from_tenders(db: Session) -> dict[str, Any]:
             source="boamp_auto",
             source_url=getattr(tender, "source_url", None),
             opportunity_type="Mission conseil Data / IT / IA",
-            description=(
+            notes=(
                 f"Opportunité créée automatiquement depuis l'appel d'offres : {tender.title}. "
                 f"Acheteur : {buyer}. Source : BOAMP."
             ),
+            ai_notes="Créé par agent CRM automatisé depuis scan BOAMP.",
+            probability=30,
         )
         db.add(opp)
         created += 1
@@ -246,9 +248,8 @@ def update_pipeline_from_workflow(db: Session, tender_id: int, new_status: str) 
 
     opp = db.query(Opportunity).filter(
         Opportunity.organization_id == org.id,
-        Opportunity.title.contains(
-            (tender.title or "")[:30]
-        ),
+        Opportunity.source == "boamp_auto",
+        Opportunity.organization_id == org.id,
     ).first()
 
     if not opp:
