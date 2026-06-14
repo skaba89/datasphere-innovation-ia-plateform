@@ -106,7 +106,8 @@ export default function DashboardPage() {
   const [kpis, setKpis] = useState<any>(null);
   const [perf, setPerf] = useState<any>(null);
   const [pendingSuggestions, setPendingSuggestions] = useState<{ total: number; tenders: number; opportunities: number; organizations: number } | null>(null);
-  const [pendingWorkflow, setPendingWorkflow] = useState<{ count: number; steps: any[] } | null>(null);
+  type WorkflowStep = { id: number; step_key: string; step_label: string; status: string; tender_id?: number };
+  const [pendingWorkflow, setPendingWorkflow] = useState<{ count: number; steps: WorkflowStep[] } | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(() => {
     try { return sessionStorage.getItem('onboarding_dismissed') !== 'true'; } catch { return true; }
   });
@@ -287,7 +288,7 @@ export default function DashboardPage() {
               {pendingWorkflow.count} étape{pendingWorkflow.count > 1 ? 's' : ''} workflow en attente de validation
             </span>
             <div style={{ marginTop: 6, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {pendingWorkflow.steps.slice(0, 3).map((s: any, i: number) => (
+              {pendingWorkflow.steps.slice(0, 3).map((s: WorkflowStep, i: number) => (
                 <span key={i} style={{ fontSize: '.74rem', padding: '2px 8px', borderRadius: 99, background: 'rgba(250,204,21,.1)', color: '#fde68a', border: '1px solid rgba(250,204,21,.2)' }}>
                   AO #{s.tender_id} — {s.step_label}
                 </span>
@@ -567,7 +568,7 @@ export default function DashboardPage() {
               <p style={{ fontSize: '.82rem', color: '#475569', margin: 0 }}>Aucun AO en cours avec deadline</p>
             ) : (
               <div style={{ display: 'grid', gap: 8 }}>
-                {(data.top_tenders ?? []).map((t: any) => {
+                {(data.top_tenders ?? []).map((t) => {
                   const urgent = t.days_left !== null && t.days_left <= 7;
                   const warning = t.days_left !== null && t.days_left <= 14;
                   return (
@@ -616,7 +617,7 @@ export default function DashboardPage() {
               <p style={{ fontSize: '.82rem', color: '#475569', margin: 0 }}>Aucun livrable récent</p>
             ) : (
               <div style={{ display: 'grid', gap: 8 }}>
-                {(data.recent_deliverables ?? []).map((d: any) => {
+                {(data.recent_deliverables ?? []).map((d) => {
                   const statusColor: Record<string, string> = {
                     approved: '#22c55e', in_review: '#f59e0b',
                     draft: '#64748b', rejected: '#ef4444',

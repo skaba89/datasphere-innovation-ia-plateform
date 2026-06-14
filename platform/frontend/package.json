@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "lint": "eslint .",
+    "lint": "eslint src --ext .ts,.tsx --max-warnings 50",
     "test:e2e": "npx playwright test",
     "test:e2e:mocked": "npx playwright test",
     "test:e2e:integration": "cross-env E2E_RUN_BACKEND=true npx playwright test",
@@ -23,7 +23,9 @@
     "test:e2e:robust": "cross-env E2E_RUN_BACKEND=true npx playwright test e2e/ui-robustness.spec.ts",
     "test:e2e:ci": "npx playwright test --reporter=github",
     "test:e2e:headed:smoke": "cross-env E2E_RUN_BACKEND=true E2E_HEADLESS=false npx playwright test e2e/api-smoke.spec.ts",
-    "test:e2e:headed:workflow": "cross-env E2E_RUN_BACKEND=true E2E_HEADLESS=false npx playwright test e2e/workflow.spec.ts"
+    "test:e2e:headed:workflow": "cross-env E2E_RUN_BACKEND=true E2E_HEADLESS=false npx playwright test e2e/workflow.spec.ts",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
@@ -35,10 +37,15 @@
     "vite": "latest"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.60.0",
     "@types/react": "latest",
     "@types/react-dom": "latest",
+    "@typescript-eslint/eslint-plugin": "^8.61.0",
+    "@typescript-eslint/parser": "^8.61.0",
     "cross-env": "^10.1.0",
-    "eslint": "latest"
+    "eslint": "^10.5.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.2"
   }
 }
