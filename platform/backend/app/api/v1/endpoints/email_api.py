@@ -151,3 +151,63 @@ def tracking_pixel(tracking_id: str, db: Session = Depends(get_db)):
         media_type="image/gif",
         headers={"Cache-Control": "no-store, no-cache, must-revalidate"},
     )
+
+
+@router.post("/test")
+def test_smtp_config(
+    to: str | None = None,
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    """Test la config SMTP en envoyant un email de vérification. Admin uniquement."""
+    import smtplib
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.text import MIMEText
+    from app.core.config import get_settings
+
+    settings = get_settings()
+
+    if not settings.smtp_enabled:
+        return {
+            "success": False,
+            "status": "not_configured",
+            "message": "SMTP non configuré. Ajoutez SMTP_HOST et SMTP_USER dans les variables Render.",
+            "fix": {
+                "SMTP_HOST": "mail.datasphere-innovation.net",
+                "SMTP_PORT": "587",
+                "SMTP_USER": "infos@datasphere-innovation.net",
+                "SMTP_PASSWORD": "(mot de passe mail LWS)",
+                "SMTP_FROM": "DataSphere Innovation <infos@datasphere-innovation.net>",
+            }
+        }
+
+    recipient = to or current_user.email
+    cfg = {"host": settings.smtp_host, "port": settings.smtp_port,
+           "user": settings.smtp_user, "tls": settings.smtp_tls}
+
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = "[DataSphere] ✅ Test SMTP"
+        msg["From"]    = settings.smtp_from
+        msg["To"]      = recipient
+        msg.attach(MIMEText(
+            f"<h2>✅ SMTP OK</h2><p>Serveur : {settings.smtp_host}:{settings.smtp_port}</p>",
+            "html", "utf-8"
+        ))
+        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=15) as s:
+            if settings.smtp_tls:
+                s.starttls()
+            s.login(settings.smtp_user, settings.smtp_password)
+            s.sendmail(settings.smtp_from, [recipient], msg.as_string())
+
+        return {"success": True, "status": "sent",
+                "message": f"Email de test envoyé à {recipient}", "config": cfg}
+
+    except smtplib.SMTPAuthenticationError:
+        return {"success": False, "status": "auth_error",
+                "message": "❌ Authentification échouée — SMTP_PASSWORD incorrect ?", "config": cfg}
+    except (smtplib.SMTPConnectError, ConnectionRefusedError, TimeoutError) as e:
+        return {"success": False, "status": "connect_error",
+                "message": f"❌ Connexion impossible à {settings.smtp_host}:{settings.smtp_port}: {e}", "config": cfg}
+    except Exception as e:
+        return {"success": False, "status": "error",
+                "message": str(e)[:200], "config": cfg}
