@@ -31,6 +31,7 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     'nav.notifications':  'Notifications',
     'nav.search':         'Recherche',
     'nav.webhooks':       'Webhooks',
+    'nav.intelligence':   'Intelligence',
     'nav.ai_providers':   'AI Providers',
 
     // Dashboard
@@ -211,6 +212,7 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     'nav.notifications':  'Notifications',
     'nav.search':         'Search',
     'nav.webhooks':       'Webhooks',
+    'nav.intelligence':   'Intelligence',
     'nav.ai_providers':   'AI Providers',
 
     // Dashboard
