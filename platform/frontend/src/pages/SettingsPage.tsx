@@ -168,6 +168,7 @@ export default function SettingsPage() {
             <div style={{ paddingTop: 12, display: 'grid', gap: 8 }}>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
                 {[
+                  { name: 'GLM-4-Flash', ok: (status.llm as any).glm,  link: 'https://open.bigmodel.cn', badge: '🆓 100% Gratuit — RECOMMANDÉ' },
                   { name: 'Groq',      ok: status.llm.groq,      link: 'https://console.groq.com', badge: '🆓 Gratuit' },
                   { name: 'Gemini',    ok: status.llm.gemini,    link: 'https://aistudio.google.com/app/apikey', badge: '🆓 Gratuit' },
                   { name: 'OpenAI',    ok: status.llm.openai,    link: 'https://platform.openai.com/api-keys', badge: '💳 Payant' },
@@ -184,7 +185,8 @@ export default function SettingsPage() {
               {!status.llm.groq && (
                 <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(250,204,21,.04)', border: '1px solid rgba(250,204,21,.15)', fontSize: '.74rem', color: '#fbbf24' }}>
                   ⚠️ <strong>CRITIQUE :</strong> Sans LLM configuré, les agents IA tournent en mode simulation. Les CVs, analyses et suggestions ne sont pas réels.
-                  <br />Ajoute <code style={{ background: 'rgba(255,255,255,.08)', padding: '1px 5px', borderRadius: 4 }}>GROQ_API_KEY</code> dans Render → gratuit sur <a href="https://console.groq.com" target="_blank" rel="noopener" style={{ color: '#facc15' }}>console.groq.com</a>
+                  <br />Recommandé : <strong>GLM-4-Flash (100% gratuit, sans carte)</strong> sur <a href="https://open.bigmodel.cn" target="_blank" rel="noopener" style={{ color: '#facc15' }}>open.bigmodel.cn</a>
+                  → Ajoute <code style={{ background: 'rgba(255,255,255,.08)', padding: '1px 5px', borderRadius: 4 }}>GLM_API_KEY</code> dans Render
                 </div>
               )}
             </div>
