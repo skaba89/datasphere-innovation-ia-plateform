@@ -100,6 +100,7 @@ function StatusBar({
 
 export default function DashboardPage() {
   const { t, lang } = useI18n();
+  const [llmProvider, setLlmProvider] = useState<{provider: string; active: boolean} | null>(null);
   const [data, setData] = useState<PipelineAnalytics | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -135,6 +136,13 @@ export default function DashboardPage() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    // Fetch LLM provider status
+    apiRequest<{llm: {provider: string; active: boolean}}>('/health', {}, token)
+      .then(d => setLlmProvider(d?.llm ?? null))
+      .catch(() => {});
+  }, [token]);
 
   useEffect(() => {
     load();
