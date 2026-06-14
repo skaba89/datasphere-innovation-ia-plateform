@@ -567,3 +567,65 @@ def tender_score_breakdown(
             "NO GO — Mission peu alignée avec le profil"
         ),
     }
+
+
+@router.get("/tender/{tender_id}/win-probability")
+def get_win_probability(
+    tender_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+) -> dict:
+    """Calcule la probabilité de remporter cet AO."""
+    from app.services.win_probability import compute_win_probability
+    tender = db.query(Tender).filter(Tender.id == tender_id).first()
+    if not tender:
+        raise HTTPException(status_code=404, detail="Tender not found")
+    result = compute_win_probability(
+        title=tender.title or "",
+        buyer_name=tender.buyer_name or "",
+        summary=getattr(tender, 'summary', None) or "",
+        go_no_go_score=tender.go_no_go_score,
+        submission_deadline=getattr(tender, 'submission_deadline', None),
+        estimated_budget=getattr(tender, 'estimated_budget', None),
+        status=tender.status or "draft",
+    )
+    result["tender_id"] = tender_id
+    return result
+
+
+@router.get("/dashboard/win-stats")
+def get_win_stats(
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+) -> dict:
+    """Statistiques globales de probabilité de gain sur tous les AOs actifs."""
+    from app.services.win_probability import compute_win_probability
+    from app.models.tender import Tender as TenderModel
+    tenders = db.query(TenderModel).filter(
+        TenderModel.status.notin_(["no_go", "lost"])
+    ).limit(50).all()
+
+    results = []
+    total_prob = 0
+    for t in tenders:
+        prob = compute_win_probability(
+            title=t.title or "",
+            buyer_name=t.buyer_name or "",
+            summary=getattr(t, 'summary', None) or "",
+            go_no_go_score=t.go_no_go_score,
+        )
+        results.append({"id": t.id, "title": t.title, "probability": prob["probability"]})
+        total_prob += prob["probability"]
+
+    high = [r for r in results if r["probability"] >= 65]
+    medium = [r for r in results if 35 <= r["probability"] < 65]
+    low = [r for r in results if r["probability"] < 35]
+
+    return {
+        "total_active": len(tenders),
+        "average_probability": round(total_prob / max(len(tenders), 1)),
+        "high_probability": len(high),
+        "medium_probability": len(medium),
+        "low_probability": len(low),
+        "top_opportunities": sorted(results, key=lambda x: x["probability"], reverse=True)[:5],
+    }

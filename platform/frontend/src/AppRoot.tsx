@@ -19,7 +19,7 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {error:
 
 import { useEffect, useState } from 'react';
 import {
-  LayoutDashboard, Target, FileText, Briefcase, Building2, TrendingUp,
+  Brain, LayoutDashboard, Target, FileText, Briefcase, Building2, TrendingUp,
   Settings, Download, Share2, UserCheck, Bell, Search, Zap, Users, Shield,
   Layers, UserCircle, LogOut, ChevronLeft, Menu, X, ChevronRight,
 } from 'lucide-react';
@@ -35,6 +35,7 @@ import ConsultantProfilesPage from './pages/ConsultantProfilesPage';
 import NotificationsPage from './pages/NotificationsPage';
 import SearchPage from './pages/SearchPage';
 import AIProvidersPage from './pages/AIProvidersPage';
+import IntelligencePage from './pages/IntelligencePage';
 import DashboardPage from './pages/DashboardPage';
 import DeliverablePage from './pages/DeliverablePage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
@@ -79,6 +80,7 @@ type RootView =
   | 'notifications'
   | 'search'
   | 'ai-providers'
+  | 'intelligence'
   | 'settings';
 
 type NavTab = {
@@ -293,6 +295,7 @@ export default function AppRoot() {
     notifications:        <Bell size={16} />,
     search:               <Search size={16} />,
     'ai-providers':       <Zap size={16} />,
+    'intelligence':       <Brain size={16} />,
     team:                 <Users size={16} />,
     audit:                <Shield size={16} />,
     workspaces:           <Layers size={16} />,
@@ -304,7 +307,7 @@ export default function AppRoot() {
   const NAV_GROUPS = [
     { label: 'Principal', keys: ['dashboard', 'tenders', 'deliverables'] },
     { label: 'CRM',       keys: ['organizations', 'opportunities', 'commercial'] },
-    { label: 'IA',        keys: ['ai-providers', 'consultant-profiles', 'linkedin'] },
+    { label: 'IA',        keys: ['intelligence', 'ai-providers', 'consultant-profiles', 'linkedin'] },
     { label: 'Opérations',keys: ['operations', 'data-export'] },
     { label: 'Admin',     keys: ['team', 'audit', 'workspaces'] },
     { label: 'Personnel', keys: ['notifications', 'search', 'profile', 'settings'] },
@@ -534,6 +537,7 @@ export default function AppRoot() {
             {activeView === 'notifications'      && <NotificationsPage />}
             {activeView === 'search'             && <SearchPage />}
             {activeView === 'ai-providers'       && <AIProvidersPage />}
+            {activeView === 'intelligence'        && <IntelligencePage />}
             {activeView === 'settings'           && <OperationsPage />}
           </ErrorBoundary>
         </main>
