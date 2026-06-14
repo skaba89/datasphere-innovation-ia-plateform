@@ -6,6 +6,7 @@ import type { Opportunity, Organization } from '../api/domainTypes';
 import { OpportunityForm, OpportunitiesList } from './OpportunityForm';
 import { OrganizationForm, OrganizationsList } from './OrganizationForm';
 import CrmAutomationPanel from './CrmAutomationPanel';
+import OpportunityKanban from './OpportunityKanban';
 
 type View = 'dashboard' | 'organizations' | 'opportunities';
 
@@ -127,6 +128,7 @@ export function CrmWorkspace({ token, view }: Props) {
   }
 
   const [autoTab, setAutoTab] = useState(false);
+  const [kanbanTab, setKanbanTab] = useState(false);
 
   return (
     <>
@@ -149,6 +151,13 @@ export function CrmWorkspace({ token, view }: Props) {
       {autoTab && (view === 'organizations' || view === 'opportunities') && (
         <div style={{ background: 'rgba(15,23,42,.7)', border: '1px solid rgba(148,163,184,.12)', borderRadius: 14, padding: '20px 24px' }}>
           <CrmAutomationPanel token={token} />
+        </div>
+      )}
+
+      {/* Kanban Pipeline */}
+      {kanbanTab && view === 'opportunities' && (
+        <div style={{ background: 'rgba(15,23,42,.7)', border: '1px solid rgba(148,163,184,.12)', borderRadius: 14, padding: '16px 20px' }}>
+          <OpportunityKanban token={token} />
         </div>
       )}
 
