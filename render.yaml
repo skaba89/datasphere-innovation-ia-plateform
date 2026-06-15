@@ -145,3 +145,24 @@ services:
       # URL de l'API backend — URL réelle avec suffixe Render
       - key: VITE_API_BASE_URL
         value: https://datasphere-backend-zl3v.onrender.com/api/v1
+
+  # ── Landing page / Website ──────────────────────────────────────────────────
+  - type: web
+    name: datasphere-website
+    runtime: static
+    staticPublishPath: ./website
+    buildCommand: ""   # Site statique — aucun build requis
+    region: frankfurt
+    plan: free
+    pullRequestPreviewsEnabled: false
+    headers:
+      - path: "/*"
+        name: Cache-Control
+        value: "public, max-age=3600"
+      - path: "/*"
+        name: X-Frame-Options
+        value: DENY
+    routes:
+      - type: rewrite
+        source: "/*"
+        destination: /index.html

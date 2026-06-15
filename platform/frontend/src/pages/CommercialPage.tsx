@@ -1,91 +1,341 @@
-import { useState } from 'react';
-import { Building2, Kanban, Target, Users } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import {
+  Building2, Users, TrendingUp, Target, DollarSign, Activity,
+  Kanban, RefreshCw, Plus, ChevronRight, CheckCircle, Clock,
+  AlertCircle, BarChart2, ArrowUpRight, Star, Zap,
+} from 'lucide-react';
+import { apiRequest, tokenStorage } from '../api/client';
 import ContactsPanel from '../components/ContactsPanel';
 import KanbanPipeline from '../components/KanbanPipeline';
+import CrmAutomationPanel from '../components/CrmAutomationPanel';
 
-type Tab = 'pipeline' | 'contacts';
+type Tab = 'overview' | 'pipeline' | 'contacts' | 'automation';
 
-export default function CommercialPage() {
-  const [tab, setTab] = useState<Tab>('pipeline');
+interface CrmKpi {
+  organizations: number;
+  contacts: number;
+  opportunities_total: number;
+  opportunities_active: number;
+  opportunities_won: number;
+  pipeline_value_weighted: number;
+}
 
-  const tabBtn = (t: Tab): React.CSSProperties => ({
-    display: 'flex', alignItems: 'center', gap: 8,
-    padding: '11px 20px', borderRadius: 10, border: 'none', cursor: 'pointer',
-    fontWeight: tab === t ? 700 : 500, fontSize: '0.88rem',
-    background: tab === t ? 'rgba(250,204,21,0.12)' : 'none',
-    color: tab === t ? '#facc15' : '#94a3b8',
-    borderBottom: `2px solid ${tab === t ? '#facc15' : 'transparent'}`,
-    transition: 'all 0.18s',
-  });
+interface Activity7d {
+  new_opportunities: number;
+  new_tenders: number;
+  new_deliverables: number;
+}
 
+interface DashboardData {
+  crm: CrmKpi;
+  activity_7d: Activity7d;
+  tenders: { go_decisions: number; submitted: number; upcoming_deadlines_14d: number };
+  agents: { pending_approvals: number; execution_rate: number };
+}
+
+interface Opportunity {
+  id: number;
+  title: string;
+  status: string;
+  potential_value?: number;
+  probability?: number;
+  organization_name?: string;
+  created_at: string;
+}
+
+const STATUS_COLOR: Record<string, string> = {
+  'Prospect identifié':       '#64748b',
+  'Analyse en cours':         '#3b82f6',
+  'GO — En cours de réponse': '#f59e0b',
+  'Réponse soumise':          '#8b5cf6',
+  'Mission gagnée':           '#22c55e',
+  'NO GO — Écarté':           '#ef4444',
+};
+
+const STATUS_ICON: Record<string, React.ReactNode> = {
+  'Mission gagnée': <CheckCircle size={12} />,
+  'NO GO — Écarté': <AlertCircle size={12} />,
+  'GO — En cours de réponse': <Clock size={12} />,
+};
+
+function KpiCard({ icon, label, value, sub, color = '#facc15', delta }: {
+  icon: React.ReactNode; label: string; value: string | number;
+  sub?: string; color?: string; delta?: string;
+}) {
   return (
     <div style={{
-      padding: 'clamp(16px,3vw,32px) clamp(16px,4vw,40px)',
-      maxWidth: 1400,
-      minHeight: '100vh',
-      display: 'grid',
-      gap: 28,
-      alignContent: 'start',
+      background: 'rgba(255,255,255,.03)', border: '1px solid rgba(148,163,184,.1)',
+      borderRadius: 14, padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 10,
     }}>
-      {/* Page header */}
-      <div>
-        <div style={{
-          fontFamily: 'var(--font-head, Syne, sans-serif)',
-          fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.18em',
-          textTransform: 'uppercase', color: '#facc15', marginBottom: 8,
-        }}>
-          Commercial
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ width: 36, height: 36, borderRadius: 10, background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', color }}>
+          {icon}
         </div>
-        <h1 style={{
-          fontFamily: 'var(--font-head, Syne, sans-serif)',
-          fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 8,
-        }}>
-          Pipeline & CRM
-        </h1>
-        <p style={{ color: '#94a3b8', fontSize: '0.9rem', maxWidth: 560, lineHeight: 1.7 }}>
-          Visualisez votre pipeline commercial sur le kanban, déplacez les opportunités
-          d'une étape à l'autre et gérez vos contacts clients.
-        </p>
+        {delta && (
+          <span style={{ fontSize: '.7rem', color: '#22c55e', background: 'rgba(34,197,94,.08)', border: '1px solid rgba(34,197,94,.2)', padding: '2px 7px', borderRadius: 99, display: 'flex', alignItems: 'center', gap: 3 }}>
+            <ArrowUpRight size={10} />{delta}
+          </span>
+        )}
       </div>
+      <div>
+        <div style={{ fontSize: '1.6rem', fontWeight: 800, letterSpacing: '-0.03em', color: '#f1f5f9' }}>{value}</div>
+        <div style={{ fontSize: '.75rem', color: '#64748b', marginTop: 2 }}>{label}</div>
+        {sub && <div style={{ fontSize: '.72rem', color: '#475569', marginTop: 4 }}>{sub}</div>}
+      </div>
+    </div>
+  );
+}
 
-      {/* Quick stats */}
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-        <div style={{ background: 'rgba(15,30,54,0.85)', border: '1px solid rgba(250,204,21,0.15)', borderRadius: 14, padding: '16px 22px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Target size={20} color="#facc15" />
-          <div>
-            <div style={{ fontSize: '0.72rem', color: '#64748b', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Kanban pipeline</div>
-            <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>Déplacer les opportunités par clic</div>
+function RecentOpps({ token }: { token: string }) {
+  const [opps, setOpps] = useState<Opportunity[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiRequest<{ items: Opportunity[] }>('/opportunities?limit=8&sort=created_at_desc', {}, token)
+      .then(r => setOpps(Array.isArray(r) ? r : (r?.items ?? [])))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [token]);
+
+  if (loading) return <div style={{ color: '#475569', fontSize: '.82rem', padding: 16 }}>Chargement…</div>;
+  if (!opps.length) return (
+    <div style={{ textAlign: 'center', padding: '32px 16px', color: '#334155' }}>
+      <Target size={32} style={{ opacity: .3, marginBottom: 8 }} />
+      <p style={{ fontSize: '.82rem' }}>Aucune opportunité encore.<br />Ajoutez-en depuis la page Organisations.</p>
+    </div>
+  );
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {opps.map(opp => {
+        const color = STATUS_COLOR[opp.status] ?? '#64748b';
+        return (
+          <div key={opp.id} style={{
+            display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
+            borderRadius: 10, transition: 'background .12s',
+            cursor: 'pointer',
+          }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,.04)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+          >
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: '.82rem', fontWeight: 600, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {opp.title}
+              </div>
+              <div style={{ fontSize: '.7rem', color: '#475569', marginTop: 1 }}>
+                {opp.organization_name ?? '—'} · {opp.status}
+              </div>
+            </div>
+            {opp.potential_value ? (
+              <div style={{ fontSize: '.78rem', fontWeight: 700, color: '#facc15', flexShrink: 0 }}>
+                {opp.potential_value >= 1000 ? `${(opp.potential_value/1000).toFixed(0)}k€` : `${opp.potential_value}€`}
+              </div>
+            ) : null}
+            <div style={{ color, display: 'flex', alignItems: 'center' }}>
+              {STATUS_ICON[opp.status] ?? <ChevronRight size={12} style={{ color: '#334155' }} />}
+            </div>
           </div>
-        </div>
-        <div style={{ background: 'rgba(15,30,54,0.85)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: 14, padding: '16px 22px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Users size={20} color="#93c5fd" />
-          <div>
-            <div style={{ fontSize: '0.72rem', color: '#64748b', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.06em' }}>CRM Contacts</div>
-            <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>Annuaire qualifié par organisation</div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ConversionFunnel({ data }: { data: DashboardData }) {
+  const steps = [
+    { label: 'Organisations', value: data.crm.organizations, color: '#3b82f6' },
+    { label: 'Opportunités', value: data.crm.opportunities_total, color: '#8b5cf6' },
+    { label: 'Actives', value: data.crm.opportunities_active, color: '#f59e0b' },
+    { label: 'Gagnées', value: data.crm.opportunities_won, color: '#22c55e' },
+  ];
+  const max = Math.max(...steps.map(s => s.value), 1);
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '4px 0' }}>
+      {steps.map((s, i) => (
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 90, fontSize: '.72rem', color: '#64748b', textAlign: 'right', flexShrink: 0 }}>{s.label}</div>
+          <div style={{ flex: 1, height: 22, background: 'rgba(255,255,255,.04)', borderRadius: 6, overflow: 'hidden' }}>
+            <div style={{
+              height: '100%', borderRadius: 6,
+              width: `${(s.value / max) * 100}%`,
+              background: s.color,
+              transition: 'width .6s ease',
+              opacity: .85,
+              display: 'flex', alignItems: 'center', paddingLeft: 8,
+            }}>
+              {s.value > 0 && <span style={{ fontSize: '.68rem', fontWeight: 700, color: 'white' }}>{s.value}</span>}
+            </div>
           </div>
+          <div style={{ width: 32, fontSize: '.78rem', fontWeight: 700, color: s.color, flexShrink: 0 }}>{s.value}</div>
         </div>
+      ))}
+    </div>
+  );
+}
+
+export default function CommercialPage() {
+  const token = tokenStorage.get() ?? '';
+  const [tab, setTab] = useState<Tab>('overview');
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    else setRefreshing(true);
+    try {
+      const d = await apiRequest<DashboardData>('/analytics/dashboard', {}, token);
+      setData(d);
+    } catch { }
+    finally { setLoading(false); setRefreshing(false); }
+  }, [token]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const tabBtn = (t: Tab, label: string, Icon: React.ComponentType<{size:number}>) => (
+    <button onClick={() => setTab(t)} style={{
+      display: 'flex', alignItems: 'center', gap: 7, padding: '10px 18px',
+      borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: tab === t ? 700 : 500,
+      fontSize: '.84rem', background: tab === t ? 'rgba(250,204,21,.1)' : 'none',
+      color: tab === t ? '#facc15' : '#64748b', borderBottom: `2px solid ${tab === t ? '#facc15' : 'transparent'}`,
+      transition: 'all .15s',
+    }}>
+      <Icon size={14} /> {label}
+    </button>
+  );
+
+  const winRate = data ? Math.round((data.crm.opportunities_won / Math.max(data.crm.opportunities_total, 1)) * 100) : 0;
+  const pipelineK = data ? (data.crm.pipeline_value_weighted / 1000).toFixed(0) : '—';
+
+  return (
+    <div style={{ padding: 'clamp(16px,3vw,32px) clamp(16px,4vw,40px)', maxWidth: 1400, minHeight: '100vh', display: 'grid', gap: 24, alignContent: 'start' }}>
+
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <div style={{ fontSize: '.7rem', fontWeight: 800, letterSpacing: '.18em', textTransform: 'uppercase', color: '#facc15', marginBottom: 6 }}>
+            CRM Commercial
+          </div>
+          <h1 style={{ fontSize: '1.9rem', fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 6 }}>
+            Pipeline & Opportunités
+          </h1>
+          <p style={{ color: '#64748b', fontSize: '.88rem', maxWidth: 520, lineHeight: 1.6 }}>
+            Vue 360° de votre pipeline commercial — KPIs temps réel, opportunités, contacts et automatisation CRM.
+          </p>
+        </div>
+        <button onClick={() => load(true)} disabled={refreshing} style={{
+          display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px', borderRadius: 10,
+          border: '1px solid rgba(148,163,184,.15)', background: 'none', color: '#64748b', cursor: 'pointer', fontSize: '.82rem',
+        }}>
+          <RefreshCw size={13} style={{ animation: refreshing ? 'ds-spin .7s linear infinite' : 'none' }} />
+          Actualiser
+        </button>
       </div>
 
       {/* Tabs */}
-      <div>
-        <div style={{
-          display: 'flex', gap: 4,
-          borderBottom: '1px solid rgba(148,163,184,0.1)',
-          marginBottom: 28,
-        }}>
-          <button style={tabBtn('pipeline')} onClick={() => setTab('pipeline')}>
-            <Kanban size={15} />
-            Pipeline commercial
-          </button>
-          <button style={tabBtn('contacts')} onClick={() => setTab('contacts')}>
-            <Users size={15} />
-            Contacts CRM
-          </button>
-        </div>
-
-        {tab === 'pipeline' && <KanbanPipeline />}
-        {tab === 'contacts' && <ContactsPanel />}
+      <div style={{ borderBottom: '1px solid rgba(148,163,184,.1)', display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+        {tabBtn('overview',   'Vue d\'ensemble',     BarChart2)}
+        {tabBtn('pipeline',   'Pipeline Kanban',     Kanban)}
+        {tabBtn('contacts',   'Contacts CRM',        Users)}
+        {tabBtn('automation', 'Automatisation IA',   Zap)}
       </div>
+
+      {/* Overview */}
+      {tab === 'overview' && (
+        <div style={{ display: 'grid', gap: 20 }}>
+          {loading ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(170px,1fr))', gap: 12 }}>
+              {[...Array(6)].map((_,i) => (
+                <div key={i} style={{ height: 110, borderRadius: 14, background: 'rgba(255,255,255,.02)', animation: 'ds-pulse 1.5s ease-in-out infinite' }} />
+              ))}
+            </div>
+          ) : data ? (
+            <>
+              {/* KPI Cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(170px,1fr))', gap: 12 }}>
+                <KpiCard icon={<Building2 size={18}/>} label="Organisations" value={data.crm.organizations} color="#3b82f6" delta={`+${data.activity_7d.new_opportunities} /7j`} />
+                <KpiCard icon={<Users size={18}/>} label="Contacts CRM" value={data.crm.contacts} color="#8b5cf6" />
+                <KpiCard icon={<Target size={18}/>} label="Opportunités actives" value={data.crm.opportunities_active} sub={`${data.crm.opportunities_total} total`} color="#f59e0b" />
+                <KpiCard icon={<CheckCircle size={18}/>} label="Missions gagnées" value={data.crm.opportunities_won} sub={`Taux : ${winRate}%`} color="#22c55e" />
+                <KpiCard icon={<DollarSign size={18}/>} label="Pipeline pondéré" value={`${pipelineK}k€`} sub="Probabilité × valeur" color="#facc15" />
+                <KpiCard icon={<Activity size={18}/>} label="AOs actifs GO" value={data.tenders.go_decisions} sub={`${data.tenders.upcoming_deadlines_14d} deadline <14j`} color="#f43f5e" />
+              </div>
+
+              {/* 2-col layout */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: 16, alignItems: 'start' }}>
+
+                {/* Funnel */}
+                <div style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(148,163,184,.08)', borderRadius: 14, padding: '20px 20px 16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                    <BarChart2 size={16} color="#facc15" />
+                    <span style={{ fontWeight: 700, fontSize: '.88rem' }}>Entonnoir de conversion</span>
+                    <span style={{ marginLeft: 'auto', fontSize: '.72rem', color: '#64748b', background: winRate >= 30 ? 'rgba(34,197,94,.08)' : 'rgba(245,158,11,.08)', color: winRate >= 30 ? '#22c55e' : '#f59e0b', padding: '2px 8px', borderRadius: 99 }}>
+                      Taux global : {winRate}%
+                    </span>
+                  </div>
+                  <ConversionFunnel data={data} />
+                  <div style={{ marginTop: 16, padding: '10px 12px', borderRadius: 10, background: 'rgba(250,204,21,.04)', border: '1px solid rgba(250,204,21,.08)' }}>
+                    <div style={{ fontSize: '.72rem', color: '#64748b', marginBottom: 4 }}>Recommandation IA</div>
+                    <div style={{ fontSize: '.78rem', color: '#e2e8f0', lineHeight: 1.5 }}>
+                      {winRate < 20
+                        ? '📊 Taux de conversion faible — activez l\'automatisation CRM pour qualifier plus vite vos prospects.'
+                        : winRate < 40
+                        ? '⚡ Bon rythme — concentrez-vous sur les AOs GO pour alimenter le pipeline.'
+                        : '🎯 Excellente conversion ! Scalez votre prospection pour multiplier le volume.'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Recent opps */}
+                <div style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(148,163,184,.08)', borderRadius: 14, overflow: 'hidden' }}>
+                  <div style={{ padding: '16px 18px', borderBottom: '1px solid rgba(148,163,184,.06)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <TrendingUp size={16} color="#facc15" />
+                    <span style={{ fontWeight: 700, fontSize: '.88rem' }}>Opportunités récentes</span>
+                    <button onClick={() => setTab('pipeline')} style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', color: '#facc15', cursor: 'pointer', fontSize: '.74rem', fontWeight: 600 }}>
+                      Voir tout <ChevronRight size={12} />
+                    </button>
+                  </div>
+                  <div style={{ padding: '8px 4px' }}>
+                    <RecentOpps token={token} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Activity 7j */}
+              <div style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(148,163,184,.08)', borderRadius: 14, padding: '16px 20px' }}>
+                <div style={{ fontSize: '.8rem', fontWeight: 700, color: '#94a3b8', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Star size={13} color="#facc15" /> Activité des 7 derniers jours
+                </div>
+                <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+                  {[
+                    { label: 'Nouvelles opportunités', value: data.activity_7d.new_opportunities, color: '#8b5cf6' },
+                    { label: 'Nouveaux AOs détectés', value: data.activity_7d.new_tenders, color: '#f59e0b' },
+                    { label: 'Livrables créés', value: data.activity_7d.new_deliverables, color: '#22c55e' },
+                    { label: 'Approbations en attente', value: data.agents.pending_approvals, color: '#ef4444' },
+                  ].map(item => (
+                    <div key={item.label} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <span style={{ fontSize: '1.4rem', fontWeight: 800, color: item.color }}>{item.value}</span>
+                      <span style={{ fontSize: '.72rem', color: '#64748b' }}>{item.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : (
+            <div style={{ color: '#ef4444', fontSize: '.82rem' }}>Erreur de chargement des données analytics.</div>
+          )}
+        </div>
+      )}
+
+      {tab === 'pipeline'   && <KanbanPipeline />}
+      {tab === 'contacts'   && <ContactsPanel />}
+      {tab === 'automation' && <CrmAutomationPanel />}
+
+      <style>{`
+        @keyframes ds-spin { to { transform: rotate(360deg); } }
+        @keyframes ds-pulse { 0%,100% { opacity:.4; } 50% { opacity:.7; } }
+      `}</style>
     </div>
   );
 }

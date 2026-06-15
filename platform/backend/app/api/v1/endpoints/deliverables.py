@@ -273,6 +273,21 @@ def approve_deliverable_action(
         )
     threading.Thread(target=_notify, daemon=True).start()
 
+    # Index dans pgvector (async, non-bloquant)
+    def _index_rag():
+        try:
+            from app.services.rag_service import index_deliverable
+            vectorized = index_deliverable(db, deliverable_id)
+            import logging
+            logging.getLogger("datasphere.rag").info(
+                "Deliverable %d indexed: %s", deliverable_id,
+                "pgvector" if vectorized else "tfidf-fallback"
+            )
+        except Exception as e:
+            import logging
+            logging.getLogger("datasphere.rag").warning("RAG indexing failed: %s", e)
+    threading.Thread(target=_index_rag, daemon=True).start()
+
     return result
 
 

@@ -31,7 +31,7 @@ class GenerateFromAORequest(BaseModel):
 
 class PublishRequest(BaseModel):
     content:      str
-    access_token: str
+    access_token: str = ""  # Optionnel — si absent, utilise le token OAuth stocké en DB
 
 
 @router.get("/topics")
@@ -101,17 +101,55 @@ def generate_from_ao(
 def publish_post(
     payload: PublishRequest,
     current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
-    """Publish a post to LinkedIn via the API."""
+    """
+    Publish a LinkedIn post.
+    Token priority:
+      1. Token OAuth2 stocké en DB pour l'utilisateur courant (via /linkedin/oauth/callback)
+      2. Token passé dans le body (legacy / manuel)
+    """
     from app.services.linkedin_agent import publish_to_linkedin
+    import json as _json
 
-    if not payload.access_token.strip():
+    # 1. Récupérer le token OAuth stocké en DB
+    access_token = ""
+    try:
+        if hasattr(current_user, "extra_data") and current_user.extra_data:
+            extra = _json.loads(current_user.extra_data)
+            stored_token = extra.get("linkedin_access_token", "")
+            if stored_token:
+                from datetime import datetime, timezone
+                expires = extra.get("linkedin_token_expires")
+                if expires:
+                    exp_dt = datetime.fromisoformat(expires)
+                    if exp_dt > datetime.now(timezone.utc):
+                        access_token = stored_token
+                    else:
+                        raise HTTPException(
+                            status_code=401,
+                            detail="Token LinkedIn expiré. Reconnectez-vous via /linkedin/oauth/auth-url."
+                        )
+                else:
+                    access_token = stored_token
+    except HTTPException:
+        raise
+    except Exception:
+        pass
+
+    # 2. Fallback: token passé dans le body (legacy)
+    if not access_token and payload.access_token.strip():
+        access_token = payload.access_token.strip()
+
+    if not access_token:
         raise HTTPException(
-            status_code=400,
-            detail="Token LinkedIn manquant. Obtenez-en un sur developers.linkedin.com",
+            status_code=401,
+            detail="Aucun token LinkedIn disponible. Connectez votre compte via OAuth ou fournissez un token manuel."
         )
 
-    result = publish_to_linkedin(payload.content, payload.access_token)
-    if not result["success"]:
-        raise HTTPException(status_code=502, detail=result["error"])
-    return result
+    try:
+        result = publish_to_linkedin(payload.content, access_token)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Erreur LinkedIn API: {e}")
+
