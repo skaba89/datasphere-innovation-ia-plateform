@@ -249,7 +249,7 @@ function NewOpportunityForm({ token, onSaved, onCancel }: { token: string | null
           Annuler
         </button>
         <button onClick={submit} disabled={saving || !title.trim()} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 20px', borderRadius: 9, border: 'none', background: '#facc15', color: '#060e18', cursor: 'pointer', fontWeight: 800, fontSize: '.86rem', opacity: !title.trim() ? .5 : 1 }}>
-          {saving ? 'Création…' : '+ Créer l'opportunité'}
+          {saving ? 'Création…' : "+ Créer l'opportunité"}
         </button>
       </div>
     </div>
