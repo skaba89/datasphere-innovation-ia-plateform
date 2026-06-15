@@ -594,3 +594,49 @@ def export_deliverable_pdf(
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+@router.post("/{deliverable_id}/generate")
+def generate_content_for_deliverable(
+    deliverable_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Génère le contenu IA pour un livrable existant (brouillon).
+    Utilise le type du livrable et les AOs liés comme contexte.
+    """
+    deliverable = db.query(Deliverable).filter(Deliverable.id == deliverable_id).first()
+    if not deliverable:
+        raise HTTPException(status_code=404, detail="Livrable non trouvé")
+    if deliverable.status not in ("draft", "review"):
+        raise HTTPException(status_code=400, detail="Seuls les brouillons peuvent être regénérés")
+
+    # Contexte : titre + tender lié si disponible
+    context_label = deliverable.title or ""
+    if deliverable.tender_id:
+        from app.models.tender import Tender
+        tender = db.query(Tender).filter(Tender.id == deliverable.tender_id).first()
+        if tender:
+            context_label = f"{tender.title} — {deliverable.title}"
+
+    try:
+        content = generate_draft_content(
+            deliverable_type=deliverable.deliverable_type or "technical_proposal",
+            context_label=context_label,
+            language="fr",
+        )
+        provider = content.get("provider", "simulation") if isinstance(content, dict) else "simulation"
+        content_text = content.get("content", str(content)) if isinstance(content, dict) else str(content)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur génération IA : {e}")
+
+    # Sauvegarder le contenu généré
+    deliverable.content = content_text
+    deliverable.content_markdown = content_text
+    deliverable.generated_by = f"ai:{provider}"
+    db.add(deliverable)
+    db.commit()
+    db.refresh(deliverable)
+
+    return {"content": content_text, "provider": provider, "deliverable_id": deliverable_id}

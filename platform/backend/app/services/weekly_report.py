@@ -212,3 +212,58 @@ def send_weekly_report(db) -> dict:
 
     log.info(f"Weekly report sent to {sent}/{len(recipients)} recipients")
     return {"sent": sent, "total": len(recipients), "errors": errors}
+
+
+def send_deadline_alerts(db) -> dict:
+    """
+    Envoie des alertes email aux admins/managers pour les AOs avec deadline < 7 jours.
+    Appelée par le scheduler quotidiennement à 9h.
+    """
+    from datetime import datetime, timedelta, timezone
+    from app.models.tender import Tender
+    from app.models.user import User
+    from app.services.email_service import send_email
+    from app.services.email_templates import deadline_alert_email
+
+    now = datetime.now(timezone.utc)
+    threshold = now + timedelta(days=7)
+
+    urgent_tenders = db.query(Tender).filter(
+        Tender.submission_deadline != None,
+        Tender.submission_deadline <= threshold,
+        Tender.submission_deadline >= now,
+        Tender.status.in_(["go", "draft", "pending"]),
+    ).order_by(Tender.submission_deadline).all()
+
+    if not urgent_tenders:
+        log.info("No urgent deadlines — skip alert emails")
+        return {"sent": 0, "tenders": 0}
+
+    tenders_data = [
+        {
+            "title":     t.title or f"AO #{t.id}",
+            "days_left": max(0, (t.submission_deadline - now).days),
+            "buyer":     t.buyer_name or "—",
+        }
+        for t in urgent_tenders
+    ]
+
+    recipients = db.query(User).filter(
+        User.is_active == True,
+        User.role.in_(["admin", "manager"]),
+    ).all()
+
+    sent = 0
+    for user in recipients:
+        try:
+            tmpl = deadline_alert_email(
+                first_name=user.first_name or user.email.split("@")[0],
+                tenders_near=tenders_data,
+            )
+            send_email(to=user.email, subject=tmpl["subject"], html_body=tmpl["html"])
+            sent += 1
+        except Exception as e:
+            log.warning("Deadline alert failed for %s: %s", user.email, e)
+
+    log.info("Deadline alerts sent: %d recipients, %d urgent AOs", sent, len(urgent_tenders))
+    return {"sent": sent, "tenders": len(urgent_tenders)}

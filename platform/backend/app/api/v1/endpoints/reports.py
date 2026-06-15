@@ -34,3 +34,16 @@ def send_weekly_report_now(
         raise HTTPException(status_code=403, detail="Admin only")
     from app.services.weekly_report import send_weekly_report
     return send_weekly_report(db)
+
+
+@router.post("/deadline-alert")
+def send_deadline_alert_now(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Envoie manuellement les alertes deadline (admin only)."""
+    if current_user.role != "admin":
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Admin only")
+    from app.services.weekly_report import send_deadline_alerts
+    return send_deadline_alerts(db)
