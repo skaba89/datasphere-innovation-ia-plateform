@@ -415,7 +415,7 @@ export default function CommercialPage() {
       {tab === 'pipeline'   && <KanbanPipeline />}   {/* token géré en interne */}
       {tab === 'contacts'   && <ContactsPanel />}
       {tab === 'automation'  && <CrmAutomationPanel token={token} />}
-      {tab === 'kanban-opps' && <OpportunityKanban />}
+      {tab === 'kanban-opps' && <OpportunityKanban token={token} />}
       {tab === 'new-opp'     && (
         <section className="panel">
           <h2 style={{ margin: '0 0 16px', fontSize: '1rem', fontWeight: 700 }}>Créer une opportunité</h2>
