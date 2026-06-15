@@ -12,14 +12,14 @@
  *   - Génération proposition commerciale
  */
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   AlertTriangle, ArrowRight, BarChart3, Brain, CheckCircle,
   ChevronRight, Download, Loader2, RefreshCw, Target, TrendingUp, Zap,
 } from 'lucide-react';
 import { apiRequest, tokenStorage } from '../api/client';
-import GoNoGoRadarChart from '../components/GoNoGoRadarChart';
 import GanttChart from '../components/GanttChart';
+import GoNoGoRadarChart from '../components/GoNoGoRadarChart';
 
 interface ForecastMonth { month: string; pessimistic: number; base: number; optimistic: number }
 interface IntelligenceData {
@@ -85,6 +85,38 @@ function ForecastBar({ month, pessimistic, base, optimistic, max }: ForecastMont
       </div>
       <span style={{ fontSize: '.63rem', color: '#64748b', fontWeight: 700 }}>{month}</span>
       <span style={{ fontSize: '.65rem', color: '#facc15' }}>{kFormat(base)}</span>
+    </div>
+  );
+}
+
+
+// Wrapper : charge le premier AO et affiche le radar
+function GoNoGoRadarChartWrapper() {
+  const [tenderId, setTenderId] = React.useState<number | null>(null);
+  const [tenders, setTenders]   = React.useState<{id:number;title:string}[]>([]);
+  const token = tokenStorage.get();
+
+  React.useEffect(() => {
+    apiRequest<any>('/tenders?limit=10', {}, token)
+      .then(r => {
+        const list = Array.isArray(r) ? r : (r?.items ?? []);
+        setTenders(list);
+        if (list.length > 0) setTenderId(list[0].id);
+      })
+      .catch(() => {});
+  }, []);
+
+  if (!tenderId) return <div style={{color:'#475569',fontSize:'.82rem',padding:'16px 0'}}>Aucun AO disponible pour le radar.</div>;
+
+  return (
+    <div>
+      {tenders.length > 1 && (
+        <select value={tenderId} onChange={e => setTenderId(Number(e.target.value))}
+          style={{width:'100%',padding:'6px 10px',borderRadius:8,background:'rgba(255,255,255,.05)',border:'1px solid rgba(148,163,184,.15)',color:'#e2e8f0',fontSize:'.78rem',marginBottom:12}}>
+          {tenders.map(t => <option key={t.id} value={t.id}>#{t.id} — {t.title.slice(0,50)}</option>)}
+        </select>
+      )}
+      <GoNoGoRadarChart tenderId={tenderId} size={260} />
     </div>
   );
 }
@@ -322,7 +354,7 @@ export default function IntelligencePage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
             <span style={{ fontSize: '.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.06em' }}>Radar Go/No-Go</span>
           </div>
-          <GoNoGoRadarChart />
+          <GoNoGoRadarChartWrapper />
         </section>
         <section className="panel">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>

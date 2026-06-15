@@ -1,16 +1,16 @@
 import { useI18n } from '../i18n';
 import { useWorkflowSSE } from '../hooks/useWorkflowSSE';
-import { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { FileText, Search, Zap, Plus, RefreshCw, BookOpen, Download, Loader2, CheckCircle2 } from 'lucide-react';
 import { apiRequest, tokenStorage } from '../api/client';
 import ScoreBreakdown from '../components/ScoreBreakdown';
 import AgentPipelinePanel from '../components/AgentPipelinePanel';
+import WorkflowTimeline from '../components/WorkflowTimeline';
 import type { CurrentUser } from '../api/authTypes';
 import { TenderWorkspace } from '../components/TenderWorkspace';
 import TenderPDFUpload from '../components/TenderPDFUpload';
 import WorkflowPanel from '../components/WorkflowPanel';
 import GoNoGoAdvisorPanel from '../components/GoNoGoAdvisorPanel';
-import WorkflowTimeline from '../components/WorkflowTimeline';
 import TenderAutoImportPanel from '../components/TenderAutoImportPanel';
 
 interface TenderOption  { id: number; title: string; status?: string; }
@@ -24,6 +24,28 @@ const S = {
   }),
   primary: { display:'flex',alignItems:'center',gap:7,padding:'9px 16px',borderRadius:9,border:'none',background:'#facc15',color:'#060e18',cursor:'pointer',fontWeight:800,fontSize:'.84rem' } as React.CSSProperties,
 };
+
+
+// Wrapper local : charge le workflow d'un AO et le passe à WorkflowTimeline
+function TenderWorkflowTimeline({ tenderId, token }: { tenderId: number; token: string | null }) {
+  const [workflow, setWorkflow] = React.useState<any>(null);
+  const [loading, setLoading]   = React.useState(true);
+
+  React.useEffect(() => {
+    if (!tenderId) return;
+    apiRequest<any>(`/workflow/tender/${tenderId}`, {}, token)
+      .then(w => setWorkflow(w))
+      .catch(() => setWorkflow(null))
+      .finally(() => setLoading(false));
+  }, [tenderId, token]);
+
+  if (loading) return <div style={{color:'#475569',fontSize:'.82rem',padding:16}}>Chargement du workflow…</div>;
+  if (!workflow) return <div style={{color:'#475569',fontSize:'.82rem',padding:16}}>Aucun workflow trouvé pour cet AO.<br/>Lancez-le via le panneau Workflow IA.</div>;
+
+  return <WorkflowTimeline workflow={workflow} token={token} onUpdate={() => {
+    apiRequest<any>(`/workflow/tender/${tenderId}`, {}, token).then(w => setWorkflow(w)).catch(() => {});
+  }} />;
+}
 
 export default function TenderPage() {
   const { t, lang } = useI18n();
@@ -335,7 +357,7 @@ export default function TenderPage() {
             </div>
           </div>
           <div style={{padding:'16px 20px'}}>
-            <WorkflowTimeline tenderId={activeTenderId} token={accessKey} />
+            <TenderWorkflowTimeline tenderId={activeTenderId} token={accessKey} />
           </div>
         </section>
       )}

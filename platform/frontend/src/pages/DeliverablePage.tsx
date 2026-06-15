@@ -348,7 +348,7 @@ export default function DeliverablePage() {
                           <Paperclip size={13} color="#86efac" />
                           <span style={{ fontSize: '.8rem', fontWeight: 700, color: '#86efac' }}>Pièces jointes</span>
                         </div>
-                        <FileAttachments deliverableId={d.id} />
+                        <FileAttachments resourceType="deliverable" resourceId={d.id} />
                       </div>
                     )}
                   </div>

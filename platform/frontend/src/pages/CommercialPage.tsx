@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   Building2, Users, TrendingUp, Target, DollarSign, Activity,
   Kanban, RefreshCw, Plus, ChevronRight, CheckCircle, Clock,
@@ -9,7 +9,6 @@ import ContactsPanel from '../components/ContactsPanel';
 import KanbanPipeline from '../components/KanbanPipeline';
 import CrmAutomationPanel from '../components/CrmAutomationPanel';
 import OpportunityKanban from '../components/OpportunityKanban';
-import OpportunityForm from '../components/OpportunityForm';
 
 type Tab = 'overview' | 'pipeline' | 'kanban-opps' | 'new-opp' | 'contacts' | 'automation';
 
@@ -176,6 +175,87 @@ function ConversionFunnel({ data }: { data: DashboardData }) {
   );
 }
 
+
+// Formulaire création opportunité autonome (ne dépend pas des props complexes de OpportunityForm)
+function NewOpportunityForm({ token, onSaved, onCancel }: { token: string | null; onSaved: () => void; onCancel: () => void }) {
+  const [title, setTitle]   = useState('');
+  const [orgId, setOrgId]   = useState('');
+  const [type, setType]     = useState('mission_data');
+  const [value, setValue]   = useState('');
+  const [saving, setSaving] = useState(false);
+  const [orgs, setOrgs]     = useState<{id:number;name:string}[]>([]);
+
+  useEffect(() => {
+    apiRequest<{id:number;name:string}[]>('/organizations?limit=100', {}, token)
+      .then(r => setOrgs(Array.isArray(r) ? r : []))
+      .catch(() => {});
+  }, [token]);
+
+  async function submit() {
+    if (!title.trim()) return;
+    setSaving(true);
+    try {
+      await apiRequest('/opportunities', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: title.trim(),
+          organization_id: orgId ? parseInt(orgId) : null,
+          opportunity_type: type,
+          potential_value: value ? parseFloat(value) : null,
+          status: 'Prospect identifié',
+        }),
+      }, token);
+      onSaved();
+    } catch (e) { alert(String(e)); }
+    finally { setSaving(false); }
+  }
+
+  const inp: React.CSSProperties = {
+    width: '100%', padding: '9px 12px', borderRadius: 9,
+    background: 'rgba(255,255,255,.04)', border: '1.5px solid rgba(148,163,184,.15)',
+    color: '#f1f5f9', fontSize: '.85rem', outline: 'none', boxSizing: 'border-box' as const,
+  };
+
+  return (
+    <div style={{ display: 'grid', gap: 14, maxWidth: 560 }}>
+      <div>
+        <label style={{ display: 'block', fontSize: '.72rem', color: '#64748b', marginBottom: 5, textTransform: 'uppercase' as const, letterSpacing: '.05em', fontWeight: 700 }}>Titre *</label>
+        <input style={inp} value={title} onChange={e => setTitle(e.target.value)} placeholder="Mission Data Engineering SACEM" />
+      </div>
+      <div>
+        <label style={{ display: 'block', fontSize: '.72rem', color: '#64748b', marginBottom: 5, textTransform: 'uppercase' as const, letterSpacing: '.05em', fontWeight: 700 }}>Organisation</label>
+        <select style={{ ...inp }} value={orgId} onChange={e => setOrgId(e.target.value)}>
+          <option value="">— Sans organisation —</option>
+          {orgs.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+        </select>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <div>
+          <label style={{ display: 'block', fontSize: '.72rem', color: '#64748b', marginBottom: 5, textTransform: 'uppercase' as const, letterSpacing: '.05em', fontWeight: 700 }}>Type</label>
+          <select style={{ ...inp }} value={type} onChange={e => setType(e.target.value)}>
+            <option value="mission_data">Mission Data</option>
+            <option value="appel_offre">Appel d'offres</option>
+            <option value="regie">Régie</option>
+            <option value="forfait">Forfait</option>
+          </select>
+        </div>
+        <div>
+          <label style={{ display: 'block', fontSize: '.72rem', color: '#64748b', marginBottom: 5, textTransform: 'uppercase' as const, letterSpacing: '.05em', fontWeight: 700 }}>Valeur estimée (€)</label>
+          <input style={inp} type="number" value={value} onChange={e => setValue(e.target.value)} placeholder="50000" />
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: 10 }}>
+        <button onClick={onCancel} style={{ padding: '9px 16px', borderRadius: 9, border: '1px solid rgba(148,163,184,.15)', background: 'none', color: '#64748b', cursor: 'pointer', fontSize: '.84rem' }}>
+          Annuler
+        </button>
+        <button onClick={submit} disabled={saving || !title.trim()} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 20px', borderRadius: 9, border: 'none', background: '#facc15', color: '#060e18', cursor: 'pointer', fontWeight: 800, fontSize: '.86rem', opacity: !title.trim() ? .5 : 1 }}>
+          {saving ? 'Création…' : '+ Créer l'opportunité'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function CommercialPage() {
   const token = tokenStorage.get() ?? '';
   const [tab, setTab] = useState<Tab>('overview');
@@ -274,7 +354,7 @@ export default function CommercialPage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                     <BarChart2 size={16} color="#facc15" />
                     <span style={{ fontWeight: 700, fontSize: '.88rem' }}>Entonnoir de conversion</span>
-                    <span style={{ marginLeft: 'auto', fontSize: '.72rem', color: '#64748b', background: winRate >= 30 ? 'rgba(34,197,94,.08)' : 'rgba(245,158,11,.08)', color: winRate >= 30 ? '#22c55e' : '#f59e0b', padding: '2px 8px', borderRadius: 99 }}>
+                    <span style={{ marginLeft: 'auto', fontSize: '.72rem', color: winRate >= 30 ? '#22c55e' : '#f59e0b', background: winRate >= 30 ? 'rgba(34,197,94,.08)' : 'rgba(245,158,11,.08)', padding: '2px 8px', borderRadius: 99 }}>
                       Taux global : {winRate}%
                     </span>
                   </div>
@@ -332,14 +412,14 @@ export default function CommercialPage() {
         </div>
       )}
 
-      {tab === 'pipeline'   && <KanbanPipeline />}
+      {tab === 'pipeline'   && <KanbanPipeline />}   {/* token géré en interne */}
       {tab === 'contacts'   && <ContactsPanel />}
-      {tab === 'automation'  && <CrmAutomationPanel />}
+      {tab === 'automation'  && <CrmAutomationPanel token={token} />}
       {tab === 'kanban-opps' && <OpportunityKanban />}
       {tab === 'new-opp'     && (
         <section className="panel">
           <h2 style={{ margin: '0 0 16px', fontSize: '1rem', fontWeight: 700 }}>Créer une opportunité</h2>
-          <OpportunityForm onSaved={() => setTab('kanban-opps')} onCancel={() => setTab('overview')} />
+          <NewOpportunityForm token={token} onSaved={() => setTab('kanban-opps')} onCancel={() => setTab('overview')} />
         </section>
       )}
 
