@@ -1,251 +1,301 @@
 /**
- * SettingsPage — Configuration de la plateforme
- * Affiche l'état de toutes les intégrations et guides de configuration.
+ * SettingsPage — Configuration plateforme (admin) + état des intégrations
  */
-
 import { useEffect, useState } from 'react';
 import {
-  Bell, CheckCircle, ChevronRight, ExternalLink,
-  Loader2, Mail, RefreshCw, Shield, Zap,
+  Activity, Bot, CheckCircle2, Cloud, Database, Globe,
+  Key, Mail, RefreshCw, Server, Shield, Sparkles,
+  AlertTriangle, Clock, Cpu, HardDrive, Wifi, X,
 } from 'lucide-react';
 import { apiRequest, tokenStorage } from '../api/client';
 
-interface SettingsStatus {
-  email:      { configured: boolean; smtp_host: string; smtp_user: string; smtp_from: string; port: number; status: string };
-  llm:        { groq: boolean; openai: boolean; anthropic: boolean; gemini: boolean; mistral: boolean; active_provider: string; status: string };
-  stripe:     { configured: boolean; mode: string; status: string };
-  monitoring: { sentry: boolean; status: string };
-  security:   { secret_key_strength: string; setup_disabled: boolean; scheduler: boolean };
-  app:        { env: string; version: string };
+interface HealthData {
+  status: string; version: string; environment: string;
+  uptime_seconds: number;
+  components: {
+    db:        { ok: boolean; latency_ms?: number };
+    llm:       { ok: boolean; provider: string };
+    rag:       { ok: boolean; mode: string; active_provider: string };
+    scheduler: { ok: boolean };
+    cache:     { ok: boolean; size: number };
+    email:     { ok: boolean };
+  };
 }
 
-const renderEnvLink = "https://dashboard.render.com";
+interface DiagData {
+  checks: Record<string, any>;
+  overall: string;
+}
 
-function StatusBadge({ ok, label }: { ok: boolean; label: string }) {
+function formatUptime(s: number) {
+  const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+  if (d > 0) return `${d}j ${h}h`;
+  if (h > 0) return `${h}h ${m}min`;
+  return `${m} min`;
+}
+
+function StatusDot({ ok, pulse }: { ok: boolean; pulse?: boolean }) {
   return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 5,
-      padding: '3px 9px', borderRadius: 99,
-      background: ok ? 'rgba(34,197,94,.08)' : 'rgba(239,68,68,.08)',
-      border: `1px solid ${ok ? 'rgba(34,197,94,.2)' : 'rgba(239,68,68,.2)'}`,
-      color: ok ? '#22c55e' : '#ef4444',
-      fontSize: '.72rem', fontWeight: 700,
-    }}>
-      {ok ? <CheckCircle size={11} /> : '✗'} {label}
+    <span style={{ position: 'relative', display: 'inline-flex' }}>
+      <span style={{
+        width: 8, height: 8, borderRadius: '50%',
+        background: ok ? '#22c55e' : '#ef4444',
+        display: 'block', flexShrink: 0,
+        boxShadow: ok ? '0 0 6px rgba(34,197,94,.6)' : '0 0 6px rgba(239,68,68,.6)',
+      }} />
+      {pulse && ok && (
+        <span style={{
+          position: 'absolute', inset: -2, borderRadius: '50%',
+          border: '2px solid rgba(34,197,94,.3)',
+          animation: 'settingsPulse 2s ease-in-out infinite',
+        }} />
+      )}
     </span>
   );
 }
 
-function ConfigCard({ icon, title, status, configured, children }: {
-  icon: React.ReactNode; title: string; status: string; configured: boolean; children: React.ReactNode;
+function ServiceCard({ icon: Icon, label, ok, detail, color = '#64748b', extra }: {
+  icon: React.ElementType; label: string; ok: boolean;
+  detail?: string; color?: string; extra?: React.ReactNode;
 }) {
-  const [open, setOpen] = useState(!configured);
   return (
-    <div style={{ borderRadius: 12, border: `1px solid ${configured ? 'rgba(34,197,94,.15)' : 'rgba(239,68,68,.15)'}`, background: 'rgba(15,23,42,.5)', overflow: 'hidden' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px', cursor: 'pointer' }} onClick={() => setOpen(o => !o)}>
-        <div style={{ width: 34, height: 34, borderRadius: 9, background: configured ? 'rgba(34,197,94,.08)' : 'rgba(239,68,68,.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          {icon}
-        </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 800, fontSize: '.85rem', color: '#f1f5f9' }}>{title}</div>
-          <div style={{ fontSize: '.72rem', color: configured ? '#22c55e' : '#ef4444', marginTop: 1 }}>{status}</div>
-        </div>
-        <ChevronRight size={14} color="#475569" style={{ transform: open ? 'rotate(90deg)' : 'none', transition: '.15s' }} />
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px',
+      background: ok ? 'rgba(34,197,94,.03)' : 'rgba(239,68,68,.03)',
+      border: `1px solid ${ok ? 'rgba(34,197,94,.1)' : 'rgba(239,68,68,.1)'}`,
+      borderRadius: 12, transition: 'all .18s ease',
+    }}>
+      <div style={{
+        width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+        background: `${color}12`, border: `1px solid ${color}20`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <Icon size={16} color={color} />
       </div>
-      {open && <div style={{ padding: '0 16px 16px', borderTop: '1px solid rgba(148,163,184,.06)' }}>{children}</div>}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: '.84rem', fontWeight: 700, color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: 8 }}>
+          {label}
+          <StatusDot ok={ok} pulse={ok} />
+          <span style={{ fontSize: '.7rem', fontWeight: 700, color: ok ? '#86efac' : '#fca5a5', marginLeft: 'auto' }}>
+            {ok ? 'Opérationnel' : 'Hors ligne'}
+          </span>
+        </div>
+        {detail && <div style={{ fontSize: '.72rem', color: '#475569', marginTop: 2 }}>{detail}</div>}
+        {extra}
+      </div>
     </div>
   );
 }
 
-function EnvVar({ name, value, required }: { name: string; value?: string | null; required?: boolean }) {
+function MetricBar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
+  const pct = Math.min(100, Math.round((value / max) * 100));
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 0', fontSize: '.78rem', borderBottom: '1px solid rgba(148,163,184,.05)' }}>
-      <code style={{ color: value ? '#22c55e' : required ? '#ef4444' : '#64748b', fontWeight: 700, minWidth: 220 }}>{name}</code>
-      <span style={{ color: '#475569', flex: 1 }}>{value ? `= ${value}` : required ? '← OBLIGATOIRE' : '← optionnel'}</span>
-      {value ? <CheckCircle size={12} color="#22c55e" /> : null}
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+        <span style={{ fontSize: '.72rem', color: '#64748b', fontWeight: 600 }}>{label}</span>
+        <span style={{ fontSize: '.72rem', color: '#94a3b8', fontWeight: 700 }}>{value} / {max}</span>
+      </div>
+      <div style={{ height: 5, background: 'rgba(255,255,255,.05)', borderRadius: 99, overflow: 'hidden' }}>
+        <div style={{
+          height: '100%', borderRadius: 99,
+          width: `${pct}%`,
+          background: `linear-gradient(90deg, ${color}, ${color}cc)`,
+          transition: 'width 1s cubic-bezier(0,0,.2,1)',
+          boxShadow: `0 0 8px ${color}50`,
+        }} />
+      </div>
     </div>
   );
 }
 
 export default function SettingsPage() {
   const token = tokenStorage.get();
-  const [status,  setStatus]  = useState<SettingsStatus | null>(null);
+  const [health, setHealth]   = useState<HealthData | null>(null);
+  const [diag,   setDiag]     = useState<DiagData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [testEmail, setTestEmail] = useState('');
+  const [testResult, setTestResult] = useState<{ok:boolean;msg:string}|null>(null);
   const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
   async function load() {
     setLoading(true);
     try {
-      const data = await apiRequest<SettingsStatus>('/settings/status', {}, token);
-      setStatus(data);
-    } catch { setStatus(null); }
+      const [h, d] = await Promise.all([
+        apiRequest<HealthData>('/health', {}, token),
+        apiRequest<DiagData>('/auth/diagnose-login', {}, token).catch(() => null),
+      ]);
+      setHealth(h); setDiag(d);
+    } catch { }
     finally { setLoading(false); }
   }
 
-  useEffect(() => { load(); }, [token]);
+  useEffect(() => { load(); }, []);
 
-  async function testSmtp() {
+  async function sendTestEmail() {
+    if (!testEmail) return;
     setTesting(true); setTestResult(null);
     try {
-      const r = await apiRequest<{ success: boolean; message: string; status: string }>('/email/test', { method: 'POST' }, token);
-      setTestResult({ success: r.success, message: r.message });
+      await apiRequest('/email/test', { method: 'POST', body: JSON.stringify({ to: testEmail }) }, token);
+      setTestResult({ ok: true, msg: `Email de test envoyé à ${testEmail}` });
     } catch (e) {
-      setTestResult({ success: false, message: 'Erreur réseau' });
+      setTestResult({ ok: false, msg: String(e).slice(0, 120) });
     } finally { setTesting(false); }
   }
 
-  if (loading) return (
-    <main className="app-shell">
-      <div style={{ textAlign: 'center', padding: 40 }}>
-        <Loader2 size={22} color="#facc15" style={{ animation: 'spin .7s linear infinite', margin: '0 auto' }} />
-      </div>
-    </main>
-  );
+  const c = health?.components;
 
   return (
-    <main className="app-shell">
+    <div style={{ padding: 'clamp(20px,3vw,40px) clamp(16px,3vw,40px)', maxWidth: 900, display: 'grid', gap: 24 }}>
+      <style>{`
+        @keyframes settingsPulse {
+          0%, 100% { transform: scale(1); opacity: .6; }
+          50%       { transform: scale(1.8); opacity: 0; }
+        }
+      `}</style>
+
       {/* Header */}
-      <section className="panel" style={{ padding: '14px 20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <p className="eyebrow">Configuration</p>
-            <h1 style={{ margin: 0, fontSize: '1.3rem' }}>Paramètres</h1>
-            <p style={{ margin: '3px 0 0', fontSize: '.78rem', color: '#64748b' }}>
-              v{status?.app?.version} · {status?.app?.env}
-            </p>
+      <div>
+        <div style={{ fontSize: '.68rem', fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase', color: '#facc15', marginBottom: 8 }}>Configuration</div>
+        <h1 style={{ fontSize: 'clamp(1.5rem,3vw,2rem)', fontWeight: 900, letterSpacing: '-.04em', margin: 0, marginBottom: 6 }}>
+          Paramètres & Intégrations
+        </h1>
+        <p style={{ color: '#64748b', fontSize: '.86rem', margin: 0 }}>
+          État des services, clés API et diagnostics plateforme.
+        </p>
+      </div>
+
+      {/* Global status */}
+      {health && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 16, padding: '16px 22px',
+          background: health.status === 'ok' ? 'rgba(34,197,94,.05)' : 'rgba(245,158,11,.05)',
+          border: `1px solid ${health.status === 'ok' ? 'rgba(34,197,94,.15)' : 'rgba(245,158,11,.15)'}`,
+          borderRadius: 14, flexWrap: 'wrap',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <StatusDot ok={health.status === 'ok'} pulse />
+            <span style={{ fontWeight: 800, color: health.status === 'ok' ? '#86efac' : '#fde68a', fontSize: '.9rem' }}>
+              {health.status === 'ok' ? 'Tous les systèmes opérationnels' : 'Service dégradé'}
+            </span>
           </div>
-          <button onClick={load} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 8, border: '1px solid rgba(148,163,184,.15)', background: 'none', color: '#64748b', cursor: 'pointer', fontSize: '.78rem' }}>
-            <RefreshCw size={13} /> Actualiser
+          <div style={{ display: 'flex', gap: 20, marginLeft: 'auto', flexWrap: 'wrap' }}>
+            {[
+              { icon: Server,  label: `v${health.version}` },
+              { icon: Globe,   label: health.environment },
+              { icon: Clock,   label: formatUptime(health.uptime_seconds) },
+            ].map(({ icon: Icon, label }) => (
+              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '.76rem', color: '#64748b' }}>
+                <Icon size={12} /> {label}
+              </div>
+            ))}
+          </div>
+          <button onClick={load} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8, border: '1px solid rgba(148,163,184,.12)', background: 'none', color: '#64748b', cursor: 'pointer', fontSize: '.76rem', fontWeight: 600 }}>
+            <RefreshCw size={12} style={{ animation: loading ? 'spin .7s linear infinite' : 'none' }} /> Actualiser
           </button>
-        </div>
-      </section>
-
-      {!status ? (
-        <section className="panel"><p style={{ color: '#ef4444' }}>Impossible de charger les paramètres</p></section>
-      ) : (
-        <div style={{ display: 'grid', gap: 10 }}>
-
-          {/* Email SMTP */}
-          <ConfigCard icon={<Mail size={16} color={status.email.configured ? '#22c55e' : '#ef4444'} />}
-            title="Email SMTP" status={status.email.status} configured={status.email.configured}>
-            <div style={{ paddingTop: 12, display: 'grid', gap: 8 }}>
-              <div style={{ padding: '10px 12px', borderRadius: 8, background: 'rgba(255,255,255,.02)' }}>
-                <EnvVar name="SMTP_HOST" value={status.email.smtp_host} required />
-                <EnvVar name="SMTP_PORT" value={status.email.port ? String(status.email.port) : null} />
-                <EnvVar name="SMTP_USER" value={status.email.smtp_user} required />
-                <EnvVar name="SMTP_PASSWORD" value={status.email.smtp_user ? '••••••••' : null} required />
-                <EnvVar name="SMTP_FROM"     value={status.email.smtp_from} />
-              </div>
-              {status.email.configured ? (
-                <div>
-                  <button onClick={testSmtp} disabled={testing} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: '1px solid rgba(59,130,246,.25)', background: 'rgba(59,130,246,.06)', color: '#93c5fd', cursor: 'pointer', fontWeight: 700, fontSize: '.8rem' }}>
-                    {testing ? <Loader2 size={13} style={{ animation: 'spin .7s linear infinite' }} /> : <Mail size={13} />}
-                    Tester le SMTP
-                  </button>
-                  {testResult && (
-                    <p style={{ margin: '8px 0 0', fontSize: '.78rem', color: testResult.success ? '#22c55e' : '#fca5a5' }}>
-                      {testResult.success ? '✅' : '❌'} {testResult.message}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div style={{ padding: '10px 12px', borderRadius: 8, background: 'rgba(239,68,68,.04)', border: '1px solid rgba(239,68,68,.1)', fontSize: '.76rem', color: '#fca5a5' }}>
-                  <strong>Configuration recommandée :</strong> Gmail (smtp.gmail.com:587 + mot de passe d'application)
-                  <br />ou Brevo (smtp-relay.brevo.com:587 — 300 emails/jour gratuit)
-                  <br /><br />
-                  <a href={renderEnvLink} target="_blank" rel="noopener" style={{ color: '#93c5fd', display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <ExternalLink size={11} /> Configurer dans Render →
-                  </a>
-                </div>
-              )}
-            </div>
-          </ConfigCard>
-
-          {/* LLM Providers */}
-          <ConfigCard icon={<Zap size={16} color={status.llm.groq || status.llm.openai ? '#22c55e' : '#ef4444'} />}
-            title="Providers IA (LLM)" status={status.llm.status} configured={status.llm.groq || status.llm.openai}>
-            <div style={{ paddingTop: 12, display: 'grid', gap: 8 }}>
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
-                {[
-                  { name: 'GLM-4-Flash', ok: (status.llm as any).glm,  link: 'https://open.bigmodel.cn', badge: '🆓 100% Gratuit — RECOMMANDÉ' },
-                  { name: 'Groq',      ok: status.llm.groq,      link: 'https://console.groq.com', badge: '🆓 Gratuit' },
-                  { name: 'Gemini',    ok: status.llm.gemini,    link: 'https://aistudio.google.com/app/apikey', badge: '🆓 Gratuit' },
-                  { name: 'OpenAI',    ok: status.llm.openai,    link: 'https://platform.openai.com/api-keys', badge: '💳 Payant' },
-                  { name: 'Anthropic', ok: status.llm.anthropic, link: 'https://console.anthropic.com', badge: '💳 Payant' },
-                  { name: 'Mistral',   ok: status.llm.mistral,   link: 'https://console.mistral.ai', badge: '💳 Payant' },
-                ].map(p => (
-                  <div key={p.name} style={{ padding: '6px 10px', borderRadius: 8, background: p.ok ? 'rgba(34,197,94,.06)' : 'rgba(255,255,255,.02)', border: `1px solid ${p.ok ? 'rgba(34,197,94,.2)' : 'rgba(148,163,184,.1)'}`, fontSize: '.72rem' }}>
-                    <span style={{ color: p.ok ? '#22c55e' : '#64748b', fontWeight: 700 }}>{p.ok ? '✅' : '○'} {p.name}</span>
-                    <span style={{ color: '#475569', marginLeft: 4 }}>{p.badge}</span>
-                    {!p.ok && <a href={p.link} target="_blank" rel="noopener" style={{ display: 'block', color: '#60a5fa', fontSize: '.65rem', marginTop: 2 }}>Obtenir clé →</a>}
-                  </div>
-                ))}
-              </div>
-              {!status.llm.groq && (
-                <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(250,204,21,.04)', border: '1px solid rgba(250,204,21,.15)', fontSize: '.74rem', color: '#fbbf24' }}>
-                  ⚠️ <strong>CRITIQUE :</strong> Sans LLM configuré, les agents IA tournent en mode simulation. Les CVs, analyses et suggestions ne sont pas réels.
-                  <br />Recommandé : <strong>GLM-4-Flash (100% gratuit, sans carte)</strong> sur <a href="https://open.bigmodel.cn" target="_blank" rel="noopener" style={{ color: '#facc15' }}>open.bigmodel.cn</a>
-                  → Ajoute <code style={{ background: 'rgba(255,255,255,.08)', padding: '1px 5px', borderRadius: 4 }}>GLM_API_KEY</code> dans Render
-                </div>
-              )}
-            </div>
-          </ConfigCard>
-
-          {/* Stripe */}
-          <ConfigCard icon={<span style={{ fontSize: '1rem' }}>💳</span>}
-            title="Stripe Billing" status={status.stripe.status} configured={status.stripe.configured}>
-            <div style={{ paddingTop: 12, fontSize: '.78rem', color: '#64748b' }}>
-              {status.stripe.configured ? (
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <StatusBadge ok={status.stripe.mode === 'live'} label={status.stripe.mode === 'live' ? 'Mode live ✅' : 'Mode test ⚠️'} />
-                  {status.stripe.mode !== 'live' && <span style={{ color: '#fbbf24' }}>Remplace <code>sk_test_</code> par <code>sk_live_</code> dans Render</span>}
-                </div>
-              ) : (
-                <p>Non configuré — <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noopener" style={{ color: '#60a5fa' }}>Obtenir les clés Stripe →</a></p>
-              )}
-            </div>
-          </ConfigCard>
-
-          {/* Monitoring */}
-          <ConfigCard icon={<Bell size={16} color={status.monitoring.sentry ? '#22c55e' : '#64748b'} />}
-            title="Monitoring (Sentry)" status={status.monitoring.status} configured={status.monitoring.sentry}>
-            <div style={{ paddingTop: 12, fontSize: '.78rem', color: '#64748b' }}>
-              {!status.monitoring.sentry && (
-                <div>
-                  <p style={{ margin: '0 0 8px' }}>Sans Sentry, les erreurs production ne sont pas trackées.</p>
-                  <ol style={{ margin: 0, paddingLeft: 16, display: 'grid', gap: 4 }}>
-                    <li>Créer un projet sur <a href="https://sentry.io" target="_blank" rel="noopener" style={{ color: '#60a5fa' }}>sentry.io</a> (gratuit)</li>
-                    <li>Copier le DSN</li>
-                    <li>Ajouter <code style={{ background: 'rgba(255,255,255,.08)', padding: '1px 5px', borderRadius: 4 }}>SENTRY_DSN</code> dans Render</li>
-                  </ol>
-                </div>
-              )}
-            </div>
-          </ConfigCard>
-
-          {/* Sécurité */}
-          <ConfigCard icon={<Shield size={16} color="#22c55e" />}
-            title="Sécurité" status="Vérifications de base" configured>
-            <div style={{ paddingTop: 12, display: 'grid', gap: 6 }}>
-              {[
-                { label: 'Clé secrète JWT', ok: status.security.secret_key_strength.startsWith('✅'), detail: status.security.secret_key_strength },
-                { label: 'Endpoint /setup désactivé', ok: status.security.setup_disabled, detail: status.security.setup_disabled ? 'SETUP_ENABLED=false ✅' : 'SETUP_ENABLED=true ⚠️ risque prod' },
-                { label: 'Scheduler BOAMP actif', ok: status.security.scheduler, detail: status.security.scheduler ? 'Scan toutes les 6h ✅' : 'SCHEDULER_ENABLED=false' },
-              ].map(item => (
-                <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '.78rem' }}>
-                  <StatusBadge ok={item.ok} label={item.ok ? 'OK' : 'Attention'} />
-                  <span style={{ color: '#94a3b8' }}>{item.label}</span>
-                  <span style={{ color: '#475569', fontSize: '.72rem' }}>{item.detail}</span>
-                </div>
-              ))}
-            </div>
-          </ConfigCard>
-
         </div>
       )}
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-    </main>
+      {loading ? (
+        <div style={{ display: 'grid', gap: 10 }}>
+          {[...Array(5)].map((_,i) => (
+            <div key={i} style={{ height: 66, borderRadius: 12, background: 'linear-gradient(90deg,rgba(255,255,255,.03) 0%,rgba(255,255,255,.06) 50%,rgba(255,255,255,.03) 100%)', backgroundSize: '200% 100%', animation: 'shimmer 1.4s ease-in-out infinite' }} />
+          ))}
+          <style>{`@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}`}</style>
+        </div>
+      ) : c && (
+        <div style={{ display: 'grid', gap: 24 }}>
+
+          {/* Services grid */}
+          <div>
+            <h2 style={{ fontSize: '.8rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 12 }}>Services</h2>
+            <div style={{ display: 'grid', gap: 8 }}>
+              <ServiceCard icon={Database} label="Base de données PostgreSQL" ok={c.db.ok} color="#3b82f6"
+                detail={c.db.latency_ms ? `Latence : ${c.db.latency_ms}ms · Render Frankfurt` : 'Render Frankfurt'} />
+              <ServiceCard icon={Sparkles} label={`LLM — ${c.llm.provider}`} ok={c.llm.ok} color="#8b5cf6"
+                detail={`Provider actif : ${c.llm.provider} · Fallback simulation disponible`} />
+              <ServiceCard icon={Cpu} label={`RAG — ${c.rag?.mode === 'vector' ? 'pgvector + Embeddings' : 'TF-IDF fallback'}`}
+                ok={c.rag?.ok ?? true} color="#22c55e"
+                detail={`Provider embeddings : ${c.rag?.active_provider ?? 'tfidf'} · ${c.rag?.mode === 'vector' ? 'Recherche vectorielle active' : 'Activez GEMINI_API_KEY pour embeddings réels'}`} />
+              <ServiceCard icon={Mail} label="Email / SMTP" ok={c.email?.ok ?? false} color="#f59e0b"
+                detail={c.email?.ok ? 'SMTP configuré et opérationnel' : 'SMTP non configuré — définissez SMTP_HOST dans Render'}
+                extra={
+                  <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
+                    <input value={testEmail} onChange={e => setTestEmail(e.target.value)}
+                      placeholder="test@example.com" type="email"
+                      style={{ flex: 1, padding: '6px 10px', borderRadius: 7, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(148,163,184,.12)', color: '#f1f5f9', fontSize: '.76rem', outline: 'none', minWidth: 0 }} />
+                    <button onClick={sendTestEmail} disabled={testing || !testEmail}
+                      style={{ padding: '6px 12px', borderRadius: 7, border: 'none', background: '#facc15', color: '#060d1a', cursor: 'pointer', fontWeight: 700, fontSize: '.74rem', opacity: !testEmail ? .5 : 1, whiteSpace: 'nowrap' }}>
+                      {testing ? '…' : 'Tester'}
+                    </button>
+                    {testResult && (
+                      <span style={{ fontSize: '.72rem', color: testResult.ok ? '#86efac' : '#fca5a5' }}>
+                        {testResult.ok ? '✓' : '✗'} {testResult.msg.slice(0, 40)}
+                      </span>
+                    )}
+                  </div>
+                } />
+              <ServiceCard icon={Bot} label="Scheduler APScheduler" ok={c.scheduler.ok} color="#facc15"
+                detail="Jobs : scan BOAMP toutes les 6h · rapport hebdo lundi 8h" />
+              <ServiceCard icon={HardDrive} label="Cache in-memory" ok={c.cache.ok} color="#06b6d4"
+                detail={`${c.cache.size ?? 0} entrées en cache · TTL automatique`} />
+            </div>
+          </div>
+
+          {/* Métriques */}
+          {diag?.checks && (
+            <div>
+              <h2 style={{ fontSize: '.8rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 12 }}>Diagnostic auth</h2>
+              <div style={{ padding: '18px 20px', background: 'rgba(10,18,38,.8)', border: '1px solid rgba(148,163,184,.08)', borderRadius: 14, display: 'grid', gap: 10 }}>
+                {Object.entries(diag.checks).map(([key, val]) => (
+                  <div key={key} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center', padding: '6px 0', borderBottom: '1px solid rgba(148,163,184,.04)' }}>
+                    <span style={{ fontSize: '.76rem', color: '#475569', fontFamily: "'JetBrains Mono', monospace", flexShrink: 0 }}>{key}</span>
+                    <span style={{ fontSize: '.76rem', color: val === true ? '#86efac' : val === false ? '#fca5a5' : '#94a3b8', fontFamily: "'JetBrains Mono', monospace", textAlign: 'right' }}>
+                      {typeof val === 'boolean' ? (val ? '✓ true' : '✗ false') : String(val).slice(0, 60)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Variables d'environnement requises */}
+          <div>
+            <h2 style={{ fontSize: '.8rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 12 }}>Variables d&apos;environnement</h2>
+            <div style={{ display: 'grid', gap: 6 }}>
+              {[
+                { key: 'DATABASE_URL',          req: true,  desc: 'PostgreSQL Render (auto-configuré)',        category: 'core' },
+                { key: 'SECRET_KEY',            req: true,  desc: 'JWT signing key (32+ caractères)',          category: 'core' },
+                { key: 'GEMINI_API_KEY',        req: false, desc: 'Embeddings RAG vectoriels (GRATUIT)',       category: 'ai', recommend: true },
+                { key: 'GLM_API_KEY',           req: false, desc: 'Génération texte GLM-4-Flash (GRATUIT)',    category: 'ai' },
+                { key: 'GROQ_API_KEY',          req: false, desc: 'Génération rapide Llama/Mixtral (GRATUIT)', category: 'ai' },
+                { key: 'OPENAI_API_KEY',        req: false, desc: 'GPT-4o + embeddings premium',              category: 'ai' },
+                { key: 'MISTRAL_API_KEY',       req: false, desc: 'Mistral Large (souveraineté EU)',           category: 'ai' },
+                { key: 'SMTP_HOST',             req: false, desc: 'Serveur email sortant',                    category: 'email' },
+                { key: 'SMTP_USER',             req: false, desc: 'Utilisateur SMTP',                         category: 'email' },
+                { key: 'SMTP_PASSWORD',         req: false, desc: 'Mot de passe SMTP',                        category: 'email' },
+                { key: 'STRIPE_SECRET_KEY',     req: false, desc: 'Paiements Stripe (mode prod)',             category: 'billing' },
+                { key: 'LINKEDIN_CLIENT_ID',    req: false, desc: 'OAuth LinkedIn (publication posts)',        category: 'social' },
+                { key: 'LINKEDIN_CLIENT_SECRET',req: false, desc: 'OAuth LinkedIn secret',                    category: 'social' },
+                { key: 'SENTRY_DSN',            req: false, desc: 'Monitoring erreurs Sentry',                category: 'ops' },
+              ].map(({ key, req, desc, recommend }) => (
+                <div key={key} style={{
+                  display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
+                  borderRadius: 10, background: 'rgba(255,255,255,.02)', border: '1px solid rgba(148,163,184,.05)',
+                }}>
+                  <Key size={11} color={req ? '#fca5a5' : '#334155'} style={{ flexShrink: 0 }} />
+                  <code style={{ fontSize: '.75rem', color: req ? '#fde68a' : '#64748b', fontFamily: "'JetBrains Mono', monospace", flex: 1 }}>{key}</code>
+                  {recommend && <span style={{ fontSize: '.65rem', padding: '2px 6px', borderRadius: 99, background: 'rgba(250,204,21,.1)', color: '#facc15', border: '1px solid rgba(250,204,21,.2)', fontWeight: 700, flexShrink: 0 }}>RECOMMANDÉ</span>}
+                  {req && <span style={{ fontSize: '.65rem', padding: '2px 6px', borderRadius: 99, background: 'rgba(239,68,68,.1)', color: '#fca5a5', border: '1px solid rgba(239,68,68,.2)', fontWeight: 700, flexShrink: 0 }}>REQUIS</span>}
+                  <span style={{ fontSize: '.71rem', color: '#334155', textAlign: 'right', maxWidth: 260 }}>{desc}</span>
+                </div>
+              ))}
+            </div>
+            <p style={{ fontSize: '.74rem', color: '#334155', marginTop: 12, lineHeight: 1.5 }}>
+              Configurez ces variables dans <strong style={{ color: '#64748b' }}>Render Dashboard → datasphere-backend → Environment</strong>.
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

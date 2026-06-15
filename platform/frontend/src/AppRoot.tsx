@@ -101,23 +101,24 @@ function LoginPage({
   onLogin: (email: string, password: string) => Promise<void>;
   onForgot: () => void;
 }) {
-  const [email, setEmail] = useState('');
+  const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [showPwd,  setShowPwd]  = useState(false);
+  const [error,    setError]    = useState<string | null>(null);
+  const [loading,  setLoading]  = useState(false);
   const [slowServer, setSlowServer] = useState(false);
+  const [focused,  setFocused]  = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
     setSlowServer(false);
-    // Après 5s, afficher un message de patience (cold start Render)
     const slowTimer = setTimeout(() => setSlowServer(true), 5000);
     try {
       await onLogin(email, password);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur de connexion');
+      setError(err instanceof Error ? err.message : 'Email ou mot de passe incorrect');
     } finally {
       clearTimeout(slowTimer);
       setLoading(false);
@@ -125,62 +126,182 @@ function LoginPage({
     }
   }
 
+  const inp = (focused_key: string): React.CSSProperties => ({
+    width: '100%', padding: '13px 16px',
+    background: focused === focused_key ? 'rgba(255,255,255,.06)' : 'rgba(255,255,255,.03)',
+    border: `1.5px solid ${focused === focused_key ? 'rgba(250,204,21,.4)' : 'rgba(148,163,184,.12)'}`,
+    borderRadius: 11, color: '#f1f5f9', fontSize: '.92rem', outline: 'none',
+    transition: 'all .18s cubic-bezier(.4,0,.2,1)',
+    fontFamily: 'Inter, sans-serif',
+    boxSizing: 'border-box' as const,
+    boxShadow: focused === focused_key ? '0 0 0 3px rgba(250,204,21,.08)' : 'none',
+  });
+
   return (
-    <main className="app-shell auth-shell">
-      <section className="hero auth-card">
-        <p className="eyebrow">Connexion sécurisée</p>
-        <h1>Accéder à la plateforme DataSphere</h1>
-        <p className="subtitle">
-          Connecte-toi avec le compte administrateur créé au démarrage.
+    <main style={{
+      minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: 16, position: 'relative', overflow: 'hidden',
+      background: '#060d1a',
+    }}>
+      {/* Ambient glows */}
+      <div style={{ position: 'absolute', top: '-20%', left: '-10%', width: '60%', height: '60%', background: 'radial-gradient(circle, rgba(37,99,235,.15) 0%, transparent 70%)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', bottom: '-20%', right: '-10%', width: '50%', height: '50%', background: 'radial-gradient(circle, rgba(250,204,21,.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', top: '40%', right: '20%', width: '30%', height: '30%', background: 'radial-gradient(circle, rgba(139,92,246,.07) 0%, transparent 70%)', pointerEvents: 'none' }} />
+
+      {/* Card */}
+      <div style={{
+        width: '100%', maxWidth: 420, position: 'relative', zIndex: 1,
+        animation: 'loginFadeUp .45s cubic-bezier(0,0,.2,1) both',
+      }}>
+        {/* Logo */}
+        <div style={{ textAlign: 'center', marginBottom: 36 }}>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            width: 52, height: 52, borderRadius: 14,
+            background: 'linear-gradient(135deg, rgba(250,204,21,.25), rgba(250,204,21,.08))',
+            border: '1.5px solid rgba(250,204,21,.3)',
+            marginBottom: 16, boxShadow: '0 8px 32px rgba(250,204,21,.15)',
+          }}>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#facc15" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <div style={{ fontSize: '.7rem', fontWeight: 700, letterSpacing: '.2em', textTransform: 'uppercase', color: 'rgba(250,204,21,.7)', marginBottom: 8 }}>
+            DataSphere Innovation
+          </div>
+          <h1 style={{ fontSize: '1.65rem', fontWeight: 900, letterSpacing: '-.04em', color: '#f1f5f9', lineHeight: 1.1, margin: 0 }}>
+            Bon retour 👋
+          </h1>
+          <p style={{ color: '#475569', fontSize: '.86rem', marginTop: 8, lineHeight: 1.5 }}>
+            Connectez-vous à votre espace IA
+          </p>
+        </div>
+
+        {/* Form card */}
+        <div style={{
+          background: 'rgba(12,20,40,.9)',
+          border: '1px solid rgba(148,163,184,.1)',
+          borderRadius: 20,
+          padding: '32px 28px',
+          backdropFilter: 'blur(32px)',
+          boxShadow: '0 32px 100px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.04) inset',
+          position: 'relative', overflow: 'hidden',
+        }}>
+          {/* Inner glow */}
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg, transparent, rgba(255,255,255,.08), transparent)', pointerEvents: 'none' }} />
+
+          <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 16 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '.75rem', fontWeight: 700, color: '#64748b', marginBottom: 7, letterSpacing: '.06em', textTransform: 'uppercase' }}>
+                Adresse email
+              </label>
+              <input
+                style={inp('email')}
+                type="email" value={email} required autoComplete="email" disabled={loading}
+                placeholder="vous@datasphere.fr"
+                onChange={e => setEmail(e.target.value)}
+                onFocus={() => setFocused('email')}
+                onBlur={() => setFocused(null)}
+              />
+            </div>
+
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 }}>
+                <label style={{ fontSize: '.75rem', fontWeight: 700, color: '#64748b', letterSpacing: '.06em', textTransform: 'uppercase' }}>
+                  Mot de passe
+                </label>
+                <button type="button" onClick={onForgot}
+                  style={{ fontSize: '.74rem', color: 'rgba(250,204,21,.7)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
+                  Oublié ?
+                </button>
+              </div>
+              <div style={{ position: 'relative' }}>
+                <input
+                  style={{ ...inp('password'), paddingRight: 44 }}
+                  type={showPwd ? 'text' : 'password'} value={password} required autoComplete="current-password" disabled={loading}
+                  placeholder="••••••••••"
+                  onChange={e => setPassword(e.target.value)}
+                  onFocus={() => setFocused('password')}
+                  onBlur={() => setFocused(null)}
+                />
+                <button type="button" onClick={() => setShowPwd(v => !v)}
+                  style={{ position: 'absolute', right: 13, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#475569', padding: 4, display: 'flex', alignItems: 'center' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    {showPwd
+                      ? <><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></>
+                      : <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></>}
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {error && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '11px 14px', borderRadius: 10, background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.2)', color: '#fca5a5', fontSize: '.83rem', lineHeight: 1.4 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0 }}>
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                {error}
+              </div>
+            )}
+
+            <button type="submit" disabled={loading || !email || !password}
+              style={{
+                marginTop: 4,
+                padding: '13px',
+                borderRadius: 11,
+                border: 'none',
+                background: loading ? 'rgba(250,204,21,.5)' : '#facc15',
+                color: '#060d1a',
+                fontWeight: 900,
+                fontSize: '.92rem',
+                cursor: loading || !email || !password ? 'not-allowed' : 'pointer',
+                opacity: !email || !password ? .5 : 1,
+                transition: 'all .18s cubic-bezier(.4,0,.2,1)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                boxShadow: loading ? 'none' : '0 4px 20px rgba(250,204,21,.25)',
+                letterSpacing: '-.01em',
+                fontFamily: 'Inter, sans-serif',
+              }}
+            >
+              {loading ? (
+                <>
+                  <svg style={{ animation: 'loginSpin .7s linear infinite', flexShrink: 0 }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                  </svg>
+                  Connexion en cours…
+                </>
+              ) : (
+                <>
+                  Se connecter
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                  </svg>
+                </>
+              )}
+            </button>
+
+            {slowServer && (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '10px 13px', borderRadius: 9, background: 'rgba(245,158,11,.05)', border: '1px solid rgba(245,158,11,.15)', fontSize: '.77rem', color: '#94a3b8', lineHeight: 1.5 }}>
+                <span style={{ fontSize: '1rem', flexShrink: 0 }}>⏳</span>
+                <span>Le serveur démarre depuis le repos… cela peut prendre <strong style={{ color: '#fde68a' }}>jusqu&apos;à 30 secondes</strong>. Merci de patienter.</span>
+              </div>
+            )}
+          </form>
+        </div>
+
+        {/* Footer */}
+        <p style={{ textAlign: 'center', marginTop: 20, fontSize: '.74rem', color: '#334155' }}>
+          DataSphere Innovation · Plateforme IA confidentielle
         </p>
-        <form className="form" onSubmit={handleSubmit}>
-          <label>
-            Email
-            <input
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              type="email"
-              required
-              autoComplete="email"
-              disabled={loading}
-            />
-          </label>
-          <label>
-            Mot de passe
-            <input
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              type="password"
-              required
-              autoComplete="current-password"
-              disabled={loading}
-            />
-          </label>
-          {error && (
-            <p className="error" role="alert">
-              {error}
-            </p>
-          )}
-          <button type="submit" disabled={loading}>
-            {loading ? 'Connexion…' : 'Se connecter'}
-          </button>
-          {slowServer && (
-            <p style={{ fontSize: '.75rem', color: '#64748b', textAlign: 'center', lineHeight: 1.5, marginTop: 4 }}>
-              ⏳ Le serveur démarre… cela peut prendre jusqu'à 30s (Render free plan).
-            </p>
-          )}
-          <button
-            type="button"
-            onClick={onForgot}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: '#64748b', fontSize: '.8rem', marginTop: 8, textDecoration: 'underline',
-            }}
-          >
-            Mot de passe oublié ?
-          </button>
-        </form>
-      </section>
+      </div>
+
+      <style>{`
+        @keyframes loginFadeUp {
+          from { opacity: 0; transform: translateY(20px) scale(.98); }
+          to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes loginSpin { to { transform: rotate(360deg); } }
+      `}</style>
     </main>
   );
 }

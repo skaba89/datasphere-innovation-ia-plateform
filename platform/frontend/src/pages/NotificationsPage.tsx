@@ -1,262 +1,229 @@
+/**
+ * NotificationsPage — Centre de notifications premium
+ */
 import { useEffect, useState } from 'react';
-import { Bell, Check, CheckCheck, Filter, Loader2, RefreshCw, Trash2, X } from 'lucide-react';
+import {
+  AlertTriangle, Bell, BellOff, CheckCheck, ChevronRight,
+  Clock, Filter, RefreshCw, Trash2, Zap, Bot, FileText,
+  Target, Users, Activity, Info,
+} from 'lucide-react';
 import { apiRequest, tokenStorage } from '../api/client';
-import { useWorkflowSSE } from '../hooks/useWorkflowSSE';
 
 interface Notification {
   id: number;
+  type: string;
   title: string;
-  detail: string;
-  priority: 'low' | 'normal' | 'high' | 'urgent';
+  message: string;
   is_read: boolean;
   created_at: string;
-  source?: string;
-  tender_id?: number;
+  link?: string;
+  severity?: 'info' | 'warning' | 'error' | 'success';
 }
 
-const PRIORITY_COLOR: Record<string, string> = {
-  urgent: '#ef4444', high: '#f97316', normal: '#facc15', low: '#64748b',
+const TYPE_CONFIG: Record<string, { icon: React.ElementType; color: string; label: string }> = {
+  workflow:      { icon: Zap,         color: '#facc15', label: 'Workflow' },
+  agent:         { icon: Bot,         color: '#8b5cf6', label: 'Agent IA' },
+  deliverable:   { icon: FileText,    color: '#22c55e', label: 'Livrable'  },
+  tender:        { icon: Target,      color: '#3b82f6', label: 'AO'        },
+  team:          { icon: Users,       color: '#f59e0b', label: 'Équipe'    },
+  system:        { icon: Activity,    color: '#64748b', label: 'Système'   },
+  approval:      { icon: CheckCheck,  color: '#22c55e', label: 'Validation'},
+  alert:         { icon: AlertTriangle,color:'#ef4444', label: 'Alerte'   },
+  default:       { icon: Info,        color: '#64748b', label: 'Info'      },
 };
-const PRIORITY_LABEL: Record<string, string> = {
-  urgent: 'Urgent', high: 'Haute', normal: 'Normale', low: 'Basse',
+
+const SEV_COLOR: Record<string, string> = {
+  info:    'rgba(59,130,246,.08)',
+  warning: 'rgba(245,158,11,.08)',
+  error:   'rgba(239,68,68,.08)',
+  success: 'rgba(34,197,94,.08)',
 };
+
+function timeAgo(iso: string) {
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 60)   return 'À l\'instant';
+  if (diff < 3600) return `${Math.floor(diff/60)}min`;
+  if (diff < 86400)return `${Math.floor(diff/3600)}h`;
+  return `${Math.floor(diff/86400)}j`;
+}
 
 export default function NotificationsPage() {
   const token = tokenStorage.get();
-  const [notifications, setNotifications]   = useState<Notification[]>([]);
-  const [loading,        setLoading]         = useState(true);
-  const [filter,         setFilter]          = useState<'all' | 'unread' | 'high'>('all');
-  const [markingAll,     setMarkingAll]      = useState(false);
-
-  // Live updates via SSE
-  useWorkflowSSE({
-    token,
-    onEvent: (e) => {
-      if (e.type === 'notification' || e.type === 'workflow.step_awaiting') load();
-    },
-  });
+  const [notifs, setNotifs]     = useState<Notification[]>([]);
+  const [loading, setLoading]   = useState(true);
+  const [filter, setFilter]     = useState<'all'|'unread'|'read'>('all');
+  const [typeFilter, setType]   = useState('all');
+  const [clearing, setClearing] = useState(false);
 
   async function load() {
+    setLoading(true);
     try {
-      const params = filter === 'unread' ? '?is_read=false' :
-                     filter === 'high'   ? '?priority=high&priority=urgent' : '';
-      const data = await apiRequest<Notification[]>(`/notifications${params}&limit=50`, {}, token);
-      setNotifications(Array.isArray(data) ? data : []);
-    } catch {
-      setNotifications([]);
-    } finally {
-      setLoading(false);
-    }
+      const data = await apiRequest<Notification[]>('/notifications?limit=50', {}, token);
+      setNotifs(Array.isArray(data) ? data : []);
+    } catch { setNotifs([]); }
+    finally { setLoading(false); }
   }
 
-  useEffect(() => { setLoading(true); load(); }, [filter]);
-
-  async function markRead(id: number) {
-    await apiRequest(`/notifications/${id}/read`, { method: 'PATCH' }, token);
-    setNotifications(ns => ns.map(n => n.id === id ? { ...n, is_read: true } : n));
-  }
-
-  async function deleteNotif(id: number) {
-    await apiRequest(`/notifications/${id}`, { method: 'DELETE' }, token);
-    setNotifications(ns => ns.filter(n => n.id !== id));
-  }
+  useEffect(() => { load(); }, []);
 
   async function markAllRead() {
-    setMarkingAll(true);
     try {
       await apiRequest('/notifications/read-all', { method: 'POST' }, token);
-      setNotifications(ns => ns.map(n => ({ ...n, is_read: true })));
-    } finally {
-      setMarkingAll(false);
-    }
+      setNotifs(n => n.map(x => ({ ...x, is_read: true })));
+    } catch { }
   }
 
-  const safeNotifs = Array.isArray(notifications) ? notifications : [];
-  const unreadCount = safeNotifs.filter(n => !n.is_read).length;
-  const filtered    = safeNotifs.filter(n => {
-    if (filter === 'unread') return !n.is_read;
-    if (filter === 'high')   return n.priority === 'high' || n.priority === 'urgent';
+  async function markRead(id: number) {
+    try {
+      await apiRequest(`/notifications/${id}/read`, { method: 'POST' }, token);
+      setNotifs(n => n.map(x => x.id === id ? { ...x, is_read: true } : x));
+    } catch { }
+  }
+
+  async function clearAll() {
+    setClearing(true);
+    try {
+      await apiRequest('/notifications/clear', { method: 'DELETE' }, token);
+      setNotifs([]);
+    } catch { }
+    finally { setClearing(false); }
+  }
+
+  const types = ['all', ...new Set(notifs.map(n => n.type || 'default'))];
+  const filtered = notifs.filter(n => {
+    if (filter === 'unread' && n.is_read)    return false;
+    if (filter === 'read'   && !n.is_read)   return false;
+    if (typeFilter !== 'all' && n.type !== typeFilter) return false;
     return true;
   });
-
-  function fmtDate(iso: string) {
-    const d = new Date(iso);
-    const now = new Date();
-    const diffMin = Math.floor((now.getTime() - d.getTime()) / 60000);
-    if (diffMin < 1)   return 'à l\'instant';
-    if (diffMin < 60)  return `il y a ${diffMin} min`;
-    if (diffMin < 1440) return `il y a ${Math.floor(diffMin / 60)}h`;
-    return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
-  }
-
-  if (!token) return (
-    <main className="app-shell">
-      <section className="panel"><p>Connecte-toi d'abord.</p></section>
-    </main>
-  );
+  const unreadCount = notifs.filter(n => !n.is_read).length;
 
   return (
-    <main className="app-shell">
-      {/* Header */}
-      <section className="panel">
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-          <div>
-            <p className="eyebrow">Centre de notifications</p>
-            <h1 style={{ display: 'flex', alignItems: 'center', gap: 10, margin: 0 }}>
-              <Bell size={20} color="#facc15" />
-              Notifications
-              {unreadCount > 0 && (
-                <span style={{
-                  background: '#ef4444', color: 'white', borderRadius: 99,
-                  fontSize: '.7rem', fontWeight: 800, padding: '2px 8px', minWidth: 20, textAlign: 'center',
-                }}>
-                  {unreadCount}
-                </span>
-              )}
-            </h1>
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={load} style={ghostBtn}>
-              <RefreshCw size={13} /> Actualiser
-            </button>
-            {unreadCount > 0 && (
-              <button onClick={markAllRead} disabled={markingAll} style={primaryBtn}>
-                {markingAll ? <Loader2 size={13} style={{ animation: 'spin .7s linear infinite' }} /> : <CheckCheck size={13} />}
-                Tout marquer lu
-              </button>
-            )}
-          </div>
-        </div>
-      </section>
+    <div style={{ padding: 'clamp(20px,3vw,40px) clamp(16px,3vw,40px)', maxWidth: 820, display: 'grid', gap: 20 }}>
 
-      {/* Filters */}
-      <div style={{ display: 'flex', gap: 8 }}>
-        {(['all', 'unread', 'high'] as const).map(f => (
-          <button key={f} onClick={() => setFilter(f)}
-            style={{
-              padding: '6px 14px', borderRadius: 8, fontWeight: 700, fontSize: '.78rem',
-              border: `1px solid ${filter === f ? 'rgba(250,204,21,.4)' : 'rgba(148,163,184,.15)'}`,
-              background: filter === f ? 'rgba(250,204,21,.08)' : 'none',
-              color: filter === f ? '#facc15' : '#64748b', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: 5,
-            }}>
-            <Filter size={11} />
-            {f === 'all' ? `Toutes (${notifications.length})` :
-             f === 'unread' ? `Non lues (${unreadCount})` : 'Haute priorité'}
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <div style={{ fontSize: '.68rem', fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase', color: '#facc15', marginBottom: 8 }}>Centre</div>
+          <h1 style={{ fontSize: 'clamp(1.5rem,3vw,2rem)', fontWeight: 900, letterSpacing: '-.04em', margin: 0, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 12 }}>
+            Notifications
+            {unreadCount > 0 && (
+              <span style={{ fontSize: '.7rem', padding: '3px 10px', borderRadius: 99, background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.2)', color: '#fca5a5', fontWeight: 800 }}>
+                {unreadCount} non lue{unreadCount > 1 ? 's' : ''}
+              </span>
+            )}
+          </h1>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button onClick={load} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 13px', borderRadius: 9, border: '1px solid rgba(148,163,184,.12)', background: 'none', color: '#64748b', cursor: 'pointer', fontSize: '.8rem', fontWeight: 600 }}>
+            <RefreshCw size={13} style={{ animation: loading ? 'notifSpin .7s linear infinite' : 'none' }} />
           </button>
-        ))}
+          {unreadCount > 0 && (
+            <button onClick={markAllRead} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 9, border: '1px solid rgba(34,197,94,.2)', background: 'rgba(34,197,94,.06)', color: '#86efac', cursor: 'pointer', fontSize: '.8rem', fontWeight: 700 }}>
+              <CheckCheck size={13} /> Tout marquer lu
+            </button>
+          )}
+          {notifs.length > 0 && (
+            <button onClick={clearAll} disabled={clearing} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 9, border: '1px solid rgba(239,68,68,.15)', background: 'rgba(239,68,68,.04)', color: '#fca5a5', cursor: 'pointer', fontSize: '.8rem', fontWeight: 700 }}>
+              <Trash2 size={13} /> Tout effacer
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* List */}
-      <section className="panel" style={{ padding: 0, overflow: 'hidden' }}>
-        {loading ? (
-          <div style={{ padding: 40, textAlign: 'center' }}>
-            <Loader2 size={24} color="#facc15" style={{ animation: 'spin .7s linear infinite', margin: '0 auto' }} />
-          </div>
-        ) : filtered.length === 0 ? (
-          <div style={{ padding: '40px 24px', textAlign: 'center' }}>
-            <CheckCheck size={32} color="#22c55e" style={{ margin: '0 auto 10px', display: 'block' }} />
-            <p style={{ color: '#64748b', margin: 0, fontSize: '.88rem' }}>
-              {filter === 'unread' ? 'Aucune notification non lue' :
-               filter === 'high'   ? 'Aucune notification haute priorité' :
-               'Aucune notification'}
-            </p>
-          </div>
-        ) : (
-          <div>
-            {(Array.isArray(filtered) ? filtered : []).map((n, idx) => (
-              <div key={n.id} style={{
-                display: 'flex', alignItems: 'flex-start', gap: 14,
-                padding: '14px 20px',
-                borderBottom: idx < filtered.length - 1 ? '1px solid rgba(148,163,184,.06)' : 'none',
-                background: n.is_read ? 'transparent' : 'rgba(250,204,21,.02)',
-                transition: 'background .15s',
-              }}>
-                {/* Priority dot */}
-                <div style={{
-                  width: 8, height: 8, borderRadius: '50%', flexShrink: 0, marginTop: 6,
-                  background: PRIORITY_COLOR[n.priority] || '#64748b',
-                  boxShadow: !n.is_read ? `0 0 8px ${PRIORITY_COLOR[n.priority] || '#64748b'}` : 'none',
-                }} />
+      {/* Filtres */}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        {(['all','unread','read'] as const).map(f => (
+          <button key={f} onClick={() => setFilter(f)} style={{
+            padding: '6px 14px', borderRadius: 8, fontSize: '.78rem', fontWeight: 700, cursor: 'pointer',
+            border: `1px solid ${filter===f?'rgba(250,204,21,.3)':'rgba(148,163,184,.1)'}`,
+            background: filter===f?'rgba(250,204,21,.08)':'none',
+            color: filter===f?'#facc15':'#64748b',
+          }}>
+            {f==='all'?'Toutes':f==='unread'?'Non lues':'Lues'}
+          </button>
+        ))}
+        <div style={{ width: 1, height: 20, background: 'rgba(148,163,184,.1)', margin: '0 4px' }} />
+        {types.map(t => {
+          const cfg = TYPE_CONFIG[t] ?? TYPE_CONFIG.default;
+          return (
+            <button key={t} onClick={() => setType(t)} style={{
+              display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 8, fontSize: '.75rem', fontWeight: 600, cursor: 'pointer',
+              border: `1px solid ${typeFilter===t?`${cfg.color}40`:'rgba(148,163,184,.08)'}`,
+              background: typeFilter===t?`${cfg.color}08`:'none',
+              color: typeFilter===t?cfg.color:'#64748b',
+            }}>
+              {t !== 'all' && <cfg.icon size={11} />}
+              {t === 'all' ? 'Tous types' : cfg.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Liste */}
+      {loading ? (
+        <div style={{ display: 'grid', gap: 8 }}>
+          {[...Array(5)].map((_,i) => (
+            <div key={i} style={{ height: 72, borderRadius: 12, background: 'linear-gradient(90deg,rgba(255,255,255,.03) 0%,rgba(255,255,255,.06) 50%,rgba(255,255,255,.03) 100%)', backgroundSize: '200% 100%', animation: 'shimmer 1.4s ease-in-out infinite' }} />
+          ))}
+          <style>{`@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}} @keyframes notifSpin{to{transform:rotate(360deg)}}`}</style>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div style={{ padding: '64px 24px', textAlign: 'center' }}>
+          <BellOff size={40} style={{ color: '#1e293b', margin: '0 auto 16px' }} />
+          <p style={{ color: '#334155', fontSize: '.88rem', margin: 0 }}>
+            {filter === 'unread' ? 'Aucune notification non lue' : 'Aucune notification'}
+          </p>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gap: 4 }}>
+          <style>{`@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}} @keyframes notifSpin{to{transform:rotate(360deg)}}`}</style>
+          {filtered.map(n => {
+            const cfg = TYPE_CONFIG[n.type] ?? TYPE_CONFIG.default;
+            const bg = n.severity ? SEV_COLOR[n.severity] : 'rgba(255,255,255,.02)';
+            return (
+              <div key={n.id} onClick={() => !n.is_read && markRead(n.id)}
+                style={{
+                  display: 'flex', alignItems: 'flex-start', gap: 14, padding: '14px 16px',
+                  borderRadius: 12, cursor: 'pointer', transition: 'all .15s ease',
+                  background: n.is_read ? 'rgba(255,255,255,.015)' : bg || 'rgba(255,255,255,.03)',
+                  border: `1px solid ${n.is_read ? 'rgba(148,163,184,.05)' : 'rgba(148,163,184,.1)'}`,
+                  opacity: n.is_read ? .7 : 1,
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,.04)'; e.currentTarget.style.transform = 'translateX(2px)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = n.is_read ? 'rgba(255,255,255,.015)' : (bg || 'rgba(255,255,255,.03)'); e.currentTarget.style.transform = 'none'; }}
+              >
+                {/* Unread dot */}
+                <div style={{ width: 7, height: 7, borderRadius: '50%', background: n.is_read ? 'transparent' : cfg.color, marginTop: 6, flexShrink: 0, boxShadow: n.is_read ? 'none' : `0 0 6px ${cfg.color}` }} />
+
+                {/* Icon */}
+                <div style={{ width: 34, height: 34, borderRadius: 9, background: `${cfg.color}10`, border: `1px solid ${cfg.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
+                  <cfg.icon size={15} color={cfg.color} />
+                </div>
 
                 {/* Content */}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-                    <span style={{
-                      fontWeight: n.is_read ? 600 : 800,
-                      fontSize: '.85rem',
-                      color: n.is_read ? '#94a3b8' : '#f1f5f9',
-                    }}>{n.title}</span>
-                    <span style={{
-                      fontSize: '.65rem', fontWeight: 700, padding: '1px 6px', borderRadius: 4,
-                      background: `${PRIORITY_COLOR[n.priority]}15`,
-                      color: PRIORITY_COLOR[n.priority],
-                      border: `1px solid ${PRIORITY_COLOR[n.priority]}25`,
-                    }}>
-                      {PRIORITY_LABEL[n.priority] || n.priority}
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 3 }}>
+                    <div style={{ fontSize: '.83rem', fontWeight: n.is_read ? 600 : 700, color: n.is_read ? '#94a3b8' : '#f1f5f9', lineHeight: 1.3 }}>{n.title}</div>
+                    <span style={{ fontSize: '.68rem', color: '#334155', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 3 }}>
+                      <Clock size={10} /> {timeAgo(n.created_at)}
                     </span>
-                    {!n.is_read && (
-                      <span style={{
-                        width: 6, height: 6, borderRadius: '50%',
-                        background: '#3b82f6', flexShrink: 0,
-                      }} />
-                    )}
                   </div>
-                  <p style={{ margin: '0 0 4px', fontSize: '.78rem', color: '#64748b', lineHeight: 1.5 }}>
-                    {n.detail}
+                  <p style={{ margin: 0, fontSize: '.76rem', color: '#475569', lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}>
+                    {n.message}
                   </p>
-                  <span style={{ fontSize: '.68rem', color: '#475569' }}>
-                    {fmtDate(n.created_at)}
-                    {n.source && <span style={{ marginLeft: 8 }}>· {n.source}</span>}
-                  </span>
-                </div>
-
-                {/* Actions */}
-                <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                  {!n.is_read && (
-                    <button onClick={() => markRead(n.id)} title="Marquer comme lu"
-                      style={iconBtn('#22c55e')}>
-                      <Check size={13} />
-                    </button>
-                  )}
-                  <button onClick={() => deleteNotif(n.id)} title="Supprimer"
-                    style={iconBtn('#ef4444')}>
-                    <Trash2 size={13} />
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 5 }}>
+                    <span style={{ fontSize: '.67rem', padding: '1px 7px', borderRadius: 99, background: `${cfg.color}10`, color: cfg.color, border: `1px solid ${cfg.color}20`, fontWeight: 700 }}>
+                      {cfg.label}
+                    </span>
+                    {n.link && <span style={{ fontSize: '.68rem', color: '#3b82f6', display: 'flex', alignItems: 'center', gap: 3 }}><ChevronRight size={10} /> Voir</span>}
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @media (max-width: 640px) {
-          main.app-shell > div:nth-child(2) { flex-wrap: wrap; }
-        }
-      `}</style>
-    </main>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
-
-const ghostBtn: React.CSSProperties = {
-  display: 'flex', alignItems: 'center', gap: 5,
-  padding: '7px 12px', borderRadius: 8,
-  border: '1px solid rgba(148,163,184,.15)',
-  background: 'none', color: '#64748b', cursor: 'pointer',
-  fontSize: '.78rem', fontWeight: 600,
-};
-const primaryBtn: React.CSSProperties = {
-  display: 'flex', alignItems: 'center', gap: 5,
-  padding: '7px 14px', borderRadius: 8, border: 'none',
-  background: 'rgba(34,197,94,.12)', color: '#86efac',
-  cursor: 'pointer', fontSize: '.78rem', fontWeight: 700,
-};
-const iconBtn = (color: string): React.CSSProperties => ({
-  display: 'flex', alignItems: 'center', justifyContent: 'center',
-  width: 28, height: 28, borderRadius: 7,
-  border: `1px solid ${color}20`,
-  background: `${color}08`,
-  color, cursor: 'pointer',
-});

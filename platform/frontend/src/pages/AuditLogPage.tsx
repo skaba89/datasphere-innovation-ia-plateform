@@ -1,260 +1,235 @@
-import { useI18n } from '../i18n';
+/**
+ * AuditLogPage — Journal d'audit premium avec search, filtres, export CSV
+ */
 import { useEffect, useState, useCallback } from 'react';
-import { API_BASE } from '../api/config';
 import {
-  Search, Download, RefreshCw, ChevronLeft, ChevronRight,
-  Filter, Shield, Clock, User, Tag,
+  Activity, AlertTriangle, ChevronLeft, ChevronRight,
+  Download, Filter, RefreshCw, Search, Shield, User,
+  Clock, Terminal,
 } from 'lucide-react';
 import { apiRequest, tokenStorage } from '../api/client';
 
 interface AuditLog {
   id: number;
-  created_at: string;
+  user_id?: number;
+  user_email?: string;
   action: string;
-  resource_type: string | null;
-  resource_id: number | null;
-  resource_label: string | null;
-  user_email: string | null;
-  actor_name: string | null;
-  detail: string | null;
-  status: string;
+  resource_type?: string;
+  resource_id?: number;
+  details?: string;
+  ip_address?: string;
+  status: 'success' | 'failure' | 'warning';
+  created_at: string;
 }
 
-const ACTION_COLORS: Record<string, string> = {
-  create:   '#86efac',
-  update:   '#93c5fd',
-  delete:   '#fca5a5',
-  approve:  '#a78bfa',
-  login:    '#fde68a',
-  logout:   '#94a3b8',
-  export:   '#67e8f9',
+const ACTION_COLOR: Record<string, string> = {
+  create: '#22c55e', update: '#3b82f6', delete: '#ef4444',
+  login:  '#facc15', logout: '#64748b', export: '#8b5cf6',
+  approve:'#22c55e', reject: '#ef4444', generate: '#f59e0b',
 };
 
-const STATUS_COLORS: Record<string, string> = {
-  success: 'rgba(34,197,94,.12)',
-  error:   'rgba(239,68,68,.12)',
-  warning: 'rgba(245,158,11,.12)',
+const STATUS_CONFIG = {
+  success: { color: '#22c55e', bg: 'rgba(34,197,94,.08)',  border: 'rgba(34,197,94,.2)',  label: 'Succès'     },
+  failure: { color: '#ef4444', bg: 'rgba(239,68,68,.08)',  border: 'rgba(239,68,68,.2)',  label: 'Échec'      },
+  warning: { color: '#f59e0b', bg: 'rgba(245,158,11,.08)', border: 'rgba(245,158,11,.2)', label: 'Avertissement' },
 };
 
-function fmt(iso: string) {
-  return new Date(iso).toLocaleString('fr-FR', {
-    day: '2-digit', month: '2-digit', year: '2-digit',
-    hour: '2-digit', minute: '2-digit', second: '2-digit',
-  });
+function timeAgo(iso: string) {
+  const d = new Date(iso);
+  return d.toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
-
-const PAGE_SIZE = 50;
 
 export default function AuditLogPage() {
-  const { t, lang } = useI18n();
   const token = tokenStorage.get();
-  const [logs, setLogs] = useState<AuditLog[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [page, setPage] = useState(0);
+  const [logs, setLogs]         = useState<AuditLog[]>([]);
+  const [total, setTotal]       = useState(0);
+  const [loading, setLoading]   = useState(true);
+  const [search, setSearch]     = useState('');
+  const [statusFilter, setStatus] = useState('all');
+  const [actionFilter, setAction] = useState('all');
+  const [page, setPage]         = useState(0);
+  const PAGE_SIZE = 20;
 
-  // Filters
-  const [search, setSearch] = useState('');
-  const [filterAction, setFilterAction] = useState('');
-  const [filterType, setFilterType] = useState('');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
-
-  
-  const buildParams = useCallback(() => {
-    const p = new URLSearchParams();
-    if (filterAction) p.set('action', filterAction);
-    if (filterType) p.set('resource_type', filterType);
-    if (search) p.set('user', search);
-    if (dateFrom) p.set('date_from', dateFrom);
-    if (dateTo) p.set('date_to', dateTo);
-    return p;
-  }, [filterAction, filterType, search, dateFrom, dateTo]);
-
-  const load = useCallback(async (p: number) => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
-      const params = buildParams();
-      params.set('skip', String(p * PAGE_SIZE));
-      params.set('limit', String(PAGE_SIZE));
-      const [data, countData] = await Promise.all([
-        apiRequest<AuditLog[]>(`/audit-logs?${params}`, {}, token),
-        apiRequest<{ total: number }>(`/audit-logs/count?${buildParams()}`, {}, token),
-      ]);
-      setLogs(data);
-      setTotal(countData.total);
-    } finally {
-      setLoading(false);
-    }
-  }, [buildParams, token]);
+      const params = new URLSearchParams({
+        limit: String(PAGE_SIZE),
+        offset: String(page * PAGE_SIZE),
+        ...(search && { search }),
+        ...(statusFilter !== 'all' && { status: statusFilter }),
+        ...(actionFilter !== 'all' && { action: actionFilter }),
+      });
+      const data = await apiRequest<{items:AuditLog[];total:number} | AuditLog[]>(`/audit-logs?${params}`, {}, token);
+      if (Array.isArray(data)) { setLogs(data); setTotal(data.length); }
+      else { setLogs(data.items ?? []); setTotal(data.total ?? 0); }
+    } catch { setLogs([]); }
+    finally { setLoading(false); }
+  }, [page, search, statusFilter, actionFilter, token]);
 
-  useEffect(() => {
-    setPage(0);
-    load(0);
-  }, [filterAction, filterType, search, dateFrom, dateTo]);
+  useEffect(() => { load(); }, [load]);
+  useEffect(() => { setPage(0); }, [search, statusFilter, actionFilter]);
 
-  const changePage = (p: number) => { setPage(p); load(p); };
-
-  const exportCSV = () => {
-    const params = buildParams();
-    window.open(`${API_BASE}/audit-logs/export/csv?${params}&token_header=${token}`, '_blank');
-  };
+  function exportCSV() {
+    const headers = ['ID','Email','Action','Ressource','Statut','IP','Date'];
+    const rows = logs.map(l => [
+      l.id, l.user_email ?? '', l.action, `${l.resource_type ?? ''}#${l.resource_id ?? ''}`,
+      l.status, l.ip_address ?? '', l.created_at,
+    ]);
+    const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `audit-log-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+  }
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
-
-  const actionColor = (a: string) => ACTION_COLORS[a?.toLowerCase()] || '#94a3b8';
-  const statusBg = (s: string) => STATUS_COLORS[s] || 'rgba(148,163,184,.08)';
-
-  const s = {
-    page: { padding: 'clamp(14px,3vw,28px) clamp(12px,3vw,32px)', maxWidth: 1200, margin: '0 auto' } as React.CSSProperties,
-    card: { background: 'rgba(15,30,54,.85)', border: '1px solid rgba(148,163,184,.12)', borderRadius: 14, overflow: 'hidden' } as React.CSSProperties,
-    input: { background: 'rgba(255,255,255,.05)', border: '1px solid rgba(148,163,184,.15)', borderRadius: 8, padding: '8px 12px', color: '#f1f5f9', fontSize: '.82rem', outline: 'none', fontFamily: 'inherit' } as React.CSSProperties,
-    select: { background: '#0c1425', border: '1px solid rgba(148,163,184,.15)', borderRadius: 8, padding: '8px 12px', color: '#f1f5f9', fontSize: '.82rem', outline: 'none', fontFamily: 'inherit' } as React.CSSProperties,
-  };
+  const actions = ['all', ...new Set(logs.map(l => l.action.split('_')[0]))].slice(0, 10);
 
   return (
-    <div style={s.page}>
+    <div style={{ padding: 'clamp(20px,3vw,40px) clamp(16px,3vw,40px)', maxWidth: 1100, display: 'grid', gap: 20 }}>
+      <style>{`@keyframes auditSpin{to{transform:rotate(360deg)}} @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}`}</style>
+
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <Shield size={20} color="#facc15" />
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: '1.3rem', letterSpacing: '-.02em' }}>
-            Journal d'audit
+          <div style={{ fontSize: '.68rem', fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase', color: '#facc15', marginBottom: 8 }}>Sécurité</div>
+          <h1 style={{ fontSize: 'clamp(1.5rem,3vw,2rem)', fontWeight: 900, letterSpacing: '-.04em', margin: 0, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Shield size={24} color="#facc15" /> Journal d&apos;audit
           </h1>
-          <p style={{ fontSize: '.8rem', color: '#64748b', marginTop: 2 }}>
-            {total.toLocaleString('fr-FR')} événement{total > 1 ? 's' : ''} — traçabilité complète
+          <p style={{ color: '#64748b', fontSize: '.84rem', margin: 0 }}>
+            {total.toLocaleString('fr-FR')} événements enregistrés · Rétention 90 jours
           </p>
         </div>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-          <button onClick={() => load(page)} style={{ ...s.input, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', paddingInline: 12 }}>
-            <RefreshCw size={13} style={loading ? { animation: 'spin 1s linear infinite' } : {}} />
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={load} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 13px', borderRadius: 9, border: '1px solid rgba(148,163,184,.12)', background: 'none', color: '#64748b', cursor: 'pointer', fontSize: '.8rem' }}>
+            <RefreshCw size={13} style={{ animation: loading ? 'auditSpin .7s linear infinite' : 'none' }} />
           </button>
-          <button onClick={exportCSV} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 14px', borderRadius: 8, border: 'none', background: 'rgba(250,204,21,.1)', color: '#facc15', cursor: 'pointer', fontSize: '.8rem', fontWeight: 700 }}>
+          <button onClick={exportCSV} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 16px', borderRadius: 9, border: '1px solid rgba(250,204,21,.2)', background: 'rgba(250,204,21,.06)', color: '#facc15', cursor: 'pointer', fontSize: '.82rem', fontWeight: 700 }}>
             <Download size={13} /> Export CSV
           </button>
         </div>
       </div>
 
-      {/* Filters */}
-      <div style={{ ...s.card, padding: 16, marginBottom: 16, display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '1 1 200px' }}>
-          <Search size={14} color="#64748b" />
-          <input
-            style={{ ...s.input, flex: 1 }}
-            placeholder="Rechercher par utilisateur…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
+      {/* Filtres */}
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ position: 'relative', flex: '1 1 200px' }}>
+          <Search size={13} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: '#475569' }} />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher action, email, ressource…"
+            style={{ width: '100%', padding: '9px 12px 9px 32px', borderRadius: 9, border: '1px solid rgba(148,163,184,.12)', background: 'rgba(255,255,255,.03)', color: '#f1f5f9', fontSize: '.83rem', outline: 'none', boxSizing: 'border-box' as const }} />
         </div>
-        <select style={s.select} value={filterAction} onChange={e => setFilterAction(e.target.value)}>
-          <option value="">Toutes les actions</option>
-          {['create', 'update', 'delete', 'approve', 'login', 'logout', 'export'].map(a => (
-            <option key={a} value={a}>{a}</option>
-          ))}
+        <select value={statusFilter} onChange={e => setStatus(e.target.value)}
+          style={{ padding: '9px 12px', borderRadius: 9, border: '1px solid rgba(148,163,184,.12)', background: '#0a1628', color: '#94a3b8', fontSize: '.82rem', cursor: 'pointer' }}>
+          <option value="all">Tous statuts</option>
+          <option value="success">Succès</option>
+          <option value="failure">Échec</option>
+          <option value="warning">Avertissement</option>
         </select>
-        <select style={s.select} value={filterType} onChange={e => setFilterType(e.target.value)}>
-          <option value="">Tous les types</option>
-          {['tender', 'deliverable', 'opportunity', 'contact', 'agent_action', 'user', 'organization'].map(t => (
-            <option key={t} value={t}>{t}</option>
-          ))}
+        <select value={actionFilter} onChange={e => setAction(e.target.value)}
+          style={{ padding: '9px 12px', borderRadius: 9, border: '1px solid rgba(148,163,184,.12)', background: '#0a1628', color: '#94a3b8', fontSize: '.82rem', cursor: 'pointer' }}>
+          <option value="all">Toutes actions</option>
+          {actions.filter(a => a !== 'all').map(a => <option key={a} value={a}>{a}</option>)}
         </select>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Filter size={13} color="#64748b" />
-          <input type="date" style={s.input} value={dateFrom} onChange={e => setDateFrom(e.target.value)} title="Date début" />
-          <span style={{ color: '#64748b', fontSize: '.8rem' }}>→</span>
-          <input type="date" style={s.input} value={dateTo} onChange={e => setDateTo(e.target.value)} title="Date fin" />
-        </div>
-        {(search || filterAction || filterType || dateFrom || dateTo) && (
-          <button
-            onClick={() => { setSearch(''); setFilterAction(''); setFilterType(''); setDateFrom(''); setDateTo(''); }}
-            style={{ padding: '6px 12px', borderRadius: 7, border: '1px solid rgba(239,68,68,.25)', background: 'rgba(239,68,68,.08)', color: '#fca5a5', cursor: 'pointer', fontSize: '.76rem' }}
-          >
-            Effacer filtres
-          </button>
-        )}
       </div>
 
       {/* Table */}
-      <div style={s.card}>
-        <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid rgba(148,163,184,.1)', background: 'rgba(255,255,255,.02)' }}>
-                {['Date', 'Action', 'Ressource', 'Utilisateur', 'Détail', 'Statut'].map(h => (
-                  <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontFamily: 'monospace', fontSize: '.68rem', letterSpacing: '.1em', textTransform: 'uppercase', color: '#64748b', fontWeight: 600, whiteSpace: 'nowrap' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {logs.length === 0 && !loading && (
-                <tr><td colSpan={6} style={{ padding: 32, textAlign: 'center', color: '#475569', fontSize: '.84rem' }}>Aucun événement trouvé.</td></tr>
-              )}
-              {logs.map(log => (
-                <tr key={log.id} style={{ borderBottom: '1px solid rgba(148,163,184,.06)', transition: 'background .1s' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,.02)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                >
-                  <td style={{ padding: '9px 14px', whiteSpace: 'nowrap' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <Clock size={11} color="#475569" />
-                      <span style={{ fontFamily: 'monospace', fontSize: '.73rem', color: '#94a3b8' }}>{log.created_at ? fmt(log.created_at) : '—'}</span>
-                    </div>
-                  </td>
-                  <td style={{ padding: '9px 14px' }}>
-                    <span style={{ padding: '2px 9px', borderRadius: 99, fontSize: '.7rem', fontWeight: 700, fontFamily: 'monospace', background: 'rgba(255,255,255,.05)', color: actionColor(log.action), border: `1px solid ${actionColor(log.action)}40` }}>
-                      {log.action}
-                    </span>
-                  </td>
-                  <td style={{ padding: '9px 14px' }}>
-                    {log.resource_type && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <Tag size={11} color="#64748b" />
-                        <span style={{ fontSize: '.77rem', color: '#94a3b8' }}>
-                          {log.resource_type}
-                          {log.resource_id ? <span style={{ color: '#475569' }}>#{log.resource_id}</span> : null}
-                        </span>
-                        {log.resource_label && <span style={{ fontSize: '.74rem', color: '#64748b' }}>— {log.resource_label.slice(0, 32)}</span>}
-                      </div>
-                    )}
-                  </td>
-                  <td style={{ padding: '9px 14px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <User size={11} color="#64748b" />
-                      <span style={{ fontSize: '.77rem', color: '#94a3b8' }}>{log.actor_name || log.user_email || '—'}</span>
-                    </div>
-                  </td>
-                  <td style={{ padding: '9px 14px', maxWidth: 260 }}>
-                    <span style={{ fontSize: '.75rem', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
-                      {log.detail || '—'}
-                    </span>
-                  </td>
-                  <td style={{ padding: '9px 14px' }}>
-                    <span style={{ padding: '2px 8px', borderRadius: 99, fontSize: '.68rem', fontWeight: 600, fontFamily: 'monospace', background: statusBg(log.status), color: log.status === 'success' ? '#86efac' : log.status === 'error' ? '#fca5a5' : '#fde68a' }}>
-                      {log.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <div style={{ background: 'rgba(10,18,38,.85)', border: '1px solid rgba(148,163,184,.08)', borderRadius: 16, overflow: 'hidden', backdropFilter: 'blur(24px)' }}>
+        {/* Header row */}
+        <div style={{ display: 'grid', gridTemplateColumns: '60px 1fr 120px 140px 90px 90px', gap: 0, padding: '10px 16px', borderBottom: '1px solid rgba(148,163,184,.06)', background: 'rgba(255,255,255,.02)' }}>
+          {['ID','Utilisateur · Action · Ressource','Statut','Date','IP','Détails'].map(h => (
+            <div key={h} style={{ fontSize: '.66rem', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '.08em' }}>{h}</div>
+          ))}
         </div>
+
+        {loading ? (
+          <div style={{ padding: 20, display: 'grid', gap: 6 }}>
+            {[...Array(8)].map((_,i) => (
+              <div key={i} style={{ height: 44, borderRadius: 8, background: 'linear-gradient(90deg,rgba(255,255,255,.03) 0%,rgba(255,255,255,.06) 50%,rgba(255,255,255,.03) 100%)', backgroundSize: '200% 100%', animation: 'shimmer 1.4s ease-in-out infinite' }} />
+            ))}
+          </div>
+        ) : logs.length === 0 ? (
+          <div style={{ padding: '48px', textAlign: 'center', color: '#334155' }}>
+            <Activity size={32} style={{ margin: '0 auto 12px', opacity: .2 }} />
+            <p style={{ margin: 0, fontSize: '.86rem' }}>Aucun événement trouvé</p>
+          </div>
+        ) : (
+          <div>
+            {logs.map((log, i) => {
+              const sc = STATUS_CONFIG[log.status] ?? STATUS_CONFIG.success;
+              const actionKey = log.action.split('_')[0];
+              const aColor = ACTION_COLOR[actionKey] ?? '#64748b';
+              return (
+                <div key={log.id} style={{
+                  display: 'grid', gridTemplateColumns: '60px 1fr 120px 140px 90px 90px', gap: 0,
+                  padding: '11px 16px', alignItems: 'center',
+                  borderBottom: i < logs.length - 1 ? '1px solid rgba(148,163,184,.04)' : 'none',
+                  transition: 'background .12s',
+                }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,.025)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  <span style={{ fontSize: '.7rem', color: '#334155', fontFamily: "'JetBrains Mono', monospace" }}>#{log.id}</span>
+
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 2 }}>
+                      <User size={10} color="#475569" />
+                      <span style={{ fontSize: '.77rem', fontWeight: 600, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>{log.user_email ?? 'système'}</span>
+                      <span style={{ fontSize: '.72rem', fontFamily: "'JetBrains Mono', monospace", color: aColor, background: `${aColor}10`, padding: '1px 6px', borderRadius: 5, fontWeight: 700 }}>{log.action}</span>
+                    </div>
+                    {log.resource_type && (
+                      <span style={{ fontSize: '.68rem', color: '#334155' }}>{log.resource_type}{log.resource_id ? ` #${log.resource_id}` : ''}</span>
+                    )}
+                  </div>
+
+                  <div style={{ padding: '2px 8px', borderRadius: 99, background: sc.bg, border: `1px solid ${sc.border}`, color: sc.color, fontSize: '.68rem', fontWeight: 700, display: 'inline-block', width: 'fit-content' }}>
+                    {sc.label}
+                  </div>
+
+                  <span style={{ fontSize: '.71rem', color: '#475569', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Clock size={10} /> {timeAgo(log.created_at)}
+                  </span>
+
+                  <span style={{ fontSize: '.7rem', color: '#334155', fontFamily: "'JetBrains Mono', monospace" }}>{log.ip_address ?? '—'}</span>
+
+                  <span style={{ fontSize: '.7rem', color: '#334155', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {log.details ? log.details.slice(0, 25) : '—'}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderTop: '1px solid rgba(148,163,184,.08)', justifyContent: 'flex-end' }}>
-            <span style={{ fontSize: '.76rem', color: '#64748b' }}>
-              Page {page + 1} / {totalPages} · {total} entrées
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid rgba(148,163,184,.06)', background: 'rgba(255,255,255,.01)' }}>
+            <span style={{ fontSize: '.76rem', color: '#475569' }}>
+              {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} sur {total.toLocaleString('fr-FR')}
             </span>
-            <button onClick={() => changePage(page - 1)} disabled={page === 0} style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid rgba(148,163,184,.15)', background: 'none', cursor: page === 0 ? 'not-allowed' : 'pointer', color: page === 0 ? '#475569' : '#94a3b8' }}>
-              <ChevronLeft size={14} />
-            </button>
-            <button onClick={() => changePage(page + 1)} disabled={page >= totalPages - 1} style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid rgba(148,163,184,.15)', background: 'none', cursor: page >= totalPages - 1 ? 'not-allowed' : 'pointer', color: page >= totalPages - 1 ? '#475569' : '#94a3b8' }}>
-              <ChevronRight size={14} />
-            </button>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}
+                style={{ display: 'flex', alignItems: 'center', padding: '6px 10px', borderRadius: 8, border: '1px solid rgba(148,163,184,.12)', background: 'none', color: page === 0 ? '#1e293b' : '#64748b', cursor: page === 0 ? 'not-allowed' : 'pointer' }}>
+                <ChevronLeft size={14} />
+              </button>
+              {[...Array(Math.min(5, totalPages))].map((_, i) => {
+                const p = Math.max(0, Math.min(page - 2 + i, totalPages - 5 + i));
+                return (
+                  <button key={p} onClick={() => setPage(p)} style={{
+                    width: 32, height: 32, borderRadius: 8, border: `1px solid ${p === page ? 'rgba(250,204,21,.3)' : 'rgba(148,163,184,.1)'}`,
+                    background: p === page ? 'rgba(250,204,21,.1)' : 'none',
+                    color: p === page ? '#facc15' : '#64748b', cursor: 'pointer', fontSize: '.78rem', fontWeight: p === page ? 800 : 500,
+                  }}>{p + 1}</button>
+                );
+              })}
+              <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}
+                style={{ display: 'flex', alignItems: 'center', padding: '6px 10px', borderRadius: 8, border: '1px solid rgba(148,163,184,.12)', background: 'none', color: page >= totalPages - 1 ? '#1e293b' : '#64748b', cursor: page >= totalPages - 1 ? 'not-allowed' : 'pointer' }}>
+                <ChevronRight size={14} />
+              </button>
+            </div>
           </div>
         )}
       </div>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 }
