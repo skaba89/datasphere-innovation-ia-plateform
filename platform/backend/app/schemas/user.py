@@ -30,6 +30,7 @@ class UserRead(UserBase):
     id: int
     created_at: datetime
     updated_at: datetime | None = None  # Peut être NULL sur anciens comptes
+    must_change_password: bool = False
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -44,6 +45,7 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
     refresh_token: str = ""
     user: UserRead
+    must_change_password: bool = False  # True = forcer changement MDP à la connexion
 
 
 # Role constants for documentation

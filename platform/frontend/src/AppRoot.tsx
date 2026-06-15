@@ -94,6 +94,235 @@ type NavTab = {
   permission: AppPermission;
 };
 
+
+// ── Écran changement MDP forcé (première connexion) ──────────────────────────
+function ForcePasswordChange({
+  token, user, onChanged,
+}: {
+  token: string;
+  user: CurrentUser;
+  onChanged: () => void;
+}) {
+  const [current, setCurrent]   = useState('');
+  const [newPwd,  setNewPwd]    = useState('');
+  const [confirm, setConfirm]   = useState('');
+  const [showPwd, setShowPwd]   = useState(false);
+  const [saving,  setSaving]    = useState(false);
+  const [error,   setError]     = useState<string | null>(null);
+
+  const checks = [
+    { label: '8+ caractères',      ok: newPwd.length >= 8 },
+    { label: 'Majuscule',          ok: /[A-Z]/.test(newPwd) },
+    { label: 'Chiffre',            ok: /\d/.test(newPwd) },
+    { label: 'Caractère spécial',  ok: /[^A-Za-z0-9]/.test(newPwd) },
+  ];
+  const strength = checks.filter(c => c.ok).length;
+  const strengthColor = strength <= 1 ? '#ef4444' : strength <= 2 ? '#f59e0b' : strength <= 3 ? '#22c55e' : '#4ade80';
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (newPwd !== confirm) { setError("Les mots de passe ne correspondent pas."); return; }
+    if (strength < 2)       { setError("Mot de passe trop faible."); return; }
+    setSaving(true);
+    try {
+      await apiRequest('/auth/change-password', {
+        method: 'POST',
+        body: JSON.stringify({ current_password: current, new_password: newPwd }),
+      }, token);
+      onChanged();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Mot de passe actuel incorrect.');
+    } finally { setSaving(false); }
+  }
+
+  const inp = (focused: boolean): React.CSSProperties => ({
+    width: '100%', padding: '12px 16px',
+    background: 'rgba(255,255,255,.04)',
+    border: `1.5px solid ${focused ? 'rgba(250,204,21,.4)' : 'rgba(148,163,184,.12)'}`,
+    borderRadius: 11, color: '#f1f5f9', fontSize: '.9rem', outline: 'none',
+    boxSizing: 'border-box' as const, fontFamily: 'Inter, sans-serif',
+    boxShadow: focused ? '0 0 0 3px rgba(250,204,21,.08)' : 'none',
+  });
+
+  const displayName = user.first_name
+    ? user.first_name
+    : user.email.split('@')[0];
+
+  return (
+    <main style={{
+      minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: 16, background: '#060d1a', position: 'relative', overflow: 'hidden',
+    }}>
+      {/* Glows */}
+      <div style={{ position: 'absolute', top: '-20%', left: '-10%', width: '60%', height: '60%', background: 'radial-gradient(circle, rgba(37,99,235,.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', bottom: '-20%', right: '-10%', width: '50%', height: '50%', background: 'radial-gradient(circle, rgba(250,204,21,.07) 0%, transparent 70%)', pointerEvents: 'none' }} />
+
+      <div style={{ width: '100%', maxWidth: 460, position: 'relative', zIndex: 1, animation: 'fpcFadeUp .4s cubic-bezier(0,0,.2,1) both' }}>
+
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            width: 56, height: 56, borderRadius: 16,
+            background: 'linear-gradient(135deg, rgba(250,204,21,.2), rgba(250,204,21,.06))',
+            border: '1.5px solid rgba(250,204,21,.3)', marginBottom: 18,
+            boxShadow: '0 8px 32px rgba(250,204,21,.15)',
+          }}>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#facc15" strokeWidth="2.5">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </div>
+          <div style={{ fontSize: '.68rem', fontWeight: 800, letterSpacing: '.18em', textTransform: 'uppercase', color: 'rgba(250,204,21,.7)', marginBottom: 10 }}>
+            Première connexion
+          </div>
+          <h1 style={{ fontSize: '1.55rem', fontWeight: 900, letterSpacing: '-.04em', color: '#f1f5f9', lineHeight: 1.1, margin: '0 0 10px' }}>
+            Bienvenue, {displayName} 👋
+          </h1>
+          <p style={{ color: '#475569', fontSize: '.85rem', lineHeight: 1.6, maxWidth: 360, margin: '0 auto' }}>
+            Pour des raisons de sécurité, vous devez définir un nouveau mot de passe personnel avant d&apos;accéder à la plateforme.
+          </p>
+        </div>
+
+        {/* Card */}
+        <div style={{
+          background: 'rgba(12,20,40,.92)', border: '1px solid rgba(148,163,184,.1)',
+          borderRadius: 20, padding: '32px 28px',
+          backdropFilter: 'blur(32px)',
+          boxShadow: '0 32px 100px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.04)',
+        }}>
+          <form onSubmit={submit} style={{ display: 'grid', gap: 16 }}>
+
+            {/* Mot de passe provisoire */}
+            <div>
+              <label style={{ display: 'block', fontSize: '.72rem', fontWeight: 700, color: '#64748b', marginBottom: 7, textTransform: 'uppercase', letterSpacing: '.06em' }}>
+                Mot de passe provisoire (reçu de votre admin)
+              </label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showPwd ? 'text' : 'password'}
+                  style={{ ...inp(false), paddingRight: 44 }}
+                  value={current} onChange={e => setCurrent(e.target.value)}
+                  placeholder="Mot de passe reçu par email" required autoComplete="current-password"
+                />
+                <button type="button" onClick={() => setShowPwd(v => !v)}
+                  style={{ position: 'absolute', right: 13, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#475569', padding: 4, display: 'flex', alignItems: 'center' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    {showPwd
+                      ? <><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></>
+                      : <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></>}
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Nouveau MDP */}
+            <div>
+              <label style={{ display: 'block', fontSize: '.72rem', fontWeight: 700, color: '#64748b', marginBottom: 7, textTransform: 'uppercase', letterSpacing: '.06em' }}>
+                Nouveau mot de passe
+              </label>
+              <input
+                type="password" style={inp(newPwd.length > 0)}
+                value={newPwd} onChange={e => setNewPwd(e.target.value)}
+                placeholder="Choisissez un mot de passe fort" required autoComplete="new-password"
+              />
+              {newPwd.length > 0 && (
+                <div style={{ marginTop: 10 }}>
+                  {/* Barre de force */}
+                  <div style={{ display: 'flex', gap: 3, marginBottom: 8 }}>
+                    {[1,2,3,4].map(i => (
+                      <div key={i} style={{ flex: 1, height: 4, borderRadius: 99, background: i <= strength ? strengthColor : 'rgba(148,163,184,.08)', transition: 'background .2s' }} />
+                    ))}
+                  </div>
+                  {/* Checks */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                    {checks.map(c => (
+                      <span key={c.label} style={{ fontSize: '.72rem', color: c.ok ? '#86efac' : '#334155', display: 'flex', alignItems: 'center', gap: 4, transition: 'color .2s' }}>
+                        <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                          {c.ok
+                            ? <><circle cx="6" cy="6" r="6" fill="#22c55e20"/><path d="M3.5 6l2 2 3-3" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></>
+                            : <circle cx="6" cy="6" r="5" stroke="#1e293b" strokeWidth="1.5"/>}
+                        </svg>
+                        {c.label}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Confirmer */}
+            <div>
+              <label style={{ display: 'block', fontSize: '.72rem', fontWeight: 700, color: '#64748b', marginBottom: 7, textTransform: 'uppercase', letterSpacing: '.06em' }}>
+                Confirmer le nouveau mot de passe
+              </label>
+              <input
+                type="password"
+                style={{ ...inp(confirm.length > 0 && confirm === newPwd), borderColor: confirm.length > 0 && confirm !== newPwd ? 'rgba(239,68,68,.4)' : undefined }}
+                value={confirm} onChange={e => setConfirm(e.target.value)}
+                placeholder="Répéter le mot de passe" required autoComplete="new-password"
+              />
+              {confirm.length > 0 && confirm !== newPwd && (
+                <p style={{ margin: '5px 0 0', fontSize: '.72rem', color: '#fca5a5' }}>Les mots de passe ne correspondent pas</p>
+              )}
+            </div>
+
+            {/* Erreur */}
+            {error && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '11px 14px', borderRadius: 10, background: 'rgba(239,68,68,.07)', border: '1px solid rgba(239,68,68,.2)', color: '#fca5a5', fontSize: '.83rem' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                {error}
+              </div>
+            )}
+
+            {/* Submit */}
+            <button type="submit" disabled={saving || !current || !newPwd || !confirm || newPwd !== confirm || strength < 2}
+              style={{
+                marginTop: 6, padding: '14px', borderRadius: 12, border: 'none',
+                background: '#facc15', color: '#060d1a',
+                fontWeight: 900, fontSize: '.92rem',
+                cursor: 'pointer',
+                opacity: (!current || !newPwd || !confirm || newPwd !== confirm || strength < 2) ? .45 : 1,
+                transition: 'all .18s ease',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                boxShadow: '0 4px 20px rgba(250,204,21,.2)',
+                letterSpacing: '-.01em', fontFamily: 'Inter, sans-serif',
+              }}>
+              {saving ? (
+                <>
+                  <svg style={{ animation: 'fpcSpin .7s linear infinite' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                  </svg>
+                  Enregistrement…
+                </>
+              ) : (
+                <>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  Définir mon mot de passe
+                </>
+              )}
+            </button>
+          </form>
+        </div>
+
+        <p style={{ textAlign: 'center', marginTop: 20, fontSize: '.73rem', color: '#1e293b' }}>
+          Ce mot de passe est personnel · Ne le partagez jamais
+        </p>
+      </div>
+
+      <style>{`
+        @keyframes fpcFadeUp { from { opacity:0; transform:translateY(20px) scale(.98); } to { opacity:1; transform:none; } }
+        @keyframes fpcSpin   { to   { transform:rotate(360deg); } }
+      `}</style>
+    </main>
+  );
+}
+
 function LoginPage({
   onLogin,
   onForgot,
@@ -377,7 +606,6 @@ export default function AppRoot() {
   }, [token]);
 
   async function handleLogin(email: string, password: string) {
-    // Timeout warning pour Render free cold start (30-60s de réveil possible)
     const coldStartWarning = setTimeout(() => {
       console.info('[DataSphere] Démarrage du serveur en cours (Render free plan)…');
     }, 5000);
@@ -391,10 +619,18 @@ export default function AppRoot() {
       localStorage.setItem('ds_user', JSON.stringify(result.user));
       setToken(result.access_token);
       setUser(result.user);
+      // Forcer changement MDP si l'admin a créé le compte avec MDP provisoire
+      if (result.must_change_password || result.user?.must_change_password) {
+        setMustChangePwd(true);
+      }
     } catch (err) {
       clearTimeout(coldStartWarning);
       throw err;
     }
+  }
+
+  async function handlePasswordChanged() {
+    setMustChangePwd(false);
   }
 
   function logout() {

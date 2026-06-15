@@ -110,7 +110,7 @@ export default function TeamPage() {
     try {
       const created = await apiRequest<Member>('/team/invite', {
         method: 'POST',
-        body: JSON.stringify({ ...form, is_active: true }),
+        body: JSON.stringify({ ...form, is_active: true, must_change_password: true }),
       }, token);
       setMembers(m => [created, ...m]);
       setShowInvite(false);
@@ -279,8 +279,13 @@ export default function TeamPage() {
                   {showFormPwd ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
               </div>
-              <div style={{ fontSize: '.7rem', color: '#475569', marginTop: 4 }}>
-                L'utilisateur devra le changer à sa première connexion via Mon profil.
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7, marginTop: 6, padding: '8px 12px', borderRadius: 8, background: 'rgba(250,204,21,.04)', border: '1px solid rgba(250,204,21,.1)' }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#facc15" strokeWidth="2" style={{ flexShrink: 0, marginTop: 1 }}>
+                  <circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/>
+                </svg>
+                <span style={{ fontSize: '.72rem', color: '#64748b', lineHeight: 1.5 }}>
+                  L&apos;utilisateur sera <strong style={{ color: '#fde68a' }}>forcé de changer ce mot de passe</strong> dès sa première connexion avant d&apos;accéder à la plateforme.
+                </span>
               </div>
             </div>
           </div>

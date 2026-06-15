@@ -18,3 +18,4 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     extra_data  = Column(Text, nullable=True, server_default=None)   # JSON blob for extended profile
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    must_change_password = Column(Boolean, nullable=False, default=False)

@@ -5,6 +5,7 @@ export type CurrentUser = {
   last_name?: string;
   role: string;
   is_active: boolean;
+  must_change_password?: boolean;
 };
 
 export type LoginResult = {
@@ -12,4 +13,5 @@ export type LoginResult = {
   refresh_token: string;
   token_type: string;
   user: CurrentUser;
+  must_change_password: boolean;
 };
