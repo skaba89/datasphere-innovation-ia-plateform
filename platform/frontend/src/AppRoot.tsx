@@ -47,6 +47,7 @@ import UserProfilePage from './pages/UserProfilePage';
 import WorkspacesPage from './pages/WorkspacesPage';
 import SettingsPage from './pages/SettingsPage';
 import CalculatorPage from './pages/CalculatorPage';
+import InvoicingPage from './pages/InvoicingPage';
 import PricingPage from './pages/PricingPage';
 import DataExportPage from './pages/DataExportPage';
 import LinkedInAgentPage from './pages/LinkedInAgentPage';
@@ -86,7 +87,8 @@ type RootView =
   | 'intelligence'
   | 'settings'
   | 'calculator'
-  | 'pricing';
+  | 'pricing'
+  | 'invoicing';
 
 type NavTab = {
   key: RootView;
@@ -558,6 +560,7 @@ function ThemeToggle() {
 export default function AppRoot() {
   const [token, setToken] = useState<string | null>(() => tokenStorage.get());
   const [user, setUser] = useState<CurrentUser | null>(null);
+  const [mustChangePwd, setMustChangePwd] = useState(false);
   const [authView, setAuthView] = useState<AuthView>(() =>
     new URLSearchParams(window.location.search).has('token') ? 'reset' : 'login',
   );
@@ -693,7 +696,7 @@ export default function AppRoot() {
     { label: 'Principal', keys: ['dashboard', 'tenders', 'deliverables'] },
     { label: 'CRM',       keys: ['organizations', 'opportunities', 'commercial'] },
     { label: 'IA',        keys: ['intelligence', 'ai-providers', 'consultant-profiles', 'linkedin'] },
-    { label: 'Opérations',keys: ['operations', 'data-export', 'calculator', 'pricing'] },
+    { label: 'Opérations',keys: ['operations', 'data-export', 'calculator', 'pricing', 'invoicing'] },
     { label: 'Admin',     keys: ['team', 'audit', 'workspaces'] },
     { label: 'Personnel', keys: ['notifications', 'search', 'profile', 'settings'] },
   ];
@@ -928,6 +931,7 @@ export default function AppRoot() {
             {activeView === 'settings'           && <SettingsPage />}
             {activeView === 'calculator'         && <CalculatorPage />}
             {activeView === 'pricing'            && <PricingPage />}
+            {activeView === 'invoicing'          && <InvoicingPage />}
           </ErrorBoundary>
         </main>
 
