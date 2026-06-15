@@ -77,7 +77,7 @@ export default function WorkspacesPage() {
           const found = members.find(m => m.email.toLowerCase() === inviteEmail.toLowerCase());
           if (found) userId = found.id;
           else { setMsg({ ok: false, text: `Aucun utilisateur avec l'email ${inviteEmail}. Invitez-le d'abord via l'onglet Équipe.` }); return; }
-        } catch { setMsg({ ok: false, text: 'Impossible de résoudre l'email.' }); return; }
+        } catch { setMsg({ ok: false, text: "Impossible de résoudre l'email." }); return; }
       }
       await apiRequest(`/workspaces/${selected.id}/members`, { method: 'POST', body: JSON.stringify({ user_id: userId, role: inviteRole }) }, token);
       setMsg({ ok: true, text: `Membre ${inviteEmail || `#${userId}`} ajouté au workspace.` });
