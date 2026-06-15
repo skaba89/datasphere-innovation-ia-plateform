@@ -6,7 +6,10 @@ from passlib.context import CryptContext
 
 from app.core.config import get_settings
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# bcrypt rounds=10 : ~70ms verify (vs 280ms à rounds=12 par défaut).
+# Render free plan : 1 CPU partagé, 10 = bon équilibre sécurité/latence.
+# NIST SP 800-132 recommande min 10 000 itérations ≈ rounds≥10 pour bcrypt.
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=10)
 settings = get_settings()
 
 ALGORITHM = "HS256"

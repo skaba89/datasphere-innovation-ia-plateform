@@ -105,17 +105,23 @@ function LoginPage({
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [slowServer, setSlowServer] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
+    setSlowServer(false);
+    // Après 5s, afficher un message de patience (cold start Render)
+    const slowTimer = setTimeout(() => setSlowServer(true), 5000);
     try {
       await onLogin(email, password);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur de connexion');
     } finally {
+      clearTimeout(slowTimer);
       setLoading(false);
+      setSlowServer(false);
     }
   }
 
@@ -158,6 +164,11 @@ function LoginPage({
           <button type="submit" disabled={loading}>
             {loading ? 'Connexion…' : 'Se connecter'}
           </button>
+          {slowServer && (
+            <p style={{ fontSize: '.75rem', color: '#64748b', textAlign: 'center', lineHeight: 1.5, marginTop: 4 }}>
+              ⏳ Le serveur démarre… cela peut prendre jusqu'à 30s (Render free plan).
+            </p>
+          )}
           <button
             type="button"
             onClick={onForgot}
@@ -245,14 +256,24 @@ export default function AppRoot() {
   }, [token]);
 
   async function handleLogin(email: string, password: string) {
-    const result = await apiRequest<LoginResult>('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
-    tokenStorage.set(result.access_token, result.refresh_token);
-    localStorage.setItem('ds_user', JSON.stringify(result.user));
-    setToken(result.access_token);
-    setUser(result.user);
+    // Timeout warning pour Render free cold start (30-60s de réveil possible)
+    const coldStartWarning = setTimeout(() => {
+      console.info('[DataSphere] Démarrage du serveur en cours (Render free plan)…');
+    }, 5000);
+    try {
+      const result = await apiRequest<LoginResult>('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      });
+      clearTimeout(coldStartWarning);
+      tokenStorage.set(result.access_token, result.refresh_token);
+      localStorage.setItem('ds_user', JSON.stringify(result.user));
+      setToken(result.access_token);
+      setUser(result.user);
+    } catch (err) {
+      clearTimeout(coldStartWarning);
+      throw err;
+    }
   }
 
   function logout() {

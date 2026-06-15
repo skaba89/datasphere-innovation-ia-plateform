@@ -29,7 +29,7 @@ class UserChangePassword(BaseModel):
 class UserRead(UserBase):
     id: int
     created_at: datetime
-    updated_at: datetime
+    updated_at: datetime | None = None  # Peut être NULL sur anciens comptes
 
     model_config = ConfigDict(from_attributes=True)
 

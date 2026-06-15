@@ -65,12 +65,21 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=5 \
 
 # Gunicorn avec 4 uvicorn workers — adapté à la prod
 # Workers = (2 × CPU) + 1, capped à 4 pour le plan free Render (512 MB RAM)
+# Gunicorn config optimisée pour Render free plan :
+#   --workers 2          : 2 workers (512MB RAM, 1 CPU partagé)
+#   --timeout 60         : 60s timeout worker (bcrypt ~70ms, migrations ~2s)
+#   --graceful-timeout 30: 30s pour finir les requêtes en cours avant restart
+#   --keep-alive 2       : 2s keep-alive (Render load balancer)
+#   --max-requests 1000  : restart workers après 1000 requêtes (évite memory leak)
 CMD ["gunicorn", "app.main:app", \
      "--worker-class", "uvicorn.workers.UvicornWorker", \
      "--workers", "2", \
      "--bind", "0.0.0.0:8000", \
-     "--timeout", "120", \
-     "--keep-alive", "5", \
+     "--timeout", "60", \
+     "--graceful-timeout", "30", \
+     "--keep-alive", "2", \
+     "--max-requests", "1000", \
+     "--max-requests-jitter", "100", \
      "--access-logfile", "-", \
      "--error-logfile", "-", \
      "--log-level", "info"]

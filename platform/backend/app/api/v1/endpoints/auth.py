@@ -259,6 +259,22 @@ def diagnose_login(db: Session = Depends(get_db)):
     except Exception:
         pass
 
+    # 6. Bcrypt latency test
+    try:
+        import time as _time
+        from app.core.security import get_password_hash, verify_password
+        _t0 = _time.monotonic()
+        _h = get_password_hash("benchmark_test_password")
+        _hash_ms = round((_time.monotonic() - _t0) * 1000, 1)
+        _t0 = _time.monotonic()
+        verify_password("benchmark_test_password", _h)
+        _verify_ms = round((_time.monotonic() - _t0) * 1000, 1)
+        checks["bcrypt_hash_ms"]   = _hash_ms
+        checks["bcrypt_verify_ms"] = _verify_ms
+        checks["bcrypt_ok"] = _verify_ms < 200  # Seuil d'alerte : 200ms
+    except Exception as _e:
+        checks["bcrypt_verify_ms"] = f"ERROR: {_e}"
+
     overall = all(
         "ERROR" not in str(v) and "MISSING" not in str(v)
         for v in checks.values() if isinstance(v, str)

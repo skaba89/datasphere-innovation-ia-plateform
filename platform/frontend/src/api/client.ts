@@ -171,3 +171,20 @@ export async function uploadFile<T>(
   }
   return (await response.json()) as T;
 }
+
+// ── Keep-alive — évite le cold start Render free plan ────────────────────────
+// Render free endort le container après 15 min d'inactivité.
+// Un ping toutes les 10 min maintient le container éveillé.
+// Uniquement activé en production (pas en dev local).
+const KEEPALIVE_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
+const IS_PROD = !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1');
+
+if (IS_PROD) {
+  const ping = () => {
+    fetch(`${API_BASE_URL}/health`, { method: 'GET', cache: 'no-store' }).catch(() => {});
+  };
+  // Premier ping au chargement (réveille si endormi)
+  ping();
+  // Puis toutes les 10 minutes
+  setInterval(ping, KEEPALIVE_INTERVAL_MS);
+}

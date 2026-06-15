@@ -576,6 +576,28 @@ def start() -> None:
         timezone=tz,
         replace_existing=True,
     )
+    # ── Keepalive Render free plan ────────────────────────────────────────────
+    # Render free plan met le container en veille après 15min sans trafic.
+    # Ce job ping /api/v1/health toutes les 14min pour éviter le cold start.
+    # Impact : ~1 requête HTTP toutes les 14min — négligeable.
+    def _keepalive_ping():
+        try:
+            import urllib.request as _r
+            _r.urlopen("http://127.0.0.1:8000/ping", timeout=3)
+            logger.debug("Keepalive ping OK")
+        except Exception as _e:
+            logger.debug("Keepalive ping failed (normal at startup): %s", _e)
+
+    _scheduler.add_job(
+        _keepalive_ping,
+        trigger="interval",
+        minutes=14,
+        id="keepalive",
+        name="Keepalive Render — évite le cold start",
+        timezone=tz,
+        replace_existing=True,
+    )
+
     _scheduler.start()
     logger.info(
         "Scheduler started — %d jobs registered (provider: %s)",

@@ -48,49 +48,56 @@ async def lifespan(app: FastAPI):
     import time as _time
     import logging as _log
     import sqlalchemy as _sa
+    import os as _os
 
     _logger = _log.getLogger("datasphere.startup")
 
-    # ── Wait for DB to be reachable (handles Docker startup race conditions) ──
-    # PostgreSQL can pass pg_isready but not yet accept full connections.
-    max_retries = 15
+    # ── Wait for DB — timeout court pour éviter cold start long ──────────────
+    max_retries = 10
     for attempt in range(1, max_retries + 1):
         try:
             with engine.connect() as _conn:
                 _conn.execute(_sa.text("SELECT 1"))
-            _logger.info("✓ Database connection established (attempt %d)", attempt)
+            _logger.info("✓ DB ready (attempt %d)", attempt)
             break
         except Exception as _e:
             if attempt == max_retries:
-                raise RuntimeError(
-                    f"Database unreachable after {max_retries} attempts. "
-                    f"Check DATABASE_URL — use service name 'postgres' (not 'localhost') in Docker. "
-                    f"Last error: {_e}"
-                ) from _e
-            _wait = min(2 ** attempt, 30)   # 2s, 4s, 8s … capped at 30s
-            _logger.warning(
-                "Database not ready (attempt %d/%d), retrying in %ds — %s",
-                attempt, max_retries, _wait, _e
-            )
+                raise RuntimeError(f"DB unreachable after {max_retries} attempts: {_e}") from _e
+            # Retry rapide : 1s, 2s, 3s… cap à 5s (pas exponentiel)
+            _wait = min(attempt, 5)
+            _logger.warning("DB not ready (%d/%d) retry in %ds: %s", attempt, max_retries, _wait, _e)
             _time.sleep(_wait)
 
-    # ── Schema init ───────────────────────────────────────────────────────────
-    # Always run Alembic migrations (create_all doesn't ALTER existing tables).
-    # This ensures workspace_id and other new columns are added to existing DBs.
+    # ── Migrations Alembic — skip si déjà à la bonne révision ────────────────
     try:
         from alembic.config import Config
         from alembic import command as alembic_command
-        import os as _os
+        from alembic.runtime.migration import MigrationContext
+
         alembic_cfg = Config(
             _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), "alembic.ini")
         )
-        alembic_command.upgrade(alembic_cfg, "head")
-        _logger.info("✓ Alembic migrations applied (head)")
+
+        # Vérifier la révision courante AVANT de lancer upgrade
+        with engine.connect() as _conn:
+            ctx = MigrationContext.configure(_conn)
+            current_rev = ctx.get_current_revision()
+
+        # Récupérer la head depuis le script
+        from alembic.script import ScriptDirectory
+        script = ScriptDirectory.from_config(alembic_cfg)
+        head_rev = script.get_current_head()
+
+        if current_rev == head_rev:
+            _logger.info("✓ Alembic already at head (%s) — skip migrations", head_rev)
+        else:
+            _logger.info("Alembic: %s → %s, running upgrade…", current_rev, head_rev)
+            alembic_command.upgrade(alembic_cfg, "head")
+            _logger.info("✓ Alembic migrations applied")
+
     except Exception as _migration_err:
         _logger.warning(
-            "Alembic migration failed (%s) — falling back to create_all. "
-            "This may cause 500 errors if columns are missing. "
-            "Fix: docker compose down -v && docker compose up -d",
+            "Alembic check failed (%s) — falling back to create_all",
             _migration_err,
         )
         Base.metadata.create_all(bind=engine)
@@ -295,6 +302,16 @@ def root() -> dict[str, str]:
     return {
         "message": "Welcome to DataSphere Innovation IA Platform API",
         "docs":    "/docs",
-        "version": "2.3.0",
+        "version": "2.3.2",
         "health":  f"{settings.api_v1_prefix}/health",
     }
+
+
+@app.get("/ping", tags=["health"])
+def ping() -> dict[str, str]:
+    """
+    Ultra-lightweight liveness probe — pas de DB, pas de dépendances.
+    Utilisé par le keepalive scheduler et les load balancers.
+    Répond en < 1ms.
+    """
+    return {"status": "ok"}
