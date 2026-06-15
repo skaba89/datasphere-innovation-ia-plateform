@@ -109,6 +109,14 @@ def health_check(db: Session = Depends(get_db)) -> dict:
     except Exception:
         pass
 
+    # RAG embedding provider
+    rag_info = {"mode": "tfidf-fallback", "active_provider": "none"}
+    try:
+        from app.services.rag_service import get_embedding_info
+        rag_info = get_embedding_info()
+    except Exception:
+        pass
+
     # Cache
     cache = cache_stats()
 
@@ -122,6 +130,7 @@ def health_check(db: Session = Depends(get_db)) -> dict:
         "components": {
             "database":  {"ok": db_ok,       "latency_ms": db_latency_ms, "error": db_error},
             "llm":       {"ok": provider_ok, "provider": provider_name},
+            "rag":        {"ok": True, **rag_info},
             "scheduler": {"ok": scheduler_ok},
             "cache":     {"ok": True, **cache},
         },
