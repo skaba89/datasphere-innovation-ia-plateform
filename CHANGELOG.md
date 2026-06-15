@@ -5,6 +5,24 @@ Format : [MAJOR.MINOR.PATCH] — YYYY-MM-DD
 
 ---
 
+## [2.3.2] — 2026-06-15 (Sprint 18 — Hardening P0/P1)
+
+### Corrigé — CRITIQUE (P0)
+- **Bug prod 500 POST /auth/login** : `limiter.hit(request)` appelait une méthode inexistante sur `slowapi.Limiter` → `AttributeError` non catchée → 500 en production (le `except Exception: pass` ne catchait pas l'AttributeError car elle était levée AVANT le try/except DB)
+  - Supprimé le `Limiter` local instancié dans `auth.py` (doublon du limiter global de `main.py`)
+  - Supprimé l'appel manuel `limiter.hit()` — le rate limiting est géré par `default_limits=["300/minute"]` sur le limiter global via `app.state.limiter`
+  - L'endpoint `/auth/login` est désormais protégé par le limiter global sans risque de crash
+
+### Corrigé — Pages non routées (P1)
+- **CalculatorPage** : présente dans `src/pages/` mais absente du type `RootView` et de la navigation → ajoutée dans le groupe `Opérations`
+- **PricingPage** : idem → ajoutée dans le groupe `Opérations`  
+- **SettingsPage** : la route `settings` dans `AppRoot` renvoyait `<OperationsPage />` au lieu de `<SettingsPage />` → corrigé
+- Les 3 pages sont maintenant importées et routées dans `AppRoot.tsx`
+
+### Amélioré
+- `/auth/diagnose-login` : révision attendue mise à jour (`consultant_exp_001`), ajout check version Pydantic et confirmation fix slowapi
+
+---
 ## [2.3.1] — 2026-06-13 (Sprint 12)
 
 ### Corrigé — CRITIQUE

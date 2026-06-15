@@ -45,6 +45,9 @@ import TeamPage from './pages/TeamPage';
 import TenderPage from './pages/TenderPage';
 import UserProfilePage from './pages/UserProfilePage';
 import WorkspacesPage from './pages/WorkspacesPage';
+import SettingsPage from './pages/SettingsPage';
+import CalculatorPage from './pages/CalculatorPage';
+import PricingPage from './pages/PricingPage';
 import DataExportPage from './pages/DataExportPage';
 import LinkedInAgentPage from './pages/LinkedInAgentPage';
 import OnboardingWizard, { shouldShowOnboarding, markOnboardingDone } from './components/OnboardingWizard';
@@ -81,7 +84,9 @@ type RootView =
   | 'search'
   | 'ai-providers'
   | 'intelligence'
-  | 'settings';
+  | 'settings'
+  | 'calculator'
+  | 'pricing';
 
 type NavTab = {
   key: RootView;
@@ -301,6 +306,8 @@ export default function AppRoot() {
     workspaces:           <Layers size={16} />,
     profile:              <UserCircle size={16} />,
     settings:             <Settings size={16} />,
+    calculator:           <Briefcase size={16} />,
+    pricing:              <Zap size={16} />,
   };
 
   // ── Navigation groups ────────────────────────────────────────
@@ -308,7 +315,7 @@ export default function AppRoot() {
     { label: 'Principal', keys: ['dashboard', 'tenders', 'deliverables'] },
     { label: 'CRM',       keys: ['organizations', 'opportunities', 'commercial'] },
     { label: 'IA',        keys: ['intelligence', 'ai-providers', 'consultant-profiles', 'linkedin'] },
-    { label: 'Opérations',keys: ['operations', 'data-export'] },
+    { label: 'Opérations',keys: ['operations', 'data-export', 'calculator', 'pricing'] },
     { label: 'Admin',     keys: ['team', 'audit', 'workspaces'] },
     { label: 'Personnel', keys: ['notifications', 'search', 'profile', 'settings'] },
   ];
@@ -338,6 +345,8 @@ export default function AppRoot() {
     { key: 'workspaces',    label: t('nav.workspaces'),           permission: 'workspaces:read' },
     { key: 'profile',       label: t('nav.profile'),           permission: 'profile:read' },
     { key: 'settings',      label: t('nav.settings'),          permission: 'profile:read' },
+    { key: 'calculator',    label: t('nav.calculator'),    permission: 'operations:read' },
+    { key: 'pricing',       label: t('nav.pricing'),            permission: 'profile:read' },
   ];
 
   const userRole = user?.role;
@@ -538,7 +547,9 @@ export default function AppRoot() {
             {activeView === 'search'             && <SearchPage />}
             {activeView === 'ai-providers'       && <AIProvidersPage />}
             {activeView === 'intelligence'        && <IntelligencePage />}
-            {activeView === 'settings'           && <OperationsPage />}
+            {activeView === 'settings'           && <SettingsPage />}
+            {activeView === 'calculator'         && <CalculatorPage />}
+            {activeView === 'pricing'            && <PricingPage />}
           </ErrorBoundary>
         </main>
 

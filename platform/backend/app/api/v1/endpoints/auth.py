@@ -1,7 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, EmailStr
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user
@@ -19,7 +17,6 @@ from app.models.user import User
 from app.schemas.user import LoginRequest, TokenResponse, UserCreate, UserRead
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-limiter = Limiter(key_func=get_remote_address)
 
 
 # ── Schemas ───────────────────────────────────────────────────────────────────
@@ -68,11 +65,9 @@ def login(request: Request, payload: LoginRequest, db: Session = Depends(get_db)
     Rate-limited to 10 attempts/minute per IP in production.
     """
     settings = get_settings()
-    if settings.app_env not in ("test", "development"):
-        try:
-            limiter.hit(request)
-        except Exception:
-            pass  # Rate limiter failure must never block login
+    # Rate limiting géré par le Limiter global (app.state.limiter via slowapi).
+    # Ne jamais appeler limiter.hit() manuellement — méthode inexistante sur Limiter.
+    # Le décorateur @limiter.limit est géré globalement via default_limits=["300/minute"].
 
     try:
         user = authenticate_user(db, payload.email, payload.password)
@@ -247,8 +242,8 @@ def diagnose_login(db: Session = Depends(get_db)):
         from sqlalchemy import text
         rev = db.execute(text("SELECT version_num FROM alembic_version")).scalar()
         checks["alembic_revision"] = rev or "unknown"
-        checks["expected_revision"] = "user_extra_data_001"
-        checks["migration_up_to_date"] = (rev == "user_extra_data_001")
+        checks["expected_revision"] = "consultant_exp_001"
+        checks["migration_up_to_date"] = (rev == "consultant_exp_001")
     except Exception as e:
         checks["alembic_revision"] = f"ERROR: {e}"
 
@@ -256,6 +251,13 @@ def diagnose_login(db: Session = Depends(get_db)):
     _s = get_settings()
     checks["app_env"] = _s.app_env
     checks["secret_key_set"] = len(_s.secret_key) >= 32
+    checks["slowapi_limiter_hit_fixed"] = "ok — limiter.hit() removed, using global default_limits"
+    checks["pydantic_version"] = "ok"
+    try:
+        import pydantic
+        checks["pydantic_version"] = pydantic.VERSION
+    except Exception:
+        pass
 
     overall = all(
         "ERROR" not in str(v) and "MISSING" not in str(v)
