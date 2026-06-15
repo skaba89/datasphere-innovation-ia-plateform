@@ -1,7 +1,7 @@
 import { useI18n } from '../i18n';
 import { useWorkflowSSE } from '../hooks/useWorkflowSSE';
 import { useEffect, useState, useCallback } from 'react';
-import { FileText, Search, Zap, Plus, RefreshCw } from 'lucide-react';
+import { FileText, Search, Zap, Plus, RefreshCw, BookOpen, Download, Loader2, CheckCircle2 } from 'lucide-react';
 import { apiRequest, tokenStorage } from '../api/client';
 import ScoreBreakdown from '../components/ScoreBreakdown';
 import AgentPipelinePanel from '../components/AgentPipelinePanel';
@@ -50,6 +50,11 @@ export default function TenderPage() {
   const [perPage] = useState(20);
   const [total,   setTotal]   = useState(0);
   const [showBOAMP,    setShowBOAMP]    = useState(false);
+  const [showMemoire,  setShowMemoire]  = useState(false);
+  const [memoireContent, setMemoireContent] = useState('');
+  const [memoireLoading, setMemoireLoading] = useState(false);
+  const [memoireGenerated, setMemoireGenerated] = useState(false);
+  const [memoireProvider, setMemoireProvider] = useState('');
 
   const loadTenders = useCallback(() => {
     if (!accessKey) return;
@@ -66,6 +71,33 @@ export default function TenderPage() {
   }, [accessKey, loadTenders]);
 
   const activeTender = tenders.find(t => t.id === activeTenderId);
+
+  async function generateMemoire() {
+    if (!activeTenderId || !accessKey) return;
+    setMemoireLoading(true); setMemoireGenerated(false);
+    try {
+      const result = await apiRequest<{content:string;provider:string;word_count:number}>(`/tenders/${activeTenderId}/memoire`, { method: 'POST' }, accessKey);
+      setMemoireContent(result.content);
+      setMemoireProvider(result.provider);
+      setMemoireGenerated(true);
+    } catch(e) { alert('Erreur génération mémoire : ' + String(e)); }
+    finally { setMemoireLoading(false); }
+  }
+
+  function downloadMemoire(format: 'docx' | 'pdf') {
+    if (!activeTenderId || !memoireContent) return;
+    const url = `/api/v1/tenders/${activeTenderId}/memoire/export-${format}`;
+    const form = document.createElement('form');
+    form.method = 'POST'; form.action = url; form.target = '_blank';
+    const tokenInput = document.createElement('input');
+    tokenInput.type = 'hidden'; tokenInput.name = 'token'; tokenInput.value = accessKey ?? '';
+    const contentInput = document.createElement('input');
+    contentInput.type = 'hidden'; contentInput.name = 'content'; contentInput.value = memoireContent;
+    const titleInput = document.createElement('input');
+    titleInput.type = 'hidden'; titleInput.name = 'tender_title'; titleInput.value = activeTender?.title ?? '';
+    form.appendChild(tokenInput); form.appendChild(contentInput); form.appendChild(titleInput);
+    document.body.appendChild(form); form.submit(); document.body.removeChild(form);
+  }
 
   if (!accessKey) return (
     <main className="app-shell"><section className="panel"><h1>{t('tenders.title')}</h1><p>Connecte-toi d'abord.</p></section></main>
@@ -98,8 +130,11 @@ export default function TenderPage() {
             <button style={S.btn()} onClick={()=>setShowPDF(true)}>
               <FileText size={14}/> Importer PDF
             </button>
-            <button style={S.btn(showWorkflow)} onClick={()=>{setShowWorkflow(v=>!v);setShowBOAMP(false);}}>
+            <button style={S.btn(showWorkflow)} onClick={()=>{setShowWorkflow(v=>!v);setShowBOAMP(false);setShowMemoire(false);}}>
               <Zap size={14}/> Workflow IA
+            </button>
+            <button style={S.btn(showMemoire)} onClick={()=>{setShowMemoire(v=>!v);setShowWorkflow(false);setShowBOAMP(false);}}>
+              <BookOpen size={14}/> Mémoire Technique
             </button>
           </div>
         </div>
@@ -175,6 +210,79 @@ export default function TenderPage() {
           </div>
           {activeTenderId && (
             <WorkflowPanel tenderId={activeTenderId} tenderTitle={activeTender?.title} token={accessKey} />
+          )}
+        </section>
+      )}
+
+      {/* Mémoire Technique Panel */}
+      {showMemoire && (
+        <section className="panel" style={{padding:0,overflow:'hidden'}}>
+          <div style={{padding:'14px 20px',borderBottom:'1px solid rgba(148,163,184,.08)',display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
+            <BookOpen size={15} color="#facc15"/>
+            <span style={{fontWeight:700,fontSize:'.88rem'}}>Mémoire Technique IA</span>
+            <span style={{fontSize:'.72rem',color:'#475569',marginLeft:4}}>Génération complète 8 sections • ~60s</span>
+            <div style={{marginLeft:'auto',display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
+              {tenders.length > 0 && (
+                <select value={activeTenderId??''} onChange={e=>setActiveTenderId(Number(e.target.value))}
+                  style={{padding:'6px 12px',borderRadius:8,background:'rgba(255,255,255,.05)',border:'1px solid rgba(148,163,184,.15)',color:'#e2e8f0',fontSize:'.82rem',minWidth:200}}>
+                  {tenders.map(t => <option key={t.id} value={t.id}>#{t.id} — {t.title.slice(0,45)}</option>)}
+                </select>
+              )}
+              {memoireGenerated && (
+                <>
+                  <button onClick={()=>downloadMemoire('docx')} style={{display:'flex',alignItems:'center',gap:6,padding:'7px 13px',borderRadius:8,border:'1px solid rgba(148,163,184,.2)',background:'none',color:'#94a3b8',cursor:'pointer',fontSize:'.78rem'}}>
+                    <Download size={12}/> DOCX
+                  </button>
+                  <button onClick={()=>downloadMemoire('pdf')} style={{display:'flex',alignItems:'center',gap:6,padding:'7px 13px',borderRadius:8,border:'1px solid rgba(148,163,184,.2)',background:'none',color:'#94a3b8',cursor:'pointer',fontSize:'.78rem'}}>
+                    <Download size={12}/> PDF
+                  </button>
+                </>
+              )}
+              <button onClick={generateMemoire} disabled={memoireLoading||!activeTenderId}
+                style={{display:'flex',alignItems:'center',gap:7,padding:'8px 16px',borderRadius:9,border:'none',background:'#facc15',color:'#060e18',cursor:memoireLoading||!activeTenderId?'not-allowed':'pointer',fontWeight:800,fontSize:'.82rem',opacity:!activeTenderId?.5:1}}>
+                {memoireLoading
+                  ? <><Loader2 size={13} style={{animation:'ds-spin .8s linear infinite'}}/> Génération…</>
+                  : memoireGenerated
+                  ? <><RefreshCw size={13}/> Régénérer</>
+                  : <><BookOpen size={13}/> Générer</>}
+              </button>
+            </div>
+          </div>
+
+          {memoireLoading && (
+            <div style={{padding:'40px 24px',textAlign:'center'}}>
+              <Loader2 size={32} color="#facc15" style={{animation:'ds-spin .8s linear infinite',marginBottom:12}}/>
+              <p style={{color:'#64748b',fontSize:'.84rem'}}>Génération de la mémoire technique en cours…</p>
+              <p style={{color:'#334155',fontSize:'.74rem',marginTop:4}}>Analyse du besoin · Méthodologie · Équipe · Planning · Références · Risques</p>
+            </div>
+          )}
+
+          {memoireGenerated && memoireContent && !memoireLoading && (
+            <div style={{padding:'20px 24px'}}>
+              <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:16}}>
+                <CheckCircle2 size={15} color="#22c55e"/>
+                <span style={{fontSize:'.78rem',color:'#86efac'}}>Mémoire générée via <strong>{memoireProvider}</strong></span>
+                <span style={{fontSize:'.72rem',color:'#475569',marginLeft:8}}>{memoireContent.split(/\s+/).length} mots</span>
+              </div>
+              <textarea
+                value={memoireContent}
+                onChange={e=>setMemoireContent(e.target.value)}
+                rows={32}
+                style={{width:'100%',padding:'16px',background:'rgba(0,0,0,.25)',border:'1px solid rgba(148,163,184,.1)',borderRadius:10,color:'#e2e8f0',fontSize:'.82rem',fontFamily:'monospace',lineHeight:1.7,resize:'vertical',boxSizing:'border-box' as const}}
+              />
+            </div>
+          )}
+
+          {!memoireLoading && !memoireGenerated && (
+            <div style={{padding:'48px 24px',textAlign:'center'}}>
+              <BookOpen size={40} color="#facc15" style={{opacity:.2,marginBottom:12}}/>
+              <p style={{color:'#475569',fontSize:'.86rem',maxWidth:400,margin:'0 auto',lineHeight:1.6}}>
+                Sélectionnez un AO et cliquez <strong style={{color:'#facc15'}}>Générer</strong> pour produire une mémoire technique complète en 8 sections prête à soumettre.
+              </p>
+              <p style={{color:'#334155',fontSize:'.74rem',marginTop:8}}>
+                Compréhension du besoin · Approche méthodologique · Équipe · Planning · Références · Valeur ajoutée · Risques · Budget
+              </p>
+            </div>
           )}
         </section>
       )}

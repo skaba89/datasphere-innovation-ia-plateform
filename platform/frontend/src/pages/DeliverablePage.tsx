@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   CheckCircle, ChevronDown, ChevronUp, Download,
   Edit3, FileText, Plus, RefreshCw, Save, X,
+  Sparkles, Loader2, Brain, GitMerge, Filter,
 } from 'lucide-react';
 import { apiRequest, tokenStorage } from '../api/client';
 import { API_BASE } from '../api/config';
@@ -37,6 +38,12 @@ export default function DeliverablePage() {
   const [editContent, setEditContent] = useState('');
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
+  const [generating, setGenerating] = useState<number | null>(null);
+  const [filterType, setFilterType] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [showNewForm, setShowNewForm] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newType, setNewType] = useState('technical_proposal');
 
   const load = useCallback(() => {
     if (!token) return;
@@ -62,6 +69,37 @@ export default function DeliverablePage() {
       setTimeout(() => setMsg(''), 3000);
     } catch (e) { setMsg(`❌ ${String(e).slice(0, 80)}`); }
     finally { setSaving(false); }
+  }
+
+  async function generateWithAI(id: number) {
+    if (!token) return;
+    setGenerating(id);
+    try {
+      const d = deliverables.find(x => x.id === id);
+      const result = await apiRequest<{content:string;provider:string}>(`/deliverables/${id}/generate`, {
+        method: 'POST',
+        body: JSON.stringify({ tender_id: d?.tender_id }),
+      }, token);
+      setMsg(`✅ Contenu généré via ${result.provider}`);
+      load();
+    } catch(e) {
+      setMsg(`❌ Erreur génération : ${String(e).slice(0,80)}`);
+    } finally {
+      setGenerating(null);
+      setTimeout(() => setMsg(''), 4000);
+    }
+  }
+
+  async function createDeliverable() {
+    if (!newTitle.trim() || !token) return;
+    try {
+      await apiRequest('/deliverables', {
+        method: 'POST',
+        body: JSON.stringify({ title: newTitle.trim(), deliverable_type: newType, status: 'draft' }),
+      }, token);
+      setShowNewForm(false); setNewTitle(''); setNewType('technical_proposal');
+      setMsg('✅ Livrable créé'); load(); setTimeout(() => setMsg(''), 3000);
+    } catch(e) { setMsg(`❌ ${String(e).slice(0,80)}`); }
   }
 
   async function approve(id: number) {
@@ -90,14 +128,23 @@ export default function DeliverablePage() {
             <h1>Bibliothèque de livrables</h1>
             <p className="subtitle">Mémoires techniques, propositions commerciales, notes de cadrage. Générés par IA, validés par vous.</p>
           </div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             {[['draft','Brouillons'],['review','En révision'],['approved','Approuvés']].map(([s,l]) => (
-              <div key={s} style={{ padding: '4px 12px', borderRadius: 99, border: `1px solid ${STATUS_COLOR[s]}30`, background: `${STATUS_COLOR[s]}10`, color: STATUS_COLOR[s], fontSize: '.74rem', fontWeight: 700 }}>
+              <button key={s} onClick={() => setFilterStatus(filterStatus === s ? 'all' : s)}
+                style={{ padding: '4px 12px', borderRadius: 99, border: `1px solid ${STATUS_COLOR[s]}${filterStatus===s?'60':'30'}`, background: `${STATUS_COLOR[s]}${filterStatus===s?'18':'08'}`, color: STATUS_COLOR[s], fontSize: '.74rem', fontWeight: 700, cursor: 'pointer' }}>
                 {byStatus(s).length} {l}
-              </div>
+              </button>
             ))}
+            <select value={filterType} onChange={e => setFilterType(e.target.value)}
+              style={{ padding: '5px 10px', borderRadius: 8, border: '1px solid rgba(148,163,184,.15)', background: '#0c1425', color: '#94a3b8', fontSize: '.74rem', cursor: 'pointer' }}>
+              <option value="all">Tous types</option>
+              {Object.entries(TYPE_LABEL).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
             <button onClick={load} style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid rgba(148,163,184,.15)', background: 'none', color: '#475569', cursor: 'pointer' }}>
               <RefreshCw size={13} />
+            </button>
+            <button onClick={() => setShowNewForm(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 13px', borderRadius: 9, border: 'none', background: '#facc15', color: '#060e18', cursor: 'pointer', fontWeight: 800, fontSize: '.78rem' }}>
+              <Plus size={13} /> Nouveau
             </button>
           </div>
         </div>
@@ -107,6 +154,34 @@ export default function DeliverablePage() {
         <div style={{ padding: '10px 18px', borderRadius: 9, background: msg.startsWith('✅') ? 'rgba(34,197,94,.08)' : 'rgba(239,68,68,.08)', border: `1px solid ${msg.startsWith('✅') ? 'rgba(34,197,94,.25)' : 'rgba(239,68,68,.25)'}`, color: msg.startsWith('✅') ? '#86efac' : '#fca5a5', fontSize: '.84rem', marginBottom: 4 }}>
           {msg}
         </div>
+      )}
+
+      {showNewForm && (
+        <section className="panel" style={{ background: 'rgba(250,204,21,.03)', border: '1px solid rgba(250,204,21,.12)' }}>
+          <h3 style={{ margin: '0 0 14px', fontSize: '.88rem', fontWeight: 800 }}>Nouveau livrable</h3>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+            <div style={{ flex: 1, minWidth: 200 }}>
+              <label style={{ fontSize: '.74rem', color: '#64748b', display: 'block', marginBottom: 4 }}>Titre</label>
+              <input value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="Ex: Mémoire Technique — Mission Data SACEM"
+                style={{ width: '100%', padding: '9px 12px', background: 'rgba(255,255,255,.05)', border: '1px solid rgba(148,163,184,.15)', borderRadius: 8, color: '#e2e8f0', fontSize: '.84rem', boxSizing: 'border-box' as const }} />
+            </div>
+            <div>
+              <label style={{ fontSize: '.74rem', color: '#64748b', display: 'block', marginBottom: 4 }}>Type</label>
+              <select value={newType} onChange={e => setNewType(e.target.value)}
+                style={{ padding: '9px 12px', background: '#0c1425', border: '1px solid rgba(148,163,184,.15)', borderRadius: 8, color: '#e2e8f0', fontSize: '.84rem' }}>
+                {Object.entries(TYPE_LABEL).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+            </div>
+            <button onClick={createDeliverable} disabled={!newTitle.trim()}
+              style={{ padding: '9px 16px', borderRadius: 9, border: 'none', background: '#facc15', color: '#060e18', cursor: 'pointer', fontWeight: 800, fontSize: '.84rem', opacity: !newTitle.trim() ? .5 : 1 }}>
+              Créer
+            </button>
+            <button onClick={() => setShowNewForm(false)}
+              style={{ padding: '9px 12px', borderRadius: 9, border: '1px solid rgba(148,163,184,.15)', background: 'none', color: '#64748b', cursor: 'pointer' }}>
+              <X size={13} />
+            </button>
+          </div>
+        </section>
       )}
 
       {loading ? (
@@ -119,7 +194,10 @@ export default function DeliverablePage() {
         </section>
       ) : (
         <div style={{ display: 'grid', gap: 8 }}>
-          {deliverables.map(d => {
+          {deliverables.filter(d =>
+            (filterStatus === 'all' || d.status === filterStatus) &&
+            (filterType === 'all' || d.deliverable_type === filterType)
+          ).map(d => {
             const isExp = expanded === d.id;
             const isEd  = editing === d.id;
             return (
@@ -168,6 +246,15 @@ export default function DeliverablePage() {
                       style={{ padding: '5px 9px', borderRadius: 7, border: `1px solid ${isEd ? 'rgba(250,204,21,.3)' : 'rgba(148,163,184,.15)'}`, background: isEd ? 'rgba(250,204,21,.08)' : 'none', color: isEd ? '#facc15' : '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: '.72rem' }}>
                       <Edit3 size={11} /> Éditer
                     </button>
+                    {/* Générer IA */}
+                    {d.status === 'draft' && (
+                      <button onClick={() => generateWithAI(d.id)} disabled={generating === d.id}
+                        style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid rgba(250,204,21,.25)', background: 'rgba(250,204,21,.06)', color: '#facc15', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: '.72rem' }}>
+                        {generating === d.id
+                          ? <><Loader2 size={11} style={{ animation: 'ds-spin .7s linear infinite' }} /> IA…</>
+                          : <><Sparkles size={11} /> Générer IA</>}
+                      </button>
+                    )}
                     {/* Approve */}
                     {d.status !== 'approved' && (
                       <button onClick={() => approve(d.id)}
