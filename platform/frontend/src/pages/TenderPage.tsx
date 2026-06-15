@@ -9,6 +9,9 @@ import type { CurrentUser } from '../api/authTypes';
 import { TenderWorkspace } from '../components/TenderWorkspace';
 import TenderPDFUpload from '../components/TenderPDFUpload';
 import WorkflowPanel from '../components/WorkflowPanel';
+import GoNoGoAdvisorPanel from '../components/GoNoGoAdvisorPanel';
+import WorkflowTimeline from '../components/WorkflowTimeline';
+import TenderAutoImportPanel from '../components/TenderAutoImportPanel';
 
 interface TenderOption  { id: number; title: string; status?: string; }
 interface BOAMPResult   { title: string; reference: string; buyer_name: string; summary: string; qualification_score: number; recommendation: string; source_url: string; }
@@ -51,6 +54,9 @@ export default function TenderPage() {
   const [total,   setTotal]   = useState(0);
   const [showBOAMP,    setShowBOAMP]    = useState(false);
   const [showMemoire,  setShowMemoire]  = useState(false);
+  const [showGoNoGo,   setShowGoNoGo]   = useState(false);
+  const [showTimeline, setShowTimeline] = useState(false);
+  const [showAutoImport, setShowAutoImport] = useState(false);
   const [memoireContent, setMemoireContent] = useState('');
   const [memoireLoading, setMemoireLoading] = useState(false);
   const [memoireGenerated, setMemoireGenerated] = useState(false);
@@ -133,8 +139,17 @@ export default function TenderPage() {
             <button style={S.btn(showWorkflow)} onClick={()=>{setShowWorkflow(v=>!v);setShowBOAMP(false);setShowMemoire(false);}}>
               <Zap size={14}/> Workflow IA
             </button>
-            <button style={S.btn(showMemoire)} onClick={()=>{setShowMemoire(v=>!v);setShowWorkflow(false);setShowBOAMP(false);}}>
+            <button style={S.btn(showMemoire)} onClick={()=>{setShowMemoire(v=>!v);setShowWorkflow(false);setShowBOAMP(false);setShowGoNoGo(false);setShowTimeline(false);setShowAutoImport(false);}}>
               <BookOpen size={14}/> Mémoire Technique
+            </button>
+            <button style={S.btn(showGoNoGo)} onClick={()=>{setShowGoNoGo(v=>!v);setShowMemoire(false);setShowWorkflow(false);setShowBOAMP(false);setShowTimeline(false);setShowAutoImport(false);}}>
+              <CheckCircle2 size={14}/> Go/No-Go IA
+            </button>
+            <button style={S.btn(showTimeline)} onClick={()=>{setShowTimeline(v=>!v);setShowGoNoGo(false);setShowMemoire(false);setShowWorkflow(false);setShowBOAMP(false);setShowAutoImport(false);}}>
+              <Zap size={14}/> Timeline
+            </button>
+            <button style={S.btn(showAutoImport)} onClick={()=>{setShowAutoImport(v=>!v);setShowTimeline(false);setShowGoNoGo(false);setShowMemoire(false);setShowWorkflow(false);setShowBOAMP(false);}}>
+              <Search size={14}/> Auto-Import IA
             </button>
           </div>
         </div>
@@ -285,6 +300,52 @@ export default function TenderPage() {
             </div>
           )}
         </section>
+      )}
+
+      {/* Go/No-Go Advisor */}
+      {showGoNoGo && activeTenderId && (
+        <section className="panel" style={{padding:0,overflow:'hidden'}}>
+          <div style={{padding:'14px 20px',borderBottom:'1px solid rgba(148,163,184,.08)',display:'flex',alignItems:'center',gap:10}}>
+            <CheckCircle2 size={15} color="#22c55e"/>
+            <span style={{fontWeight:700,fontSize:'.88rem'}}>Go/No-Go Advisor IA</span>
+            <div style={{marginLeft:'auto',display:'flex',gap:8,alignItems:'center'}}>
+              <select value={activeTenderId??''} onChange={e=>setActiveTenderId(Number(e.target.value))}
+                style={{padding:'6px 12px',borderRadius:8,background:'rgba(255,255,255,.05)',border:'1px solid rgba(148,163,184,.15)',color:'#e2e8f0',fontSize:'.82rem',minWidth:200}}>
+                {tenders.map(t => <option key={t.id} value={t.id}>#{t.id} — {t.title.slice(0,45)}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{padding:'16px 20px'}}>
+            <GoNoGoAdvisorPanel tenderId={activeTenderId} />
+          </div>
+        </section>
+      )}
+
+      {/* Workflow Timeline */}
+      {showTimeline && activeTenderId && (
+        <section className="panel" style={{padding:0,overflow:'hidden'}}>
+          <div style={{padding:'14px 20px',borderBottom:'1px solid rgba(148,163,184,.08)',display:'flex',alignItems:'center',gap:10}}>
+            <Zap size={15} color="#facc15"/>
+            <span style={{fontWeight:700,fontSize:'.88rem'}}>Timeline Workflow</span>
+            <div style={{marginLeft:'auto',display:'flex',gap:8,alignItems:'center'}}>
+              <select value={activeTenderId??''} onChange={e=>setActiveTenderId(Number(e.target.value))}
+                style={{padding:'6px 12px',borderRadius:8,background:'rgba(255,255,255,.05)',border:'1px solid rgba(148,163,184,.15)',color:'#e2e8f0',fontSize:'.82rem',minWidth:200}}>
+                {tenders.map(t => <option key={t.id} value={t.id}>#{t.id} — {t.title.slice(0,45)}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{padding:'16px 20px'}}>
+            <WorkflowTimeline tenderId={activeTenderId} token={accessKey} />
+          </div>
+        </section>
+      )}
+
+      {/* Auto-Import IA */}
+      {showAutoImport && (
+        <TenderAutoImportPanel
+          token={accessKey}
+          onImported={(id) => { if(id) setActiveTenderId(id); loadTenders(); setShowAutoImport(false); setShowWorkflow(true); }}
+        />
       )}
 
       {/* Tenders list + editor */}

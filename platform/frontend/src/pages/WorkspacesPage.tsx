@@ -27,6 +27,7 @@ export default function WorkspacesPage() {
 
   // Invite form
   const [inviteUserId, setInviteUserId] = useState('');
+  const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('member');
   const [inviting, setInviting] = useState(false);
 
@@ -65,12 +66,22 @@ export default function WorkspacesPage() {
 
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault();
-    if (!selected || !inviteUserId) return;
+    if (!selected || (!inviteUserId && !inviteEmail)) return;
     setInviting(true);
     try {
-      await apiRequest(`/workspaces/${selected.id}/members`, { method: 'POST', body: JSON.stringify({ user_id: parseInt(inviteUserId), role: inviteRole }) }, token);
-      setMsg({ ok: true, text: 'Membre ajouté.' });
-      setInviteUserId('');
+      // Priorité: email → résolution en user_id via /team, sinon user_id direct
+      let userId = inviteUserId ? parseInt(inviteUserId) : null;
+      if (!userId && inviteEmail) {
+        try {
+          const members = await apiRequest<{id:number;email:string}[]>('/team', {}, token);
+          const found = members.find(m => m.email.toLowerCase() === inviteEmail.toLowerCase());
+          if (found) userId = found.id;
+          else { setMsg({ ok: false, text: `Aucun utilisateur avec l'email ${inviteEmail}. Invitez-le d'abord via l'onglet Équipe.` }); return; }
+        } catch { setMsg({ ok: false, text: 'Impossible de résoudre l'email.' }); return; }
+      }
+      await apiRequest(`/workspaces/${selected.id}/members`, { method: 'POST', body: JSON.stringify({ user_id: userId, role: inviteRole }) }, token);
+      setMsg({ ok: true, text: `Membre ${inviteEmail || `#${userId}`} ajouté au workspace.` });
+      setInviteUserId(''); setInviteEmail('');
       await loadMembers(selected.id);
     } catch (err) { setMsg({ ok: false, text: err instanceof Error ? err.message : 'Erreur' }); }
     finally { setInviting(false); }
@@ -267,7 +278,7 @@ export default function WorkspacesPage() {
               {/* Invite */}
               <div style={{ padding: '14px 20px', borderTop: '1px solid rgba(148,163,184,.06)', background: 'rgba(255,255,255,.01)' }}>
                 <form onSubmit={handleInvite} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <input style={{ ...s.inp, flex: 1 }} value={inviteUserId} onChange={e => setInviteUserId(e.target.value)} placeholder="ID utilisateur" type="number" required />
+                  <input style={{ ...s.inp, flex: 1 }} value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="Email du membre (ex: jean@company.com)" type="email" />
                   <select value={inviteRole} onChange={e => setInviteRole(e.target.value)} style={{ ...s.inp, width: 'auto', background: '#0c1425' }}>
                     {['admin', 'member', 'viewer'].map(r => <option key={r} value={r}>{r}</option>)}
                   </select>

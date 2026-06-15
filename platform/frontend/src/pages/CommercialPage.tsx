@@ -8,8 +8,10 @@ import { apiRequest, tokenStorage } from '../api/client';
 import ContactsPanel from '../components/ContactsPanel';
 import KanbanPipeline from '../components/KanbanPipeline';
 import CrmAutomationPanel from '../components/CrmAutomationPanel';
+import OpportunityKanban from '../components/OpportunityKanban';
+import OpportunityForm from '../components/OpportunityForm';
 
-type Tab = 'overview' | 'pipeline' | 'contacts' | 'automation';
+type Tab = 'overview' | 'pipeline' | 'kanban-opps' | 'new-opp' | 'contacts' | 'automation';
 
 interface CrmKpi {
   organizations: number;
@@ -239,6 +241,8 @@ export default function CommercialPage() {
         {tabBtn('pipeline',   'Pipeline Kanban',     Kanban)}
         {tabBtn('contacts',   'Contacts CRM',        Users)}
         {tabBtn('automation', 'Automatisation IA',   Zap)}
+        {tabBtn('kanban-opps','Opportunités Kanban',  TrendingUp)}
+        {tabBtn('new-opp',    'Nouvelle opportunité', Plus)}
       </div>
 
       {/* Overview */}
@@ -330,7 +334,14 @@ export default function CommercialPage() {
 
       {tab === 'pipeline'   && <KanbanPipeline />}
       {tab === 'contacts'   && <ContactsPanel />}
-      {tab === 'automation' && <CrmAutomationPanel />}
+      {tab === 'automation'  && <CrmAutomationPanel />}
+      {tab === 'kanban-opps' && <OpportunityKanban />}
+      {tab === 'new-opp'     && (
+        <section className="panel">
+          <h2 style={{ margin: '0 0 16px', fontSize: '1rem', fontWeight: 700 }}>Créer une opportunité</h2>
+          <OpportunityForm onSaved={() => setTab('kanban-opps')} onCancel={() => setTab('overview')} />
+        </section>
+      )}
 
       <style>{`
         @keyframes ds-spin { to { transform: rotate(360deg); } }

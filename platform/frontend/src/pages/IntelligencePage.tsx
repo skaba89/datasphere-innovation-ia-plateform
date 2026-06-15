@@ -18,6 +18,8 @@ import {
   ChevronRight, Download, Loader2, RefreshCw, Target, TrendingUp, Zap,
 } from 'lucide-react';
 import { apiRequest, tokenStorage } from '../api/client';
+import GoNoGoRadarChart from '../components/GoNoGoRadarChart';
+import GanttChart from '../components/GanttChart';
 
 interface ForecastMonth { month: string; pessimistic: number; base: number; optimistic: number }
 interface IntelligenceData {
@@ -314,6 +316,21 @@ export default function IntelligencePage() {
       </section>
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      {/* Go/No-Go Radar */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <section className="panel">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+            <span style={{ fontSize: '.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.06em' }}>Radar Go/No-Go</span>
+          </div>
+          <GoNoGoRadarChart />
+        </section>
+        <section className="panel">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+            <span style={{ fontSize: '.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.06em' }}>Planning Gantt</span>
+          </div>
+          <GanttChart />
+        </section>
+      </div>
     </main>
   );
 }

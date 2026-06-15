@@ -166,6 +166,124 @@ function buildFilename(baseName: string, format: ExportFormat): string {
 
 
 
+// ── CSV Import Panel ─────────────────────────────────────────────────────────
+function CSVImportPanel({ token }: { token: string | null }) {
+  const [type, setType] = useState<'organizations' | 'contacts'>('organizations');
+  const [file, setFile] = useState<File | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [result, setResult] = useState<{imported:number;errors:string[]} | null>(null);
+
+  const API = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+
+  async function downloadTemplate() {
+    const resp = await fetch(`${API}/csv-import/template/${type}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `template_${type}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function handleImport() {
+    if (!file || !token) return;
+    setImporting(true); setResult(null);
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const resp = await fetch(`${API}/csv-import/${type}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: form,
+      });
+      const data = await resp.json();
+      setResult({ imported: data.imported ?? 0, errors: data.errors ?? [] });
+    } catch (e) { setResult({ imported: 0, errors: [String(e)] }); }
+    finally { setImporting(false); }
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ display: 'flex', gap: 6 }}>
+        {(['organizations', 'contacts'] as const).map(t => (
+          <button key={t} onClick={() => setType(t)} style={{
+            padding: '4px 10px', borderRadius: 7, border: `1px solid ${type===t?'rgba(250,204,21,.4)':'rgba(148,163,184,.15)'}`,
+            background: type===t?'rgba(250,204,21,.08)':'none', color: type===t?'#facc15':'#64748b',
+            cursor: 'pointer', fontSize: '.72rem', fontWeight: 600,
+          }}>
+            {t === 'organizations' ? 'Organisations' : 'Contacts'}
+          </button>
+        ))}
+      </div>
+      <button onClick={downloadTemplate} style={{ padding: '6px 10px', borderRadius: 7, border: '1px solid rgba(148,163,184,.15)', background: 'none', color: '#64748b', cursor: 'pointer', fontSize: '.74rem', textAlign: 'left' as const }}>
+        ⬇ Télécharger le template CSV
+      </button>
+      <input type="file" accept=".csv" onChange={e => setFile(e.target.files?.[0] ?? null)}
+        style={{ fontSize: '.74rem', color: '#64748b' }} />
+      <button onClick={handleImport} disabled={!file || importing}
+        style={{ padding: '8px 12px', borderRadius: 8, border: 'none', background: '#facc15', color: '#060e18', cursor: 'pointer', fontWeight: 800, fontSize: '.78rem', opacity: !file?0.5:1 }}>
+        {importing ? '⏳ Import…' : '📥 Importer'}
+      </button>
+      {result && (
+        <div style={{ fontSize: '.74rem', padding: '8px 10px', borderRadius: 8, background: result.errors.length?'rgba(239,68,68,.06)':'rgba(34,197,94,.06)', color: result.errors.length?'#fca5a5':'#86efac', border: `1px solid ${result.errors.length?'rgba(239,68,68,.2)':'rgba(34,197,94,.2)'}` }}>
+          {result.imported} ligne(s) importée(s)
+          {result.errors.length > 0 && <div style={{ marginTop: 4 }}>⚠ {result.errors.slice(0,3).join(' | ')}</div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Weekly Report Panel ────────────────────────────────────────────────────────
+function WeeklyReportPanel({ token }: { token: string | null }) {
+  const [preview, setPreview] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  async function loadPreview() {
+    if (!token) return;
+    setLoading(true);
+    try {
+      const data = await apiRequest<{subject:string;body_html:string;body_text:string}>('/reports/weekly/preview', {}, token);
+      setPreview(data.body_text || data.subject || 'Rapport généré');
+    } catch { setPreview('Erreur chargement aperçu.'); }
+    finally { setLoading(false); }
+  }
+
+  async function sendNow() {
+    if (!token) return;
+    try {
+      await apiRequest('/reports/weekly/send', { method: 'POST' }, token);
+      setSent(true);
+      setTimeout(() => setSent(false), 4000);
+    } catch { }
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <p style={{ fontSize: '.74rem', color: '#64748b', margin: 0, lineHeight: 1.5 }}>
+        Rapport hebdomadaire automatique : AOs actifs, livrables, pipeline, performance agents.
+      </p>
+      <div style={{ display: 'flex', gap: 6 }}>
+        <button onClick={loadPreview} disabled={loading}
+          style={{ padding: '7px 12px', borderRadius: 8, border: '1px solid rgba(148,163,184,.15)', background: 'none', color: '#64748b', cursor: 'pointer', fontSize: '.76rem', fontWeight: 600 }}>
+          {loading ? '⏳ …' : '👁 Aperçu'}
+        </button>
+        <button onClick={sendNow}
+          style={{ padding: '7px 12px', borderRadius: 8, border: 'none', background: '#facc15', color: '#060e18', cursor: 'pointer', fontWeight: 800, fontSize: '.76rem' }}>
+          {sent ? '✅ Envoyé !' : '📨 Envoyer maintenant'}
+        </button>
+      </div>
+      {preview && (
+        <pre style={{ whiteSpace: 'pre-wrap', fontSize: '.72rem', color: '#475569', background: 'rgba(0,0,0,.2)', padding: '10px 12px', borderRadius: 8, maxHeight: 160, overflow: 'auto', margin: 0 }}>
+          {preview.slice(0, 600)}
+        </pre>
+      )}
+    </div>
+  );
+}
+
 // ── Server-side CSV Quick Downloads ──────────────────────────────────────────
 function QuickCSVDownloads({ token }: { token: string | null }) {
   const API = import.meta.env.VITE_API_BASE_URL || '/api/v1';
@@ -319,6 +437,31 @@ export default function DataExportPage() {
 
       {error && <div className="team-alert error"><AlertTriangle size={16} /> {error}</div>}
       {lastUpdated && <p className="compact-subtitle">Dernière actualisation : {new Date(lastUpdated).toLocaleString('fr-FR')}</p>}
+
+      {/* Quick CSV + Import CSV + Rapport hebdo */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 8 }}>
+
+        {/* Export CSV rapide */}
+        <section className="panel" style={{ padding: '18px 20px' }}>
+          <QuickCSVDownloads token={token} />
+        </section>
+
+        {/* Import CSV */}
+        <section className="panel" style={{ padding: '18px 20px' }}>
+          <h3 style={{ margin: '0 0 12px', fontSize: '.82rem', fontWeight: 800, color: '#facc15' }}>
+            📥 Import CSV
+          </h3>
+          <CSVImportPanel token={token} />
+        </section>
+
+        {/* Rapport hebdomadaire */}
+        <section className="panel" style={{ padding: '18px 20px' }}>
+          <h3 style={{ margin: '0 0 12px', fontSize: '.82rem', fontWeight: 800, color: '#facc15' }}>
+            📊 Rapport hebdomadaire
+          </h3>
+          <WeeklyReportPanel token={token} />
+        </section>
+      </div>
 
       <section className="data-export-grid">
         {DATASETS.map(dataset => {

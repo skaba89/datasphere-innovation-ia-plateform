@@ -8,8 +8,11 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   CheckCircle, ChevronDown, ChevronUp, Download,
   Edit3, FileText, Plus, RefreshCw, Save, X,
-  Sparkles, Loader2, Brain, GitMerge, Filter,
+  Sparkles, Loader2, Brain, GitMerge, Filter, History, Paperclip,
 } from 'lucide-react';
+import DeliverableVersionsPanel from '../components/DeliverableVersionsPanel';
+import FileAttachments from '../components/FileAttachments';
+import EmailPreviewModal from '../components/EmailPreviewModal';
 import { apiRequest, tokenStorage } from '../api/client';
 import { API_BASE } from '../api/config';
 
@@ -39,6 +42,9 @@ export default function DeliverablePage() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
   const [generating, setGenerating] = useState<number | null>(null);
+  const [showVersions, setShowVersions] = useState<number | null>(null);
+  const [showAttachments, setShowAttachments] = useState<number | null>(null);
+  const [emailPreview, setEmailPreview] = useState<{id:number;title:string} | null>(null);
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [showNewForm, setShowNewForm] = useState(false);
@@ -246,6 +252,23 @@ export default function DeliverablePage() {
                       style={{ padding: '5px 9px', borderRadius: 7, border: `1px solid ${isEd ? 'rgba(250,204,21,.3)' : 'rgba(148,163,184,.15)'}`, background: isEd ? 'rgba(250,204,21,.08)' : 'none', color: isEd ? '#facc15' : '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: '.72rem' }}>
                       <Edit3 size={11} /> Éditer
                     </button>
+                    {/* Email Preview */}
+                    {d.status === 'approved' && (
+                      <button onClick={() => setEmailPreview({ id: d.id, title: d.title })}
+                        style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid rgba(14,165,233,.25)', background: 'rgba(14,165,233,.06)', color: '#38bdf8', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: '.72rem' }}>
+                        ✉ Email
+                      </button>
+                    )}
+                    {/* Versions */}
+                    <button onClick={() => setShowVersions(showVersions === d.id ? null : d.id)}
+                      style={{ padding: '5px 9px', borderRadius: 7, border: `1px solid ${showVersions===d.id?'rgba(139,92,246,.3)':'rgba(148,163,184,.15)'}`, background: showVersions===d.id?'rgba(139,92,246,.08)':'none', color: showVersions===d.id?'#c4b5fd':'#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: '.72rem' }}>
+                      <History size={11} /> v{d.version}
+                    </button>
+                    {/* Pièces jointes */}
+                    <button onClick={() => setShowAttachments(showAttachments === d.id ? null : d.id)}
+                      style={{ padding: '5px 9px', borderRadius: 7, border: `1px solid ${showAttachments===d.id?'rgba(34,197,94,.3)':'rgba(148,163,184,.15)'}`, background: showAttachments===d.id?'rgba(34,197,94,.08)':'none', color: showAttachments===d.id?'#86efac':'#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: '.72rem' }}>
+                      <Paperclip size={11} /> Fichiers
+                    </button>
                     {/* Générer IA */}
                     {d.status === 'draft' && (
                       <button onClick={() => generateWithAI(d.id)} disabled={generating === d.id}
@@ -302,11 +325,47 @@ export default function DeliverablePage() {
                         )}
                       </div>
                     )}
+
+                    {/* Historique des versions */}
+                    {showVersions === d.id && (
+                      <div style={{ marginTop: 16, borderTop: '1px solid rgba(148,163,184,.08)', paddingTop: 14 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+                          <History size={13} color="#c4b5fd" />
+                          <span style={{ fontSize: '.8rem', fontWeight: 700, color: '#c4b5fd' }}>Historique des versions</span>
+                        </div>
+                        <DeliverableVersionsPanel
+                          deliverableId={d.id}
+                          currentVersion={d.version}
+                          onRestored={() => { load(); setShowVersions(null); }}
+                        />
+                      </div>
+                    )}
+
+                    {/* Pièces jointes */}
+                    {showAttachments === d.id && (
+                      <div style={{ marginTop: 16, borderTop: '1px solid rgba(148,163,184,.08)', paddingTop: 14 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+                          <Paperclip size={13} color="#86efac" />
+                          <span style={{ fontSize: '.8rem', fontWeight: 700, color: '#86efac' }}>Pièces jointes</span>
+                        </div>
+                        <FileAttachments deliverableId={d.id} />
+                      </div>
+                    )}
                   </div>
                 )}
               </section>
             );
           })}
+        </div>
+      )}
+      {/* Email Preview Modal */}
+      {emailPreview && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,.75)', backdropFilter: 'blur(4px)', padding: 16 }}>
+          <EmailPreviewModal
+            deliverableId={emailPreview.id}
+            deliverableTitle={emailPreview.title}
+            onClose={() => setEmailPreview(null)}
+          />
         </div>
       )}
       <style>{`@keyframes ds-spin{to{transform:rotate(360deg)}}`}</style>
