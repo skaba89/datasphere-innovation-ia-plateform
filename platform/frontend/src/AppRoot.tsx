@@ -48,6 +48,7 @@ import WorkspacesPage from './pages/WorkspacesPage';
 import SettingsPage from './pages/SettingsPage';
 import CalculatorPage from './pages/CalculatorPage';
 import InvoicingPage from './pages/InvoicingPage';
+import AnalyticsPage from './pages/AnalyticsPage';
 import PricingPage from './pages/PricingPage';
 import DataExportPage from './pages/DataExportPage';
 import LinkedInAgentPage from './pages/LinkedInAgentPage';
@@ -88,7 +89,8 @@ type RootView =
   | 'settings'
   | 'calculator'
   | 'pricing'
-  | 'invoicing';
+  | 'invoicing'
+  | 'analytics';
 
 type NavTab = {
   key: RootView;
@@ -932,6 +934,7 @@ export default function AppRoot() {
             {activeView === 'calculator'         && <CalculatorPage />}
             {activeView === 'pricing'            && <PricingPage />}
             {activeView === 'invoicing'          && <InvoicingPage />}
+            {activeView === 'analytics'          && <AnalyticsPage />}
           </ErrorBoundary>
         </main>
 

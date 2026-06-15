@@ -151,6 +151,7 @@ function OAuthPanel({ token, onStatusChange }: { token: string; onStatusChange: 
 
 export default function LinkedInAgentPage() {
   const token = tokenStorage.get() ?? '';
+  const [pageView, setPageView] = useState<PageView>('generate');
   const [topicType,      setTopicType]      = useState('data_engineering');
   const [customTopic,    setCustomTopic]    = useState('');
   const [tenders,        setTenders]        = useState<{id:number;title:string}[]>([]);
@@ -218,10 +219,25 @@ export default function LinkedInAgentPage() {
   const charColor = charCount > charLimit ? '#fca5a5' : charCount > charLimit * 0.9 ? '#fde68a' : '#86efac';
   const canPublish = oauthStatus?.has_token && !oauthStatus.is_expired;
 
-  if (!token) return <main className="app-shell"><section className="panel"><h1>Agent LinkedIn</h1><p>Connecte-toi d'abord.</p></section></main>;
+  if (!token) return <main className="app-shell"><section className="panel"><h1>Agent LinkedIn</h1><p>Connectez-vous d'abord.</p></section></main>;
 
   return (
     <main className="app-shell">
+      <section className="panel" style={{ padding: '12px 20px' }}>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {(['generate','calendar'] as PageView[]).map(v => (
+            <button key={v} onClick={() => setPageView(v)} style={{
+              padding: '7px 16px', borderRadius: 8, border: `1px solid ${pageView===v?'rgba(250,204,21,.3)':'rgba(148,163,184,.1)'}`,
+              background: pageView===v?'rgba(250,204,21,.07)':'none', color: pageView===v?'#facc15':'#64748b',
+              cursor: 'pointer', fontSize: '.8rem', fontWeight: pageView===v?700:500,
+            }}>
+              {v === 'generate' ? '✍️ Générer & Publier' : '📅 Calendrier éditorial'}
+            </button>
+          ))}
+        </div>
+      </section>
+      {pageView === 'calendar' && <LinkedInCalendar token={token} />}
+      {pageView === 'generate' && <>
       <section className="panel">
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
           <div>
@@ -364,6 +380,161 @@ export default function LinkedInAgentPage() {
       </div>
 
       <style>{`@keyframes ds-spin{to{transform:rotate(360deg)}} @keyframes ds-pulse{0%,100%{opacity:.4}50%{opacity:.7}}`}</style>
+      </>}
     </main>
+  );
+}
+
+// ── Calendrier éditorial ──────────────────────────────────────────────────────
+function LinkedInCalendar({ token }: { token: string }) {
+  const [posts, setPosts]   = useState<any[]>([]);
+  const [stats, setStats]   = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [publishing, setPublishing] = useState<number | null>(null);
+  const [msg, setMsg] = useState<{ok:boolean;text:string}|null>(null);
+
+  async function load() {
+    setLoading(true);
+    try {
+      const [p, s] = await Promise.all([
+        apiRequest<any[]>('/linkedin/schedule', {}, token),
+        apiRequest<any>('/linkedin/schedule/stats', {}, token),
+      ]);
+      setPosts(Array.isArray(p) ? p : []);
+      setStats(s);
+    } catch { }
+    finally { setLoading(false); }
+  }
+
+  useEffect(() => { load(); }, []);
+
+  async function generateCalendar() {
+    setGenerating(true); setMsg(null);
+    try {
+      const r = await apiRequest<{created:number}>('/linkedin/schedule/calendar', { method: 'POST', body: JSON.stringify({ auto_generate: false }) }, token);
+      setMsg({ ok: true, text: `✅ ${r.created} posts planifiés sur 30 jours` });
+      load();
+    } catch (e) { setMsg({ ok: false, text: String(e) }); }
+    finally { setGenerating(false); }
+  }
+
+  async function publishNow(id: number) {
+    setPublishing(id); setMsg(null);
+    try {
+      const r = await apiRequest<any>(`/linkedin/schedule/${id}/publish-now`, { method: 'POST' }, token);
+      setMsg({ ok: true, text: `✅ Publié : ${r.content}` });
+      load();
+    } catch (e) { setMsg({ ok: false, text: String(e).slice(0, 100) }); }
+    finally { setPublishing(null); }
+  }
+
+  async function cancel(id: number) {
+    try {
+      await apiRequest(`/linkedin/schedule/${id}`, { method: 'DELETE' }, token);
+      setPosts(p => p.filter(x => x.id !== id));
+    } catch { }
+  }
+
+  const STATUS_CFG: Record<string, {color:string;label:string}> = {
+    pending:   { color: '#f59e0b', label: 'Planifié' },
+    generated: { color: '#3b82f6', label: 'Généré' },
+    published: { color: '#22c55e', label: 'Publié' },
+    failed:    { color: '#ef4444', label: 'Échoué' },
+    cancelled: { color: '#64748b', label: 'Annulé' },
+  };
+
+  function fmtDt(iso: string) {
+    return new Date(iso).toLocaleString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+  }
+
+  return (
+    <div style={{ display: 'grid', gap: 16 }}>
+      {/* Stats */}
+      {stats && (
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          {[
+            { label: 'Total planifiés', val: stats.total,          color: '#64748b' },
+            { label: 'Publiés',         val: stats.published,      color: '#22c55e' },
+            { label: 'En attente',      val: stats.pending,        color: '#f59e0b' },
+            { label: 'Échecs',          val: stats.failed,         color: '#ef4444' },
+            { label: 'Taux publication', val: `${stats.publication_rate}%`, color: '#facc15' },
+          ].map(s => (
+            <div key={s.label} style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(148,163,184,.08)', borderRadius: 12, padding: '12px 18px' }}>
+              <div style={{ fontSize: '1.2rem', fontWeight: 900, color: s.color }}>{s.val}</div>
+              <div style={{ fontSize: '.72rem', color: '#475569', marginTop: 2 }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Actions */}
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+        <button onClick={generateCalendar} disabled={generating} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '10px 18px', borderRadius: 10, border: 'none', background: '#facc15', color: '#060d1a', cursor: 'pointer', fontWeight: 800, fontSize: '.86rem' }}>
+          {generating ? '⏳ Génération…' : '📅 Générer calendrier 30 jours'}
+        </button>
+        <button onClick={load} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 14px', borderRadius: 10, border: '1px solid rgba(148,163,184,.12)', background: 'none', color: '#64748b', cursor: 'pointer', fontSize: '.82rem' }}>
+          🔄 Actualiser
+        </button>
+        {stats?.next_scheduled_at && (
+          <span style={{ fontSize: '.76rem', color: '#475569' }}>
+            Prochain post : <strong style={{ color: '#e2e8f0' }}>{fmtDt(stats.next_scheduled_at)}</strong>
+          </span>
+        )}
+      </div>
+
+      {msg && (
+        <div style={{ padding: '11px 16px', borderRadius: 10, background: msg.ok?'rgba(34,197,94,.07)':'rgba(239,68,68,.07)', border: `1px solid ${msg.ok?'rgba(34,197,94,.2)':'rgba(239,68,68,.2)'}`, color: msg.ok?'#86efac':'#fca5a5', fontSize: '.84rem' }}>
+          {msg.text}
+        </div>
+      )}
+
+      {/* Liste */}
+      {loading ? (
+        <div style={{ color: '#475569', padding: 24, textAlign: 'center' }}>Chargement…</div>
+      ) : posts.length === 0 ? (
+        <div style={{ padding: '48px', textAlign: 'center', color: '#334155' }}>
+          <div style={{ fontSize: '2rem', marginBottom: 12 }}>📅</div>
+          <p style={{ margin: 0, fontSize: '.88rem' }}>Aucun post planifié. Cliquez sur "Générer calendrier 30 jours".</p>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gap: 6 }}>
+          {posts.map(p => {
+            const sc = STATUS_CFG[p.status] ?? { color: '#64748b', label: p.status };
+            return (
+              <div key={p.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 14, padding: '14px 18px', background: 'rgba(255,255,255,.02)', border: '1px solid rgba(148,163,184,.07)', borderRadius: 12, transition: 'background .15s' }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: sc.color, flexShrink: 0, marginTop: 6, boxShadow: `0 0 6px ${sc.color}` }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <span style={{ fontSize: '.74rem', fontWeight: 700, color: '#64748b', background: 'rgba(255,255,255,.04)', padding: '2px 8px', borderRadius: 6 }}>{p.topic_type}</span>
+                    <span style={{ fontSize: '.72rem', color: sc.color, fontWeight: 700 }}>{sc.label}</span>
+                    <span style={{ fontSize: '.7rem', color: '#475569', marginLeft: 'auto' }}>{fmtDt(p.scheduled_at)}</span>
+                  </div>
+                  {p.content ? (
+                    <p style={{ margin: 0, fontSize: '.78rem', color: '#64748b', lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}>
+                      {p.content}
+                    </p>
+                  ) : (
+                    <p style={{ margin: 0, fontSize: '.74rem', color: '#334155', fontStyle: 'italic' }}>Contenu généré à la publication</p>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                  {p.status === 'pending' && (
+                    <>
+                      <button onClick={() => publishNow(p.id)} disabled={publishing === p.id} style={{ padding: '5px 10px', borderRadius: 7, border: '1px solid rgba(0,119,181,.25)', background: 'rgba(0,119,181,.08)', color: '#93c5fd', cursor: 'pointer', fontSize: '.74rem', fontWeight: 600 }}>
+                        {publishing === p.id ? '⏳' : '▶ Publier'}
+                      </button>
+                      <button onClick={() => cancel(p.id)} style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid rgba(239,68,68,.15)', background: 'none', color: '#fca5a5', cursor: 'pointer', fontSize: '.72rem' }}>
+                        ✕
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }

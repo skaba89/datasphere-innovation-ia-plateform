@@ -4,6 +4,7 @@ from app.db.session import get_db
 
 from app.api.v1.endpoints import (
     invoices,
+    linkedin_schedule,
     proposals,
     memoire_technique,
     settings_admin,
