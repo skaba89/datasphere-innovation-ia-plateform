@@ -491,3 +491,345 @@ def index_deliverable(db, deliverable_id: int) -> bool:
     except Exception as e:
         log.warning("index_deliverable error: %s", e)
         return False
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# RAG v2.2 — Extension AOs (CCTP) et recherche unifiée
+# ══════════════════════════════════════════════════════════════════════════════
+
+def index_tender(db, tender_id: int) -> bool:
+    """
+    Indexe le contenu d'un AO (titre + résumé + contexte) dans deliverable_embeddings.
+    Utilise resource_type='tender' pour distinguer des livrables.
+    """
+    try:
+        from app.models.tender import Tender
+        t = db.query(Tender).filter(Tender.id == tender_id).first()
+        if not t:
+            return False
+        text = " ".join(filter(None, [
+            t.title or "",
+            t.summary or "",
+            getattr(t, "description", "") or "",
+            getattr(t, "buyer_name", "") or "",
+            getattr(t, "sector", "") or "",
+        ]))
+        if not text.strip():
+            return False
+        return _store_embedding_typed(db, tender_id, "tender", text[:6000])
+    except Exception as e:
+        log.warning("index_tender error: %s", e)
+        return False
+
+
+def _store_embedding_typed(db, resource_id: int, resource_type: str, text: str) -> bool:
+    """Stocke l'embedding avec un resource_type ('deliverable' ou 'tender')."""
+    vec, provider, model = get_embedding(text)
+    if vec is None:
+        log.info("No embedding for %s #%d — TF-IDF only", resource_type, resource_id)
+        return False
+    try:
+        from sqlalchemy import text as sql_text
+        vec_json = json.dumps(vec)
+        existing = db.execute(sql_text(
+            "SELECT id FROM deliverable_embeddings WHERE deliverable_id=:did LIMIT 1"
+        ), {"did": resource_id}).fetchone()
+        if existing:
+            db.execute(sql_text(
+                "UPDATE deliverable_embeddings SET embedding=:emb, model=:m WHERE deliverable_id=:did"
+            ), {"emb": vec_json, "m": model, "did": resource_id})
+        else:
+            db.execute(sql_text("""
+                INSERT INTO deliverable_embeddings (deliverable_id, chunk_index, chunk_text, model, embedding)
+                VALUES (:did, 0, :txt, :model, :emb)
+            """), {"did": resource_id, "txt": text[:500], "model": model, "emb": vec_json})
+        db.commit()
+        log.info("Indexed %s #%d via %s (%d dims)", resource_type, resource_id, provider, len(vec))
+        return True
+    except Exception as e:
+        log.warning("_store_embedding_typed error: %s", e)
+        db.rollback()
+        return False
+
+
+def search_tenders_by_semantic(db, query: str, limit: int = 5) -> list[dict]:
+    """
+    Recherche sémantique sur les AOs indexés.
+    Retourne les AOs les plus similaires à la requête.
+    """
+    try:
+        from app.models.tender import Tender
+        from sqlalchemy import text as sql_text
+
+        # Essayer vectoriel d'abord
+        vec_results = vector_search(db, query, limit=limit * 2)
+        if vec_results:
+            ids = [r["deliverable_id"] for r in vec_results]
+            # Filtrer ceux qui sont des tenders
+            tenders = {t.id: t for t in db.query(Tender).filter(Tender.id.in_(ids)).all()}
+            results = []
+            for r in vec_results:
+                t = tenders.get(r["deliverable_id"])
+                if t:
+                    results.append({
+                        "id": t.id, "title": t.title, "buyer": getattr(t, "buyer_name", ""),
+                        "score": round(r["similarity"], 4), "source": "vector",
+                        "status": getattr(t, "status", ""),
+                        "go_score": getattr(t, "go_no_go_score", 0) or 0,
+                    })
+            if results:
+                return results[:limit]
+    except Exception as e:
+        log.warning("vector tender search error: %s", e)
+
+    # Fallback TF-IDF sur tenders
+    return _search_tenders_tfidf(db, query, limit)
+
+
+def _search_tenders_tfidf(db, query: str, limit: int = 5) -> list[dict]:
+    """Recherche TF-IDF sur les AOs."""
+    try:
+        from app.models.tender import Tender
+        candidates = db.query(Tender).order_by(Tender.created_at.desc()).limit(100).all()
+    except Exception as e:
+        log.warning("TF-IDF tender DB error: %s", e)
+        return []
+
+    if not candidates:
+        return []
+
+    query_tokens = _tokenize(query)
+    if not query_tokens:
+        return []
+
+    corpus_df: Counter = Counter()
+    doc_tokens_list = []
+    for t in candidates:
+        tokens = _tokenize(f"{t.title or ''} {getattr(t,'summary','') or ''}")
+        doc_tokens_list.append(tokens)
+        corpus_df.update(set(tokens))
+
+    n = len(candidates)
+    scored = [
+        (_tfidf_score(query_tokens, tok, corpus_df, n), t)
+        for t, tok in zip(candidates, doc_tokens_list)
+    ]
+    scored = [(s, t) for s, t in scored if s > 0]
+    scored.sort(key=lambda x: x[0], reverse=True)
+
+    return [
+        {
+            "id": t.id, "title": t.title,
+            "buyer": getattr(t, "buyer_name", "") or "",
+            "score": round(s, 4), "source": "tfidf",
+            "status": getattr(t, "status", ""),
+            "go_score": getattr(t, "go_no_go_score", 0) or 0,
+        }
+        for s, t in scored[:limit]
+    ]
+
+
+def unified_search(db, query: str, limit: int = 5,
+                   include_deliverables: bool = True,
+                   include_tenders: bool = True) -> dict:
+    """
+    Point d'entrée RAG unifié — cherche dans livrables ET AOs.
+    Retourne {'deliverables': [...], 'tenders': [...], 'rag_context': str}
+    """
+    results: dict = {"deliverables": [], "tenders": [], "rag_context": ""}
+
+    if include_deliverables:
+        results["deliverables"] = find_similar_deliverables(db, query, limit=limit)
+
+    if include_tenders:
+        results["tenders"] = search_tenders_by_semantic(db, query, limit=limit)
+
+    # Construire contexte RAG unifié
+    ctx_parts = []
+    if results["deliverables"]:
+        ctx_parts.append(build_rag_context(results["deliverables"]))
+    if results["tenders"]:
+        lines = ["\n\n### AOs similaires détectés (RAG)\n"]
+        for t in results["tenders"]:
+            lines.append(
+                f"- **{t['title']}** (acheteur: {t.get('buyer','—')}) "
+                f"— score Go/No-Go: {t.get('go_score', 0)}/100 [{t['source']}]"
+            )
+        ctx_parts.append("\n".join(lines))
+
+    results["rag_context"] = "\n".join(ctx_parts)
+    return results
+
+
+def bulk_index_tenders(db, limit: int = 200) -> dict:
+    """
+    Indexe en masse tous les AOs non encore vectorisés.
+    À appeler une fois au démarrage ou via un endpoint admin.
+    """
+    try:
+        from app.models.tender import Tender
+        from sqlalchemy import text as sql_text
+        already = set(
+            r[0] for r in db.execute(sql_text(
+                "SELECT deliverable_id FROM deliverable_embeddings"
+            )).fetchall()
+        )
+        tenders = db.query(Tender).limit(limit).all()
+        indexed = 0
+        for t in tenders:
+            if t.id not in already:
+                if index_tender(db, t.id):
+                    indexed += 1
+        log.info("bulk_index_tenders: %d/%d indexed", indexed, len(tenders))
+        return {"indexed": indexed, "total": len(tenders), "skipped": len(tenders) - indexed}
+    except Exception as e:
+        log.warning("bulk_index_tenders error: %s", e)
+        return {"indexed": 0, "error": str(e)}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# RAG v2.2 — Extension AOs (CCTP) + recherche sémantique unifiée
+# ══════════════════════════════════════════════════════════════════════════════
+
+def index_tender(db, tender_id: int) -> bool:
+    """Indexe le contenu d'un AO dans la table embeddings."""
+    try:
+        from app.models.tender import Tender
+        t = db.query(Tender).filter(Tender.id == tender_id).first()
+        if not t:
+            return False
+        text = " ".join(filter(None, [
+            t.title or "",
+            t.summary or "",
+            getattr(t, "description", "") or "",
+            getattr(t, "buyer_name", "") or "",
+            getattr(t, "sector", "") or "",
+        ])).strip()
+        if not text:
+            return False
+        return store_embedding(db, tender_id, text[:6000])
+    except Exception as e:
+        log.warning("index_tender error: %s", e)
+        return False
+
+
+def _search_tenders_tfidf(db, query: str, limit: int = 5) -> list[dict]:
+    """Recherche TF-IDF sur les AOs."""
+    try:
+        from app.models.tender import Tender
+        candidates = db.query(Tender).order_by(Tender.created_at.desc()).limit(100).all()
+    except Exception as e:
+        log.warning("TF-IDF tender DB error: %s", e)
+        return []
+
+    if not candidates:
+        return []
+
+    query_tokens = _tokenize(query)
+    if not query_tokens:
+        return []
+
+    corpus_df: Counter = Counter()
+    doc_tokens_list = []
+    for t in candidates:
+        tokens = _tokenize(f"{t.title or ''} {getattr(t, 'summary', '') or ''}")
+        doc_tokens_list.append(tokens)
+        corpus_df.update(set(tokens))
+
+    n = len(candidates)
+    scored = [
+        (_tfidf_score(query_tokens, tok, corpus_df, n), t)
+        for t, tok in zip(candidates, doc_tokens_list)
+    ]
+    scored = [(s, t) for s, t in scored if s > 0]
+    scored.sort(key=lambda x: x[0], reverse=True)
+
+    return [
+        {
+            "id": t.id, "title": t.title,
+            "buyer": getattr(t, "buyer_name", "") or "",
+            "score": round(s, 4), "source": "tfidf",
+            "status": getattr(t, "status", ""),
+            "go_score": getattr(t, "go_no_go_score", 0) or 0,
+        }
+        for s, t in scored[:limit]
+    ]
+
+
+def search_tenders_by_semantic(db, query: str, limit: int = 5) -> list[dict]:
+    """Recherche sémantique sur les AOs — vectoriel si dispo, TF-IDF sinon."""
+    try:
+        from app.models.tender import Tender
+        vec_results = vector_search(db, query, limit=limit * 2)
+        if vec_results:
+            ids = [r["deliverable_id"] for r in vec_results]
+            tenders = {t.id: t for t in db.query(Tender).filter(Tender.id.in_(ids)).all()}
+            hits = []
+            for r in vec_results:
+                t = tenders.get(r["deliverable_id"])
+                if t:
+                    hits.append({
+                        "id": t.id, "title": t.title,
+                        "buyer": getattr(t, "buyer_name", "") or "",
+                        "score": round(r["similarity"], 4), "source": "vector",
+                        "status": getattr(t, "status", ""),
+                        "go_score": getattr(t, "go_no_go_score", 0) or 0,
+                    })
+            if hits:
+                return hits[:limit]
+    except Exception as e:
+        log.warning("vector tender search error: %s", e)
+
+    return _search_tenders_tfidf(db, query, limit)
+
+
+def unified_search(db, query: str, limit: int = 5,
+                   include_deliverables: bool = True,
+                   include_tenders: bool = True) -> dict:
+    """
+    RAG unifié — cherche simultanément dans livrables approuvés ET AOs.
+    Retourne {'deliverables': [...], 'tenders': [...], 'rag_context': str}
+    """
+    results: dict = {"deliverables": [], "tenders": [], "rag_context": ""}
+
+    if include_deliverables:
+        results["deliverables"] = find_similar_deliverables(db, query, limit=limit)
+
+    if include_tenders:
+        results["tenders"] = search_tenders_by_semantic(db, query, limit=limit)
+
+    ctx_parts = []
+    if results["deliverables"]:
+        ctx_parts.append(build_rag_context(results["deliverables"]))
+    if results["tenders"]:
+        lines = ["\n\n### AOs similaires détectés (RAG)\n"]
+        for t in results["tenders"]:
+            lines.append(
+                f"- **{t['title']}** (acheteur: {t.get('buyer', '—')}) "
+                f"— score: {t.get('go_score', 0)}/100 [{t['source']}]"
+            )
+        ctx_parts.append("\n".join(lines))
+
+    results["rag_context"] = "\n".join(ctx_parts)
+    return results
+
+
+def bulk_index_tenders(db, limit: int = 200) -> dict:
+    """Indexe en masse tous les AOs existants non encore vectorisés."""
+    try:
+        from app.models.tender import Tender
+        from sqlalchemy import text as sql_text
+        already_indexed = set(
+            r[0] for r in db.execute(
+                sql_text("SELECT deliverable_id FROM deliverable_embeddings")
+            ).fetchall()
+        )
+        tenders = db.query(Tender).limit(limit).all()
+        indexed = sum(
+            1 for t in tenders
+            if t.id not in already_indexed and index_tender(db, t.id)
+        )
+        return {"indexed": indexed, "total": len(tenders)}
+    except Exception as e:
+        log.warning("bulk_index_tenders error: %s", e)
+        return {"indexed": 0, "error": str(e)}

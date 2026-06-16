@@ -45,6 +45,7 @@ import TeamPage from './pages/TeamPage';
 import TenderPage from './pages/TenderPage';
 import UserProfilePage from './pages/UserProfilePage';
 import WorkspacesPage from './pages/WorkspacesPage';
+import WorkspaceSwitcher from './components/WorkspaceSwitcher';
 import SettingsPage from './pages/SettingsPage';
 import CalculatorPage from './pages/CalculatorPage';
 import InvoicingPage from './pages/InvoicingPage';
@@ -769,6 +770,7 @@ export default function AppRoot() {
 
         {/* Center */}
         <div className="ds-header-center">
+          <WorkspaceSwitcher />
           <GlobalSearchBar onNavigate={(tab) => openView(tab as RootView)} />
         </div>
 
