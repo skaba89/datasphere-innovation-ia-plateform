@@ -63,6 +63,33 @@ export default function UserProfilePage() {
   const [availability, setAvailability] = useState('');
   const [skillsRaw, setSkillsRaw]   = useState('');
   const [profileSaving, setProfileSaving] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  async function uploadAvatar(file: File) {
+    if (!file) return;
+    setAvatarUploading(true);
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const API = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+      const r = await fetch(`${API}/team/me/avatar`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: form,
+      });
+      if (r.ok) {
+        const data = await r.json();
+        setAvatarUrl(data.avatar_url);
+        setProfileMsg({ ok: true, text: `Avatar mis à jour (${data.size_kb}KB)` });
+      } else {
+        const err = await r.json();
+        setProfileMsg({ ok: false, text: err.detail || 'Erreur upload avatar' });
+      }
+    } catch {
+      setProfileMsg({ ok: false, text: 'Erreur réseau' });
+    } finally { setAvatarUploading(false); }
+  }
   const [profileMsg, setProfileMsg] = useState<{ok:boolean;text:string}|null>(null);
 
   // Password change
@@ -178,8 +205,18 @@ export default function UserProfilePage() {
 
       {/* ── Avatar + identité ───────────────────────────────────────────── */}
       <div style={{ ...card, padding: 26, display: 'flex', gap: 20, alignItems: 'center', background: 'linear-gradient(135deg,rgba(250,204,21,.04),rgba(12,20,37,.95))' }}>
-        <div style={{ width: 70, height: 70, borderRadius: 18, background: 'linear-gradient(135deg,rgba(250,204,21,.25),rgba(250,204,21,.06))', border: '2px solid rgba(250,204,21,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '1.5rem', fontWeight: 900, color: '#facc15' }}>
-          {initials}
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+          <div style={{ width: 70, height: 70, borderRadius: 18, background: 'linear-gradient(135deg,rgba(250,204,21,.25),rgba(250,204,21,.06))', border: '2px solid rgba(250,204,21,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 900, color: '#facc15', overflow: 'hidden' }}>
+            {avatarUrl || profile?.avatar_url
+              ? <img src={avatarUrl || profile?.avatar_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : initials}
+          </div>
+          <label title="Changer l'avatar" style={{ position: 'absolute', bottom: -4, right: -4, width: 22, height: 22, borderRadius: '50%', background: '#facc15', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,.4)' }}>
+            {avatarUploading
+              ? <span style={{ fontSize: 9, animation: 'avSpin .7s linear infinite', display: 'block' }}>⟳</span>
+              : <span style={{ fontSize: 11 }}>✏️</span>}
+            <input type="file" accept="image/jpeg,image/png,image/webp" onChange={e => e.target.files?.[0] && uploadAvatar(e.target.files[0])} style={{ display: 'none' }} />
+          </label>
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontWeight: 800, fontSize: '1.25rem', letterSpacing: '-.03em', marginBottom: 3 }}>
@@ -385,7 +422,7 @@ export default function UserProfilePage() {
         </div>
       </div>
 
-      <style>{`@keyframes ds-spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`@keyframes ds-spin { to { transform: rotate(360deg); } } @keyframes avSpin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

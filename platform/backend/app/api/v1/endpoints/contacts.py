@@ -30,6 +30,7 @@ def read_contacts(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
 ):
     """List contacts. Filter by organization and/or search term."""
     return list_contacts(db, organization_id=organization_id, search=search, skip=skip, limit=limit)

@@ -71,6 +71,8 @@ router = APIRouter(
 def read_deliverables(
     opportunity_id: int | None = None,
     tender_id: int | None = None,
+    status: str | None = None,
+    deliverable_type: str | None = None,
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
@@ -80,6 +82,10 @@ def read_deliverables(
         results = [d for d in results if d.opportunity_id == opportunity_id]
     if tender_id is not None:
         results = [d for d in results if d.tender_id == tender_id]
+    if status is not None:
+        results = [d for d in results if getattr(d, 'status', None) == status]
+    if deliverable_type is not None:
+        results = [d for d in results if getattr(d, 'deliverable_type', None) == deliverable_type]
     return results
 
 

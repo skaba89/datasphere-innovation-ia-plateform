@@ -573,6 +573,7 @@ export default function AppRoot() {
   const [sidebarMini, setSidebarMini] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(() => shouldShowOnboarding());
   const [toasts, setToasts] = useState<ToastEvent[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const addToast = (t: ToastEvent) => setToasts(prev => [...prev.slice(-3), t]);
   const dismissToast = (id: string) => setToasts(prev => prev.filter(t => t.id !== id));
 
@@ -597,6 +598,7 @@ export default function AppRoot() {
         addToast({ id: `notif-${Date.now()}`, type: priority === 'high' ? 'warning' : 'info',
           title: (event as any).title || 'Nouvelle notification',
           message: (event as any).message || '', at: Date.now() });
+        setUnreadCount(c => c + 1);
       } else if (event.type === 'action_approved') {
         addToast({ id: `action-${Date.now()}`, type: 'success', title: '✅ Action approuvée',
           message: `« ${(event as any).title || 'Action'} » a été approuvée`, at: Date.now() });
@@ -609,6 +611,22 @@ export default function AppRoot() {
       }
     },
   });
+
+  // Charger le nombre de notifications non lues
+  useEffect(() => {
+    if (!token) return;
+    apiRequest<any[]>('/notifications?limit=50', {}, token)
+      .then(data => {
+        const unread = Array.isArray(data) ? data.filter((n: any) => !n.is_read).length : 0;
+        setUnreadCount(unread);
+      })
+      .catch(() => {});
+  }, [token]);
+
+  // Reset count quand on visite la page notifications
+  useEffect(() => {
+    if (view === 'notifications') setUnreadCount(0);
+  }, [view]);
 
   useEffect(() => {
     if (!token) return;
@@ -695,7 +713,24 @@ export default function AppRoot() {
     'data-export':        <Download size={16} />,
     linkedin:             <Share2 size={16} />,
     'consultant-profiles':<UserCheck size={16} />,
-    notifications:        <Bell size={16} />,
+    notifications: (
+      <div style={{ position: 'relative', display: 'inline-flex' }}>
+        <Bell size={16} />
+        {unreadCount > 0 && (
+          <span style={{
+            position: 'absolute', top: -6, right: -6,
+            background: '#ef4444', color: '#fff',
+            borderRadius: '50%', width: 14, height: 14,
+            fontSize: '.55rem', fontWeight: 900,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            lineHeight: 1, boxShadow: '0 0 0 2px #060d1a',
+            pointerEvents: 'none',
+          }}>
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
+        )}
+      </div>
+    ),
     search:               <Search size={16} />,
     'ai-providers':       <Zap size={16} />,
     'intelligence':       <Brain size={16} />,

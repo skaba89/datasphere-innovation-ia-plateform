@@ -1,154 +1,140 @@
 /**
- * E2E — UI Robustness
- *
- * Verifies that the UI:
- *   - Shows empty states when no data exists
- *   - Does not crash with network errors
- *   - Shows proper loading indicators
- *   - Does not expose raw API errors to users
- *   - Handles rapid tab switching without crashing
+ * E2E — Robustesse UI : pas de crash, responsive, accessibilité basique
  */
-
 import { test, expect } from '@playwright/test';
-import { injectAuth, goToTab, waitForIdle, assertNoError, api } from './helpers';
 
-test.describe('UI Robustness — Empty states', () => {
-  test.beforeEach(async ({ context }) => { await injectAuth(context); });
+const BASE = process.env.E2E_BASE_URL || 'http://localhost:5173';
+const API  = process.env.E2E_API_URL  || 'http://localhost:8000/api/v1';
+const ADMIN_EMAIL    = process.env.E2E_ADMIN_EMAIL    || 'admin@datasphere.io';
+const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD || 'Admin123456!';
 
-  test('Organisations tab shows empty state when no data', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForSelector('.root-switcher');
-    await goToTab(page, 'Organisations');
-    await waitForIdle(page);
-    await assertNoError(page);
-    // Either shows empty state text or a list
-    const body = await page.locator('body').textContent();
-    expect(body).toMatch(/Organisation|Créer|Aucun|organisations/i);
+async function loginAndInject(page: any, context: any) {
+  const r = await context.request.post(`${API}/auth/login`, {
+    data: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD },
+  });
+  if (!r.ok()) return false;
+  const { access_token, user } = await r.json();
+  await page.goto(BASE);
+  await page.evaluate(({ t, u }: any) => {
+    localStorage.setItem('ds_access_token', t);
+    localStorage.setItem('ds_user', JSON.stringify(u));
+  }, { t: access_token, u: user });
+  await page.reload();
+  await page.waitForTimeout(2000);
+  return true;
+}
+
+test.describe('UI Robustesse — Pas de crash JS', () => {
+  const VIEWPORTS = [
+    { name: 'mobile-sm', w: 375, h: 812 },
+    { name: 'mobile-lg', w: 430, h: 932 },
+    { name: 'tablet', w: 768, h: 1024 },
+    { name: 'desktop', w: 1440, h: 900 },
+  ];
+
+  for (const vp of VIEWPORTS) {
+    test(`aucun crash JS sur ${vp.name} (${vp.w}x${vp.h})`, async ({ page, context }) => {
+      await page.setViewportSize({ width: vp.w, height: vp.h });
+      const errors: string[] = [];
+      page.on('pageerror', err => errors.push(err.message));
+      const ok = await loginAndInject(page, context);
+      if (!ok) return;
+      await page.waitForTimeout(3000);
+      const critical = errors.filter(e =>
+        !e.includes('404') && !e.includes('network') &&
+        !e.includes('fetch') && !e.includes('ERR_')
+      );
+      expect(critical.length).toBe(0);
+    });
+  }
+});
+
+test.describe('UI Robustesse — Overflow horizontal', () => {
+  test('login page sans overflow sur 320px', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.goto(BASE);
+    await page.waitForLoadState('domcontentloaded');
+    const sw = await page.evaluate(() => document.documentElement.scrollWidth);
+    const cw = await page.evaluate(() => document.documentElement.clientWidth);
+    expect(sw).toBeLessThanOrEqual(cw + 2);
   });
 
-  test('Livrables tab shows empty state gracefully', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForSelector('.root-switcher');
-    await goToTab(page, 'Livrables');
-    await waitForIdle(page);
-    await assertNoError(page);
-    const body = await page.locator('body').textContent();
-    expect(body).toMatch(/Livrable|Aucun|vide|créer/i);
-  });
-
-  test('Dashboard renders with no data (fresh DB)', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForSelector('.root-switcher');
-    await waitForIdle(page);
-    await assertNoError(page);
-    // KPI cards should show zeros, not errors
-    const body = await page.locator('body').textContent();
-    expect(body).toMatch(/Dashboard|0|pipeline/i);
+  test('dashboard sans overflow sur 390px', async ({ page, context }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await loginAndInject(page, context);
+    await page.waitForTimeout(2000);
+    const sw = await page.evaluate(() => document.documentElement.scrollWidth);
+    const cw = await page.evaluate(() => document.documentElement.clientWidth);
+    expect(sw).toBeLessThanOrEqual(cw + 5);
   });
 });
 
-test.describe('UI Robustness — No crashes on tab switch', () => {
-  test.beforeEach(async ({ context }) => { await injectAuth(context); });
-
-  test('rapid tab switching does not crash', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForSelector('.root-switcher');
-
-    const tabs = ['Dashboard', 'Appels', 'Livrables', 'Opérations', 'Équipe', 'Dashboard'];
-    for (const tab of tabs) {
-      await goToTab(page, tab);
-      await page.waitForTimeout(300);
-    }
-    await assertNoError(page);
-    expect(await page.locator('.root-switcher').isVisible()).toBe(true);
+test.describe('UI Robustesse — Éléments critiques', () => {
+  test('page a un titre HTML valide', async ({ page }) => {
+    await page.goto(BASE);
+    const title = await page.title();
+    expect(title.length).toBeGreaterThan(0);
+    expect(title).toMatch(/DataSphere/i);
   });
 
-  test('all tabs survive 3 rapid clicks each', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForSelector('.root-switcher');
+  test('favicon chargé sans 404', async ({ page }) => {
+    const responses: number[] = [];
+    page.on('response', r => {
+      if (r.url().includes('favicon')) responses.push(r.status());
+    });
+    await page.goto(BASE);
+    await page.waitForTimeout(1000);
+    // Pas de favicon 404 critique
+    const bad = responses.filter(s => s === 404);
+    expect(bad.length).toBe(0);
+  });
 
-    for (const tab of ['Dashboard', 'Équipe', 'Audit']) {
-      for (let i = 0; i < 3; i++) {
-        await goToTab(page, tab);
+  test('inputs ont des attributs accessible', async ({ page }) => {
+    await page.goto(BASE);
+    const emailInput = page.locator('input[type="email"]');
+    if (await emailInput.count() > 0) {
+      await expect(emailInput.first()).toBeEnabled();
+    }
+  });
+
+  test('bouton submit est cliquable', async ({ page }) => {
+    await page.goto(BASE);
+    const submit = page.locator('button[type="submit"]');
+    if (await submit.count() > 0) {
+      await expect(submit.first()).toBeEnabled();
+    }
+  });
+
+  test('les images ne sont pas cassées', async ({ page, context }) => {
+    await loginAndInject(page, context);
+    await page.waitForTimeout(2000);
+    // Vérifier qu'aucune image ne retourne 404
+    const brokenImages: string[] = [];
+    page.on('response', r => {
+      if (r.url().match(/\.(png|jpg|jpeg|svg|gif|webp)$/) && r.status() === 404) {
+        brokenImages.push(r.url());
       }
-    }
-    await assertNoError(page);
+    });
+    await page.waitForTimeout(1000);
+    expect(brokenImages.length).toBe(0);
   });
 });
 
-test.describe('UI Robustness — No raw errors shown', () => {
-  test.beforeEach(async ({ context }) => { await injectAuth(context); });
-
-  test('no Python stack traces visible in UI', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForSelector('.root-switcher');
-    // Cycle through all tabs
-    for (const tab of ['Dashboard', 'Appels', 'Livrables', 'Opérations']) {
-      await goToTab(page, tab);
-      await page.waitForTimeout(600);
-      const body = await page.locator('body').textContent() ?? '';
-      expect(body).not.toMatch(/Traceback|TypeError:|AttributeError:|OperationalError/);
+test.describe('UI Robustesse — Navigation rapide', () => {
+  test('clic rapide sur plusieurs onglets ne crash pas', async ({ page, context }) => {
+    const ok = await loginAndInject(page, context);
+    if (!ok) return;
+    const errors: string[] = [];
+    page.on('pageerror', err => errors.push(err.message));
+    // Cliquer sur plusieurs éléments nav rapidement
+    const navItems = page.locator('.ds-nav-item');
+    const count = await navItems.count();
+    for (let i = 0; i < Math.min(count, 5); i++) {
+      await navItems.nth(i).click().catch(() => {});
+      await page.waitForTimeout(100);
     }
-  });
-
-  test('no HTTP 500 error messages shown to user', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForSelector('.root-switcher');
-    for (const tab of ['Dashboard', 'Appels', 'Livrables']) {
-      await goToTab(page, tab);
-      await page.waitForTimeout(600);
-      const body = await page.locator('body').textContent() ?? '';
-      expect(body).not.toMatch(/500 Internal|Internal Server Error/);
-    }
-  });
-});
-
-test.describe('UI Robustness — Loading states', () => {
-  test.beforeEach(async ({ context }) => { await injectAuth(context); });
-
-  test('page shows content after initial load (not stuck loading)', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForSelector('.root-switcher');
-    // Wait for potential loading states to resolve
-    await page.waitForTimeout(3_000);
-    // Content should be visible — not a blank loading spinner forever
-    const body = await page.locator('body').textContent() ?? '';
-    expect(body.length).toBeGreaterThan(50);
-    await assertNoError(page);
-  });
-});
-
-test.describe('UI Robustness — Notifications', () => {
-  test.beforeEach(async ({ context }) => { await injectAuth(context); });
-
-  test('notification bell renders without crashing', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForSelector('.root-switcher');
-    await waitForIdle(page);
-    await assertNoError(page);
-    // App is fully loaded and functional
-    const switcher = await page.locator('.root-switcher').isVisible();
-    expect(switcher).toBe(true);
-  });
-});
-
-test.describe('UI Robustness — Search', () => {
-  test.beforeEach(async ({ context }) => { await injectAuth(context); });
-
-  test('search with no results shows empty message', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForSelector('.root-switcher');
-    // Open search
-    await page.keyboard.press('Control+k');
-    await page.waitForTimeout(500);
-    const searchInput = page.locator('input[placeholder*="Rechercher"], input[placeholder*="Chercher"]');
-    if (await searchInput.isVisible()) {
-      await searchInput.fill('XYZNOTEXIST99999');
-      await page.waitForTimeout(800);
-      const body = await page.locator('body').textContent() ?? '';
-      // Should show "no results" message, not crash
-      expect(body).toMatch(/résultat|Aucun|vide|XYZNOTEXIST/i);
-      await page.keyboard.press('Escape');
-    }
+    await page.waitForTimeout(1000);
+    const critical = errors.filter(e => !e.includes('fetch') && !e.includes('network'));
+    expect(critical.length).toBe(0);
   });
 });

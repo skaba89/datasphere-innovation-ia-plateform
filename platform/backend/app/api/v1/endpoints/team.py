@@ -3,7 +3,7 @@ Team management — admin-only user lifecycle: create, list, update role, deacti
 """
 
 from pydantic import BaseModel
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, File, UploadFile, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user
@@ -273,3 +273,58 @@ def admin_change_password(
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return change_password(db, user, payload.new_password)
+
+
+@router.post("/me/avatar")
+async def upload_avatar(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Upload avatar pour l'utilisateur connecté.
+    Stocke en base64 dans extra_data (solution simple sans S3).
+    Limite : 500 KB max, jpeg/png/webp uniquement.
+    """
+    import base64
+    from app.crud.user import update_user
+
+    MAX_SIZE = 500 * 1024  # 500 KB
+    ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
+
+    if file.content_type not in ALLOWED_TYPES:
+        raise HTTPException(400, f"Type de fichier non supporté : {file.content_type}. Acceptés : jpeg, png, webp")
+
+    content_bytes = await file.read()
+    if len(content_bytes) > MAX_SIZE:
+        raise HTTPException(400, f"Fichier trop volumineux : {len(content_bytes)//1024}KB. Maximum : 500KB")
+
+    b64 = base64.b64encode(content_bytes).decode()
+    data_url = f"data:{file.content_type};base64,{b64}"
+
+    # Stocker dans extra_data
+    import json
+    try:
+        extra = json.loads(current_user.extra_data or "{}")
+    except Exception:
+        extra = {}
+    extra["avatar_url"] = data_url
+    update_user(db, current_user, extra_data=json.dumps(extra))
+
+    return {"avatar_url": data_url, "size_kb": len(content_bytes) // 1024}
+
+
+@router.delete("/me/avatar")
+def delete_avatar(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Supprimer l'avatar de l'utilisateur connecté."""
+    import json
+    from app.crud.user import update_user
+    try:
+        extra = json.loads(current_user.extra_data or "{}")
+        extra.pop("avatar_url", None)
+        update_user(db, current_user, extra_data=json.dumps(extra))
+    except Exception:
+        pass
+    return {"deleted": True}

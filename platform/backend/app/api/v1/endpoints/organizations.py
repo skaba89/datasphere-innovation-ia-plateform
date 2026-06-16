@@ -32,7 +32,7 @@ def read_organizations(
     orgs = list_organizations(db, skip=skip, limit=limit, workspace_id=ws.id if ws else None)
     # Filter by workspace if context is provided
     if ws is not None:
-        orgs = orgs
+        orgs = [o for o in orgs if getattr(o, "workspace_id", None) in (None, ws.id)]
     return orgs
 
 
