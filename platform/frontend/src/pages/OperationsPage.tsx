@@ -19,7 +19,6 @@ import LLMProvidersPanel from '../components/LLMProvidersPanel';
 import PendingApprovalsPanel from '../components/PendingApprovalsPanel';
 import SchedulerPanel from '../components/SchedulerPanel';
 import AgentManagementPanel from '../components/AgentManagementPanel';
-import AgentLiveFeed from '../components/AgentLiveFeed';
 import SuggestionsValidationPanel from '../components/SuggestionsValidationPanel';
 
 // ────────────────────────────────────────────────────────────────────────────
