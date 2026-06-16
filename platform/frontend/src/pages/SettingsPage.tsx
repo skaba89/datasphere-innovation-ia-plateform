@@ -83,6 +83,37 @@ function ServiceCard({ icon: Icon, label, ok, detail, color = '#64748b', extra }
         {detail && <div style={{ fontSize: '.72rem', color: '#475569', marginTop: 2 }}>{detail}</div>}
         {extra}
       </div>
+
+          {/* Guide de mise en production */}
+          <div>
+            <h2 style={{ fontSize: '.8rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 12 }}>Guide de configuration Render</h2>
+            <div style={{ padding: '18px 20px', background: 'rgba(10,18,38,.8)', border: '1px solid rgba(148,163,184,.08)', borderRadius: 14 }}>
+              <div style={{ display: 'grid', gap: 10 }}>
+                {[
+                  { step: '1', title: 'RAG vectoriel (gratuit)', desc: 'Ajouter GEMINI_API_KEY dans Render → Environment → embeddings réels au lieu de TF-IDF', urgency: 'recommandé', color: '#facc15' },
+                  { step: '2', title: 'Emails transactionnels', desc: 'SMTP_HOST + SMTP_USER + SMTP_PASSWORD → invitations, alertes deadline, rapport hebdo', urgency: 'important', color: '#f59e0b' },
+                  { step: '3', title: 'LinkedIn publication', desc: 'LINKEDIN_CLIENT_ID + LINKEDIN_CLIENT_SECRET → OAuth + publication automatique', urgency: 'optionnel', color: '#3b82f6' },
+                  { step: '4', title: 'Stripe billing', desc: 'STRIPE_SECRET_KEY + STRIPE_STARTER/PRO_PRICE_ID → checkout réel (mock sinon)', urgency: 'optionnel', color: '#8b5cf6' },
+                ].map(({ step, title, desc, urgency, color }) => (
+                  <div key={step} style={{ display: 'flex', alignItems: 'flex-start', gap: 14, padding: '12px 0', borderBottom: '1px solid rgba(148,163,184,.04)' }}>
+                    <div style={{ width: 26, height: 26, borderRadius: '50%', background: `${color}15`, border: `1px solid ${color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '.72rem', fontWeight: 900, color }}>
+                      {step}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+                        <span style={{ fontSize: '.82rem', fontWeight: 700, color: '#e2e8f0' }}>{title}</span>
+                        <span style={{ fontSize: '.65rem', padding: '1px 7px', borderRadius: 99, background: `${color}10`, color, border: `1px solid ${color}20`, fontWeight: 700 }}>{urgency.toUpperCase()}</span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: '.75rem', color: '#475569', lineHeight: 1.5 }}>{desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p style={{ marginTop: 14, fontSize: '.73rem', color: '#334155', lineHeight: 1.5 }}>
+                Accéder aux variables : <strong style={{ color: '#64748b' }}>Render Dashboard → datasphere-backend → Environment → Add Environment Variable</strong>
+              </p>
+            </div>
+          </div>
     </div>
   );
 }

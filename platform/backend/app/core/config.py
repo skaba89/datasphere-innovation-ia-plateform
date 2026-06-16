@@ -96,8 +96,8 @@ class Settings(BaseSettings):
     stripe_starter_yearly_price_id: str = ""
     stripe_pro_price_id: str = ""           # price_... for Pro monthly
     stripe_pro_yearly_price_id: str = ""
-    stripe_success_url: str = "http://localhost:5173/subscription/success"
-    stripe_cancel_url: str = "http://localhost:5173/subscription/cancel"
+    stripe_success_url: str = "https://datasphere-frontend-n1mb.onrender.com"
+    stripe_cancel_url: str = "https://datasphere-frontend-n1mb.onrender.com/pricing"
 
     @property
     def stripe_enabled(self) -> bool:
