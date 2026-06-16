@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/index';
 /**
  * TeamPage — Gestion des utilisateurs (admin uniquement pour les actions critiques)
  *
@@ -59,6 +60,7 @@ function Avatar({ member, size = 40 }: { member: Member; size?: number }) {
 }
 
 export default function TeamPage() {
+  const { t, lang } = useI18n();
   const token = tokenStorage.get();
   const [me, setMe]           = useState<CurrentUser | null>(null);
   const [members, setMembers] = useState<Member[]>([]);

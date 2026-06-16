@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/index';
 /**
  * NotificationsPage — Centre de notifications premium
  */
@@ -48,6 +49,7 @@ function timeAgo(iso: string) {
 }
 
 export default function NotificationsPage() {
+  const { t, lang } = useI18n();
   const token = tokenStorage.get();
   const [notifs, setNotifs]     = useState<Notification[]>([]);
   const [loading, setLoading]   = useState(true);
@@ -172,7 +174,7 @@ export default function NotificationsPage() {
         <div style={{ padding: '64px 24px', textAlign: 'center' }}>
           <BellOff size={40} style={{ color: '#1e293b', margin: '0 auto 16px' }} />
           <p style={{ color: '#334155', fontSize: '.88rem', margin: 0 }}>
-            {filter === 'unread' ? 'Aucune notification non lue' : 'Aucune notification'}
+            {filter === 'unread' ? 'Aucune notification non lue' : t('notif.empty')}
           </p>
         </div>
       ) : (

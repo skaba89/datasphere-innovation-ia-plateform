@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/index';
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   Building2, Users, TrendingUp, Target, DollarSign, Activity,
@@ -145,8 +146,8 @@ function RecentOpps({ token }: { token: string }) {
 
 function ConversionFunnel({ data }: { data: DashboardData }) {
   const steps = [
-    { label: 'Organisations', value: data.crm.organizations, color: '#3b82f6' },
-    { label: 'Opportunités', value: data.crm.opportunities_total, color: '#8b5cf6' },
+    { label: t('crm.organizations'), value: data.crm.organizations, color: '#3b82f6' },
+    { label: t('crm.opportunities'), value: data.crm.opportunities_total, color: '#8b5cf6' },
     { label: 'Actives', value: data.crm.opportunities_active, color: '#f59e0b' },
     { label: 'Gagnées', value: data.crm.opportunities_won, color: '#22c55e' },
   ];
@@ -257,6 +258,7 @@ function NewOpportunityForm({ token, onSaved, onCancel }: { token: string | null
 }
 
 export default function CommercialPage() {
+  const { t, lang } = useI18n();
   const token = tokenStorage.get() ?? '';
   const [tab, setTab] = useState<Tab>('overview');
   const [data, setData] = useState<DashboardData | null>(null);

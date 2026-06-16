@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/index';
 /**
  * UserProfilePage — Profil personnel + changement de mot de passe
  *
@@ -47,6 +48,7 @@ const AVAILABILITY_OPTIONS = [
 ];
 
 export default function UserProfilePage() {
+  const { t, lang } = useI18n();
   const token = tokenStorage.get();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);

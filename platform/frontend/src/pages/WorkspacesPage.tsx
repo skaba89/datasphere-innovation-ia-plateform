@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/index';
 import React from "react";
 import { useEffect, useState } from 'react';
 import { Building2, Plus, Users, Crown, Shield, Eye, Trash2, RefreshCw, CheckCircle, AlertCircle, Settings } from 'lucide-react';
@@ -11,6 +12,7 @@ const PLAN_COLORS: Record<string, string> = { free: '#64748b', starter: '#22c55e
 const ROLE_ICONS: Record<string, React.ReactNode> = { owner: <Crown size={11} />, admin: <Shield size={11} />, member: <Users size={11} />, viewer: <Eye size={11} /> };
 
 export default function WorkspacesPage() {
+  const { t, lang } = useI18n();
   const token = tokenStorage.get();
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [selected, setSelected] = useState<Workspace | null>(null);
@@ -203,7 +205,7 @@ export default function WorkspacesPage() {
               const upgradeUrl = (planUsage as any).upgrade_url;
               const planColor = PLAN_COLORS[selected.plan] || '#64748b';
               const bars = [
-                { key: 'members',        label: 'Membres' },
+                { key: 'members',        label: t('workspace.members') },
                 { key: 'tenders',        label: 'Appels d\'offres' },
                 { key: 'ai_actions_30d', label: 'Actions IA / 30j' },
               ];

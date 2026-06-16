@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/index';
 /**
  * AuditLogPage — Journal d'audit premium avec search, filtres, export CSV
  */
@@ -40,6 +41,7 @@ function timeAgo(iso: string) {
 }
 
 export default function AuditLogPage() {
+  const { t, lang } = useI18n();
   const token = tokenStorage.get();
   const [logs, setLogs]         = useState<AuditLog[]>([]);
   const [total, setTotal]       = useState(0);

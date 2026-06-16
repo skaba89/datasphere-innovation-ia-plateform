@@ -11,6 +11,7 @@ import {
 import { DashboardCharts } from '../components/DashboardCharts';
 import { SetupWizard } from '../components/SetupWizard';
 import { apiRequest, tokenStorage } from '../api/client';
+import { useI18n } from '../i18n/index';
 import ActivityFeed from '../components/ActivityFeed';
 import type { PipelineAnalytics } from '../api/domainTypes';
 
@@ -113,6 +114,7 @@ function DeadlineItem({ title, deadline, daysLeft }: { title: string; deadline: 
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
+  const { t, lang } = useI18n();
   const token = tokenStorage.get();
   const [data,      setData]      = useState<PipelineAnalytics | null>(null);
   const [loading,   setLoading]   = useState(true);
@@ -203,7 +205,7 @@ export default function DashboardPage() {
               {[
                 { label: 'Total AOs',   val: tenders?.total ?? 0,      color: '#64748b' },
                 { label: 'Go décidés',  val: tenders?.go_count ?? 0,   color: '#facc15' },
-                { label: 'Livrables',   val: deliverables?.total ?? 0, color: '#3b82f6' },
+                { label: t('nav.deliverables'),   val: deliverables?.total ?? 0, color: '#3b82f6' },
                 { label: 'Opportunités gagnées', val: opps?.won ?? 0,  color: '#22c55e' },
               ].map(s => (
                 <div key={s.label} style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>

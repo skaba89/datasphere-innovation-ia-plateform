@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/index';
 /**
  * SettingsPage — Configuration plateforme (admin) + état des intégrations
  */
@@ -140,6 +141,7 @@ function MetricBar({ label, value, max, color }: { label: string; value: number;
 }
 
 export default function SettingsPage() {
+  const { t, lang } = useI18n();
   const token = tokenStorage.get();
   const [health, setHealth]   = useState<HealthData | null>(null);
   const [diag,   setDiag]     = useState<DiagData | null>(null);

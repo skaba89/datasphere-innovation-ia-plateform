@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/index';
 import React from 'react';
 /**
  * LLMProvidersPanel — shows the full provider fallback chain
@@ -59,7 +60,8 @@ const TIER_COLORS: Record<string, { bg: string; border: string; text: string; ic
 
 function TierBadge({ tier, label }: { tier: string; label: string }) {
   const c = TIER_COLORS[tier] || TIER_COLORS['standard'];
-  return (
+  return
+  const { t } = useI18n(); (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 99, fontSize: '.66rem', fontWeight: 700, fontFamily: 'monospace', background: c.bg, border: `1px solid ${c.border}`, color: c.text }}>
       {c.icon}{label}
     </span>

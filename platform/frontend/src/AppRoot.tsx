@@ -117,9 +117,9 @@ function ForcePasswordChange({
 
   const checks = [
     { label: '8+ caractères',      ok: newPwd.length >= 8 },
-    { label: 'Majuscule',          ok: /[A-Z]/.test(newPwd) },
-    { label: 'Chiffre',            ok: /\d/.test(newPwd) },
-    { label: 'Caractère spécial',  ok: /[^A-Za-z0-9]/.test(newPwd) },
+    { label: lang === 'en' ? 'Uppercase' : 'Majuscule',          ok: /[A-Z]/.test(newPwd) },
+    { label: lang === 'en' ? 'Number' : 'Chiffre',            ok: /\d/.test(newPwd) },
+    { label: lang === 'en' ? 'Special char' : 'Caractère spécial',  ok: /[^A-Za-z0-9]/.test(newPwd) },
   ];
   const strength = checks.filter(c => c.ok).length;
   const strengthColor = strength <= 1 ? '#ef4444' : strength <= 2 ? '#f59e0b' : strength <= 3 ? '#22c55e' : '#4ade80';
@@ -699,7 +699,7 @@ export default function AppRoot() {
     );
   }
 
-  const { t } = useI18n();
+  const { t, lang } = useI18n(); // lang déclenche le re-render global
 
   // ── Navigation icon mapping ──────────────────────────────────
   const NAV_ICONS: Record<string, React.ReactElement> = {
@@ -745,12 +745,12 @@ export default function AppRoot() {
 
   // ── Navigation groups ────────────────────────────────────────
   const NAV_GROUPS = [
-    { label: 'Principal', keys: ['dashboard', 'tenders', 'deliverables'] },
+    { label: t('common.view') || 'Principal', keys: ['dashboard', 'tenders', 'deliverables'] },
     { label: 'CRM',       keys: ['organizations', 'opportunities', 'commercial'] },
     { label: 'IA',        keys: ['intelligence', 'ai-providers', 'consultant-profiles', 'linkedin'] },
-    { label: 'Opérations',keys: ['operations', 'data-export', 'calculator', 'pricing', 'invoicing'] },
-    { label: 'Admin',     keys: ['team', 'audit', 'workspaces'] },
-    { label: 'Personnel', keys: ['notifications', 'search', 'profile', 'settings'] },
+    { label: t('ops.title') || 'Opérations',keys: ['operations', 'data-export', 'calculator', 'pricing', 'invoicing'] },
+    { label: lang === 'en' ? 'Admin' : 'Admin',     keys: ['team', 'audit', 'workspaces'] },
+    { label: lang === 'en' ? 'Personal' : 'Personnel', keys: ['notifications', 'search', 'profile', 'settings'] },
   ];
 
   // Bottom bar items (mobile) — top 5 most used

@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/index';
 /**
  * AIProvidersPage — Configuration des providers LLM premium
  */
@@ -55,6 +56,7 @@ function Stars({ count }: { count: number }) {
 }
 
 export default function AIProvidersPage() {
+  const { t, lang } = useI18n();
   const token = tokenStorage.get();
   const [providers, setProviders] = useState<ProviderStatus[]>([]);
   const [testing, setTesting]     = useState<string | null>(null);

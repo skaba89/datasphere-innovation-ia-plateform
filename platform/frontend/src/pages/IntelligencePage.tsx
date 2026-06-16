@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/index';
 /**
  * IntelligencePage — Tableau de bord Intelligence d'Affaires
  *
@@ -122,6 +123,7 @@ function GoNoGoRadarChartWrapper() {
 }
 
 export default function IntelligencePage() {
+  const { t, lang } = useI18n();
   const token = tokenStorage.get();
   const [data,    setData]    = useState<IntelligenceData | null>(null);
   const [recs,    setRecs]    = useState<Recommendation[]>([]);

@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/index';
 /**
  * SearchPage — Recherche globale enrichie
  * Debounce 300ms · Highlight termes · RAG sémantique · Navigation directe
@@ -50,6 +51,7 @@ function highlight(text: string, query: string): React.ReactNode {
 }
 
 export default function SearchPage() {
+  const { t, lang } = useI18n();
   const token = tokenStorage.get();
   const [query,    setQuery]    = useState('');
   const [results,  setResults]  = useState<SearchResult[]>([]);

@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/index';
 /**
  * SetupWizard — Onboarding complet en 5 étapes
  * Apparaît au premier démarrage si setup non terminé.
@@ -75,7 +76,8 @@ export function SetupWizard({ token, onDismiss }: { token: string | null; onDism
   // ── Step actions ─────────────────────────────────────────────────────────
 
   async function configureProvider() {
-    if (!groqKey.trim()) return;
+    if (!groqKey.trim()) return
+  const { t } = useI18n();;
     setStep('provider', { loading: true, error: '' });
     try {
       await apiRequest('/providers/config', {

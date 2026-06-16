@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/index';
 import { useEffect, useState } from 'react';
 import {
   Award, Briefcase, ChevronDown, ChevronUp, Copy, Download,
@@ -49,6 +50,7 @@ const pillSlate = pill('148,163,184');
 
 // ── Main Component ─────────────────────────────────────────────────────────────
 export default function ConsultantProfilesPage() {
+  const { t, lang } = useI18n();
   const token = tokenStorage.get();
   const [cvTab, setCvTab] = useState<'generate' | 'experiences'>('experiences');
 

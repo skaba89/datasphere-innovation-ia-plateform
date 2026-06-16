@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/index';
 /**
  * AgentManagementPanel — Gestion des 12 agents IA
  * Installe, active/désactive et inspecte chaque agent.
@@ -36,6 +37,7 @@ const DOMAIN_LABELS: Record<string, string> = {
 };
 
 export default function AgentManagementPanel({ token }: { token: string | null }) {
+  const { t } = useI18n();
   const [agents,    setAgents]    = useState<Agent[]>([]);
   const [loading,   setLoading]   = useState(true);
   const [installing, setInstalling] = useState(false);

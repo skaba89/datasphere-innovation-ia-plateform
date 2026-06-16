@@ -253,8 +253,8 @@ export default function CalculatorPage() {
             {/* Main KPIs */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px,1fr))', gap: 12 }}>
               {[
-                { label: 'Revenu net / an',    value: eur(result.net.annual),          accent: '250,204,21', big: true },
-                { label: 'Net / mois moyen',   value: eur(result.net.monthly_avg),     accent: '34,197,94' },
+                { label: t('calc.net_annual'),    value: eur(result.net.annual),          accent: '250,204,21', big: true },
+                { label: t('calc.net_monthly'),   value: eur(result.net.monthly_avg),     accent: '34,197,94' },
                 { label: 'Équivalent / jour',  value: eur(result.net.daily_equivalent),accent: '59,130,246' },
                 { label: 'Taux occupation',    value: pct(result.metrics.occupancy_rate_pct), accent: result.metrics.occupancy_rate_pct < 60 ? '239,68,68' : '34,197,94' },
               ].map(k => (

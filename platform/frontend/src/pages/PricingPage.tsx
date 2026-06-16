@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/index';
 /**
  * PricingPage — Plans et abonnements DataSphere
  *
@@ -36,6 +37,7 @@ const fmt = (n: number) => n === -1 ? '∞' : n.toLocaleString('fr-FR');
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function PricingPage({ workspaceId, currentPlan = 'free', onSuccess }: Props) {
+  const { t, lang } = useI18n();
   const token = tokenStorage.get();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [cycle, setCycle] = useState<'monthly' | 'yearly'>('monthly');
@@ -290,9 +292,9 @@ export default function PricingPage({ workspaceId, currentPlan = 'free', onSucce
                 {isChecking ? (
                   <div style={{ width: 14, height: 14, borderRadius: '50%', border: '2px solid rgba(0,0,0,.3)', borderTopColor: '#060e18', animation: 'ds-spin .7s linear infinite' }} />
                 ) : null}
-                {isCurrent ? 'Plan actuel' :
+                {isCurrent ? t('pricing.current') :
                   plan.key === 'free' ? 'Commencer gratuit' :
-                  isEnterprise ? 'Nous contacter' :
+                  isEnterprise ? t('pricing.contact') :
                   showEmailFor === plan.key ? 'Procéder au paiement →' :
                   stripeEnabled ? `Passer au ${plan.label}` : `Activer ${plan.label} (demo)`}
                 {!isCurrent && !isChecking && !isEnterprise && <ChevronRight size={14} />}

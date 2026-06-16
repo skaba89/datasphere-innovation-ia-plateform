@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/index';
 import { useState, useEffect } from 'react';
 import { Lock, CheckCircle, AlertCircle } from 'lucide-react';
 import { apiRequest } from '../api/client';
@@ -7,6 +8,7 @@ interface Props {
 }
 
 export default function ResetPasswordPage({ onSuccess }: Props) {
+  const { t, lang } = useI18n();
   const [token, setToken] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');

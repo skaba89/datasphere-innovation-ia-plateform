@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/index';
 /**
  * InvoicingPage — Devis & Facturation premium
  */
@@ -21,17 +22,17 @@ interface Quote   { id:number; reference:string; title:string; client_name:strin
 interface Invoice { id:number; reference:string; title:string; client_name:string; status:string; amount_ht:number; amount_ttc:number; due_date?:string; paid_at?:string; created_at:string; }
 
 const QUOTE_STATUS: Record<string, {label:string; color:string; bg:string}> = {
-  draft:     { label: 'Brouillon',  color: '#64748b', bg: 'rgba(100,116,139,.08)' },
-  sent:      { label: 'Envoyé',    color: '#3b82f6', bg: 'rgba(59,130,246,.08)'  },
+  draft:     { label: t('invoicing.draft'),  color: '#64748b', bg: 'rgba(100,116,139,.08)' },
+  sent:      { label: t('invoicing.sent'),    color: '#3b82f6', bg: 'rgba(59,130,246,.08)'  },
   accepted:  { label: 'Accepté',   color: '#22c55e', bg: 'rgba(34,197,94,.08)'   },
   rejected:  { label: 'Refusé',    color: '#ef4444', bg: 'rgba(239,68,68,.08)'   },
   converted: { label: 'Converti',  color: '#8b5cf6', bg: 'rgba(139,92,246,.08)'  },
 };
 const INVOICE_STATUS: Record<string, {label:string; color:string; bg:string}> = {
-  draft:     { label: 'Brouillon',  color: '#64748b', bg: 'rgba(100,116,139,.08)' },
+  draft:     { label: t('invoicing.draft'),  color: '#64748b', bg: 'rgba(100,116,139,.08)' },
   sent:      { label: 'Émise',     color: '#3b82f6', bg: 'rgba(59,130,246,.08)'  },
   paid:      { label: 'Payée',     color: '#22c55e', bg: 'rgba(34,197,94,.08)'   },
-  overdue:   { label: 'En retard', color: '#ef4444', bg: 'rgba(239,68,68,.08)'   },
+  overdue:   { label: t('invoicing.overdue'), color: '#ef4444', bg: 'rgba(239,68,68,.08)'   },
   cancelled: { label: 'Annulée',   color: '#94a3b8', bg: 'rgba(148,163,184,.08)' },
 };
 
@@ -224,6 +225,7 @@ function DocRow({ doc, type, token, onRefresh }: { doc: Quote|Invoice; type: 'qu
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function InvoicingPage() {
+  const { t, lang } = useI18n();
   const token = tokenStorage.get();
   const [tab, setTab]         = useState<Tab>('overview');
   const [stats, setStats]     = useState<Stats | null>(null);
@@ -267,16 +269,16 @@ export default function InvoicingPage() {
           <button onClick={load} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 13px', borderRadius: 9, border: '1px solid rgba(148,163,184,.12)', background: 'none', color: '#64748b', cursor: 'pointer', fontSize: '.8rem' }}>
             <RefreshCw size={13} style={{ animation: loading ? 'invSpin .7s linear infinite' : 'none' }} />
           </button>
-          {tabBtn('new-quote',   'Nouveau devis',    FilePlus)}
-          {tabBtn('new-invoice', 'Nouvelle facture', Plus)}
+          {tabBtn('new-quote',   t('invoicing.new_quote'),    FilePlus)}
+          {tabBtn('new-invoice', t('invoicing.new_invoice'), Plus)}
         </div>
       </div>
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         {tabBtn('overview',  'Vue d\'ensemble', TrendingUp)}
-        {tabBtn('quotes',    'Devis',           FileText)}
-        {tabBtn('invoices',  'Factures',        Receipt)}
+        {tabBtn('quotes',    t('invoicing.quotes'),           FileText)}
+        {tabBtn('invoices',  t('invoicing.invoices'),        Receipt)}
       </div>
 
       {/* Overview */}

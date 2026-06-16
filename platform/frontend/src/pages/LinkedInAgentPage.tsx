@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/index';
 import { useEffect, useState, useCallback } from 'react';
 import { Copy, ExternalLink, RefreshCw, Send, Sparkles, CheckCircle, Link2, LogOut, AlertTriangle } from 'lucide-react';
 import { apiRequest, tokenStorage } from '../api/client';
@@ -153,6 +154,7 @@ function OAuthPanel({ token, onStatusChange }: { token: string; onStatusChange: 
 }
 
 export default function LinkedInAgentPage() {
+  const { t, lang } = useI18n();
   const token = tokenStorage.get() ?? '';
   const [pageView, setPageView] = useState<PageView>('generate');
   const [topicType,      setTopicType]      = useState('data_engineering');
@@ -234,7 +236,7 @@ export default function LinkedInAgentPage() {
               background: pageView===v?'rgba(250,204,21,.07)':'none', color: pageView===v?'#facc15':'#64748b',
               cursor: 'pointer', fontSize: '.8rem', fontWeight: pageView===v?700:500,
             }}>
-              {v === 'generate' ? '✍️ Générer & Publier' : '📅 Calendrier éditorial'}
+              {v === 'generate' ? '✍️ Générer & Publier' : t('linkedin.calendar')}
             </button>
           ))}
         </div>
@@ -457,10 +459,10 @@ function LinkedInCalendar({ token }: { token: string }) {
       {stats && (
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           {[
-            { label: 'Total planifiés', val: stats.total,          color: '#64748b' },
-            { label: 'Publiés',         val: stats.published,      color: '#22c55e' },
-            { label: 'En attente',      val: stats.pending,        color: '#f59e0b' },
-            { label: 'Échecs',          val: stats.failed,         color: '#ef4444' },
+            { label: t('linkedin.total'), val: stats.total,          color: '#64748b' },
+            { label: t('linkedin.published'),         val: stats.published,      color: '#22c55e' },
+            { label: t('linkedin.pending'),      val: stats.pending,        color: '#f59e0b' },
+            { label: t('linkedin.failed'),          val: stats.failed,         color: '#ef4444' },
             { label: 'Taux publication', val: `${stats.publication_rate}%`, color: '#facc15' },
           ].map(s => (
             <div key={s.label} style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(148,163,184,.08)', borderRadius: 12, padding: '12px 18px' }}>
@@ -474,7 +476,7 @@ function LinkedInCalendar({ token }: { token: string }) {
       {/* Actions */}
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
         <button onClick={generateCalendar} disabled={generating} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '10px 18px', borderRadius: 10, border: 'none', background: '#facc15', color: '#060d1a', cursor: 'pointer', fontWeight: 800, fontSize: '.86rem' }}>
-          {generating ? '⏳ Génération…' : '📅 Générer calendrier 30 jours'}
+          {generating ? '⏳ Génération…' : t('linkedin.schedule_30d')}
         </button>
         <button onClick={load} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 14px', borderRadius: 10, border: '1px solid rgba(148,163,184,.12)', background: 'none', color: '#64748b', cursor: 'pointer', fontSize: '.82rem' }}>
           🔄 Actualiser

@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/index';
 import { useEffect, useState } from 'react';
 import { ArrowRight, Building2, ChevronLeft, ChevronRight, RefreshCw, Target, TrendingUp } from 'lucide-react';
 import { apiRequest, tokenStorage } from '../api/client';
@@ -132,6 +133,7 @@ function PipelineCard({
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function KanbanPipeline() {
+  const { t } = useI18n();
   const [columns, setColumns] = useState<PipelineColumn[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/index';
 import { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
@@ -337,6 +338,7 @@ function QuickCSVDownloads({ token }: { token: string | null }) {
 }
 
 export default function DataExportPage() {
+  const { t, lang } = useI18n();
   const token = tokenStorage.get();
   const [data, setData] = useState<ExportState>({});
   const [loading, setLoading] = useState(false);
@@ -424,7 +426,7 @@ export default function DataExportPage() {
         </p>
         <div className="hero-actions">
           <button className="team-primary-button" type="button" onClick={loadExports} disabled={loading}>
-            <RefreshCw size={15} /> {loading ? 'Chargement…' : 'Rafraîchir'}
+            <RefreshCw size={15} /> {loading ? t('common.loading') : 'Rafraîchir'}
           </button>
           <button className="team-secondary-button" type="button" onClick={() => exportAll('csv')} disabled={totalRows === 0}>
             <Download size={15} /> Export complet CSV

@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/index';
 import { useEffect, useState } from 'react';
 import {
   Activity,
@@ -100,7 +101,8 @@ export default function SchedulerPanel() {
   }
 
   async function pauseResume() {
-    if (!status) return;
+    if (!status) return
+  const { t } = useI18n();;
     const path = status.running ? '/scheduler/pause' : '/scheduler/resume';
     try {
       await apiRequest(path, { method: 'POST' }, token);
@@ -201,7 +203,7 @@ export default function SchedulerPanel() {
             gap: 1, borderBottom: '1px solid rgba(148,163,184,0.1)',
           }}>
             {[
-              { label: 'Jobs actifs', value: status.jobs.length, color: '#facc15' },
+              { label: t('common.status'), value: status.jobs.length, color: '#facc15' },
               { label: 'Approbations en attente', value: status.pending_approvals_count, color: status.pending_approvals_count > 0 ? '#f97316' : '#22c55e' },
               { label: 'Fuseau horaire', value: status.timezone, color: '#94a3b8' },
             ].map((s) => (

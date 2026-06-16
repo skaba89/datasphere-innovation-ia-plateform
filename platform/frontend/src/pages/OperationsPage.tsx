@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/index';
 import { useState, useEffect } from 'react';
 import { API_BASE } from '../api/config';
 import {
@@ -221,6 +222,7 @@ function PendingValidationsPanel({ token }: { token: string | null }) {
 }
 
 export default function OperationsPage() {
+  const { t, lang } = useI18n();
   const [tab, setTab] = useState<Tab>('validations');
   const [quickStatus, setQuickStatus] = useState<SchedulerStatus | null>(null);
   const token = tokenStorage.get();

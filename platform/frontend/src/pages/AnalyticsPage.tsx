@@ -86,6 +86,7 @@ import {
   Trophy, Activity, Calendar, ArrowUpRight,
 } from 'lucide-react';
 import { apiRequest, tokenStorage } from '../api/client';
+import { useI18n } from '../i18n/index';
 import type { PipelineAnalytics } from '../api/domainTypes';
 
 type Tab = 'overview' | 'pipeline' | 'performance' | 'activite';
@@ -166,9 +167,9 @@ function OverviewTab({ timeline, pipeline }: { timeline: any; pipeline: Pipeline
 
   const pieData = [
     { name: 'AOs détectés', value: timeline.totals?.ao_detectes ?? 0, color: C.blue },
-    { name: 'Workflows',    value: timeline.totals?.wf_completes ?? 0, color: C.purple },
+    { name: t('analytics.workflows'),    value: timeline.totals?.wf_completes ?? 0, color: C.purple },
     { name: 'Livrables',   value: timeline.totals?.livrables ?? 0,    color: C.gold },
-    { name: 'Gagnés',      value: timeline.totals?.gagnes ?? 0,       color: C.green },
+    { name: t('analytics.won'),      value: timeline.totals?.gagnes ?? 0,       color: C.green },
   ];
 
   return (
@@ -448,6 +449,7 @@ function ActiviteTab({ timeline, pipeline }: { timeline: any; pipeline: Pipeline
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function AnalyticsPage() {
+  const { t, lang } = useI18n();
   const token = tokenStorage.get();
   const [tab, setTab]           = useState<Tab>('overview');
   const [timeline, setTimeline] = useState<any>(null);
@@ -501,10 +503,10 @@ export default function AnalyticsPage() {
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-        {tabBtn('overview',    'Vue 12 mois',   Activity)}
-        {tabBtn('pipeline',    'Pipeline',       Target)}
-        {tabBtn('performance', 'Performance',    Trophy)}
-        {tabBtn('activite',    'Agents & Ops',   Zap)}
+        {tabBtn('overview',    t('analytics.tab_overview'),   Activity)}
+        {tabBtn('pipeline',    t('analytics.tab_pipeline'),       Target)}
+        {tabBtn('performance', t('analytics.tab_perf'),    Trophy)}
+        {tabBtn('activite',    t('analytics.tab_agents'),   Zap)}
       </div>
 
       {loading ? (

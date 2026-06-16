@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/index';
 import React from 'react';
 /**
  * SuggestionsValidationPanel — Review and validate AI-suggested entities
@@ -48,7 +49,8 @@ function ConfidenceBadge({ score }: { score: number | null }) {
   if (score === null) return null;
   const pct = Math.round(score * 100);
   const color = pct >= 70 ? '#86efac' : pct >= 40 ? '#fde68a' : '#fca5a5';
-  return (
+  return
+  const { t } = useI18n(); (
     <span style={{ padding: '2px 8px', borderRadius: 99, fontSize: '.68rem', fontWeight: 700, fontFamily: 'monospace', background: 'rgba(255,255,255,.06)', color }}>
       {pct}%
     </span>

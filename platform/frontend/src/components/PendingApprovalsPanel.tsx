@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/index';
 import { useEffect, useState } from 'react';
 import {
   AlertTriangle,
@@ -56,6 +57,7 @@ function timeSince(iso: string): string {
 // ────────────────────────────────────────────────────────────────────────────
 
 export default function PendingApprovalsPanel() {
+  const { t } = useI18n();
   const [actions, setActions] = useState<AgentAction[]>([]);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
@@ -287,7 +289,7 @@ export default function PendingApprovalsPanel() {
                         }}
                       >
                         {isApproving ? <RefreshCw size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <ShieldCheck size={12} />}
-                        {isApproving ? 'En cours…' : 'Approuver'}
+                        {isApproving ? 'En cours…' : t('common.approve')}
                       </button>
                     ) : (
                       <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#86efac', fontSize: '0.8rem', fontWeight: 700 }}>
