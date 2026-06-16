@@ -342,15 +342,49 @@ def markdown_to_pdf(
 
     body_html = _md_to_html_body(content_markdown)
 
+    # CSS adapté pour HTML (supprimer les directives @page spécifiques WeasyPrint)
+    _css_html = re.sub(r'@page\s*\{[^}]+\}', '', _CSS)
+    _css_html = re.sub(r'counter\([^)]+\)', '', _css_html)
+
     full_html = f"""<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{_escape(title)}</title>
+  <style>
+    body {{ font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 900px; margin: 0 auto; padding: 40px 32px; background: #fff; color: #1e293b; line-height: 1.6; }}
+    h1 {{ font-size: 2rem; font-weight: 900; color: #0f172a; border-bottom: 3px solid #facc15; padding-bottom: 12px; margin-bottom: 24px; }}
+    h2 {{ font-size: 1.3rem; font-weight: 800; color: #0f172a; margin-top: 32px; margin-bottom: 12px; }}
+    h3 {{ font-size: 1.1rem; font-weight: 700; color: #1e293b; margin-top: 24px; }}
+    p {{ margin-bottom: 12px; }}
+    ul, ol {{ margin: 12px 0 12px 24px; }}
+    li {{ margin-bottom: 4px; }}
+    table {{ width: 100%; border-collapse: collapse; margin: 20px 0; }}
+    th {{ background: #f8fafc; font-weight: 700; padding: 10px 14px; border: 1px solid #e2e8f0; text-align: left; }}
+    td {{ padding: 8px 14px; border: 1px solid #e2e8f0; }}
+    code {{ background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: .9em; }}
+    pre {{ background: #f8fafc; padding: 16px; border-radius: 8px; overflow-x: auto; border: 1px solid #e2e8f0; }}
+    blockquote {{ border-left: 4px solid #facc15; margin: 16px 0; padding: 8px 16px; background: #fffbeb; color: #78350f; }}
+    .cover {{ background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white; padding: 48px 40px; border-radius: 12px; margin-bottom: 40px; }}
+    .cover .brand {{ font-size: .85rem; color: #facc15; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 20px; }}
+    .cover .title {{ font-size: 2rem; font-weight: 900; color: white; margin-bottom: 16px; line-height: 1.2; }}
+    .cover .subtitle {{ font-size: 1rem; color: #94a3b8; margin-bottom: 24px; }}
+    .cover .meta-table {{ border-top: 1px solid rgba(255,255,255,.15); padding-top: 20px; }}
+    .cover .row {{ display: flex; gap: 16px; margin-bottom: 8px; font-size: .85rem; }}
+    .cover .label {{ color: #64748b; min-width: 80px; }}
+    @media print {{
+      body {{ padding: 20px; max-width: 100%; }}
+      .cover {{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }}
+    }}
+  </style>
 </head>
 <body>
   {cover_html}
   {body_html}
+  <footer style="margin-top: 60px; padding-top: 20px; border-top: 1px solid #e2e8f0; font-size: .75rem; color: #94a3b8; text-align: center;">
+    DataSphere Innovation — Document généré le {date_str} — CONFIDENTIEL
+  </footer>
 </body>
 </html>"""
 

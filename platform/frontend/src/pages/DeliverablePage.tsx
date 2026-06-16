@@ -122,25 +122,37 @@ export default function DeliverablePage() {
   async function downloadExport(id: number, fmt: string) {
     const url = exportUrl(id, fmt);
     try {
+      setMsg('');
       const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}));
-        setMsg(`❌ Export ${fmt.toUpperCase()} : ${err.detail || resp.statusText}`);
+        let detail = resp.statusText;
+        try { const e = await resp.json(); detail = e.detail || detail; } catch {}
+        setMsg(`❌ Export ${fmt.toUpperCase()} : ${detail}`);
         return;
       }
-      const blob = await resp.blob();
-      const ext  = fmt === 'pdf' ? 'pdf' : fmt === 'markdown' ? 'md' : fmt;
       const ct   = resp.headers.get('content-type') || '';
-      const finalExt = ct.includes('pdf') ? 'pdf' : ct.includes('html') ? 'html' : ext;
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `livrable-${id}.${finalExt}`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(a.href);
+      const blob = await resp.blob();
+      const objUrl = URL.createObjectURL(blob);
+
+      if (fmt === 'pdf' && ct.includes('html')) {
+        // WeasyPrint absent → HTML premium — ouvrir dans un nouvel onglet (imprimable en PDF)
+        window.open(objUrl, '_blank');
+        setMsg('📄 Document HTML ouvert (Ctrl+P pour imprimer en PDF)');
+        setTimeout(() => URL.revokeObjectURL(objUrl), 60000);
+      } else {
+        // Téléchargement direct
+        const ext = ct.includes('pdf') ? 'pdf' : ct.includes('html') ? 'html' : fmt === 'markdown' ? 'md' : fmt;
+        const a = document.createElement('a');
+        a.href = objUrl;
+        a.download = `livrable-${id}.${ext}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(objUrl), 5000);
+        setMsg(`✅ Téléchargement démarré (.${ext})`);
+      }
     } catch (e) {
-      setMsg(`❌ Erreur export : ${String(e).slice(0, 80)}`);
+      setMsg(`❌ Erreur réseau : ${String(e).slice(0, 80)}`);
     }
   }
 
