@@ -57,6 +57,7 @@ function fmtMs(ms: number | null | undefined): string {
 // ────────────────────────────────────────────────────────────────────────────
 
 export default function SchedulerPanel() {
+  const { t } = useI18n();
   const [status, setStatus] = useState<SchedulerStatus | null>(null);
   const [logs, setLogs] = useState<SchedulerLog[]>([]);
   const [logsOpen, setLogsOpen] = useState(false);
@@ -101,8 +102,7 @@ export default function SchedulerPanel() {
   }
 
   async function pauseResume() {
-    if (!status) return
-  const { t } = useI18n();
+    if (!status) return;
     const path = status.running ? '/scheduler/pause' : '/scheduler/resume';
     try {
       await apiRequest(path, { method: 'POST' }, token);
