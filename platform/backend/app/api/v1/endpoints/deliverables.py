@@ -648,13 +648,18 @@ def generate_content_for_deliverable(
             context_label = f"{tender.title} — {deliverable.title}"
 
     try:
-        content = generate_draft_content(
+        result = generate_draft_content(
             deliverable_type=deliverable.deliverable_type or "technical_proposal",
-            context_label=context_label,
+            context=context_label,
             language="fr",
         )
-        provider = content.get("provider", "simulation") if isinstance(content, dict) else "simulation"
-        content_text = content.get("content", str(content)) if isinstance(content, dict) else str(content)
+        # generate_draft_content peut retourner str ou dict selon la version
+        if isinstance(result, dict):
+            provider    = result.get("provider", "template")
+            content_text = result.get("content", "")
+        else:
+            provider    = "template"
+            content_text = str(result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur génération IA : {e}")
 

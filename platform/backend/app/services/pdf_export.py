@@ -218,6 +218,7 @@ hr {
 
 def _md_to_html_body(md: str) -> str:
     """Convert Markdown to clean HTML body content."""
+    md = md or ''
     lines = md.split('\n')
     html_lines = []
     in_code = False
@@ -317,6 +318,11 @@ def markdown_to_pdf(
     Returns raw bytes ready for HTTP response.
     """
     # WeasyPrint optionnel — fallback HTML si absent (Render free sans Cairo/Pango)
+    # Normaliser les inputs
+    title = title or "Livrable DataSphere"
+    content_markdown = content_markdown or ""
+    author = author or "DataSphere Innovation"
+
     _weasyprint_available = True
     try:
         from weasyprint import HTML as WHP, CSS as WCSS
