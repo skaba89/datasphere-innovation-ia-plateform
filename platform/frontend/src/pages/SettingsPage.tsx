@@ -283,7 +283,7 @@ export default function SettingsPage() {
                   borderRadius: 10, background: 'rgba(255,255,255,.02)', border: '1px solid rgba(148,163,184,.05)',
                 }}>
                   <Key size={11} color={req ? '#fca5a5' : '#334155'} style={{ flexShrink: 0 }} />
-                  <code style={{ fontSize: '.75rem', color: req ? '#fde68a' : '#64748b', fontFamily: "'JetBrains Mono', monospace", flex: 1 }}>{key}</code>
+                  <code style={{ fontSize: '.72rem', color: req ? '#fde68a' : '#64748b', fontFamily: "'JetBrains Mono', monospace", flex: 1, minWidth: 140, wordBreak: 'break-all' }}>{key}</code>
                   {recommend && <span style={{ fontSize: '.65rem', padding: '2px 6px', borderRadius: 99, background: 'rgba(250,204,21,.1)', color: '#facc15', border: '1px solid rgba(250,204,21,.2)', fontWeight: 700, flexShrink: 0 }}>RECOMMANDÉ</span>}
                   {req && <span style={{ fontSize: '.65rem', padding: '2px 6px', borderRadius: 99, background: 'rgba(239,68,68,.1)', color: '#fca5a5', border: '1px solid rgba(239,68,68,.2)', fontWeight: 700, flexShrink: 0 }}>REQUIS</span>}
                   <span style={{ fontSize: '.71rem', color: '#334155', textAlign: 'right', maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{desc}</span>

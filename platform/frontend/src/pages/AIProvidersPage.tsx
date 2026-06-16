@@ -214,7 +214,7 @@ export default function AIProvidersPage() {
                             <p style={{ margin: 0, fontSize: '.74rem', color: '#475569', lineHeight: 1.4 }}>{meta.desc}</p>
                           </div>
                         </div>
-                        <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                             <Stars count={quality.stars} />
                             <span style={{ fontSize: '.68rem', color: '#475569' }}>{quality.label}</span>
@@ -260,7 +260,7 @@ export default function AIProvidersPage() {
               <div style={{ fontSize: '.72rem', fontWeight: 800, color: '#334155', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 10 }}>
                 {unavailable.length} provider{unavailable.length > 1 ? 's' : ''} non configuré{unavailable.length > 1 ? 's' : ''}
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 8 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(min(260px,100%),1fr))', gap: 8 }}>
                 {unavailable.map(p => {
                   const meta = PROVIDER_META[p.name] ?? { icon: '🤖', desc: p.label, docs: '#', badgeColor: '#64748b' };
                   return (

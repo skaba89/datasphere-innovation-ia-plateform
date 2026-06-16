@@ -373,7 +373,8 @@ export default function TeamPage() {
             const isSelf = m.id === me?.id;
             return (
               <div key={m.id} style={{
-                display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px',
+                display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px',
+                flexWrap: 'wrap',
                 background: m.is_active ? 'rgba(255,255,255,.025)' : 'rgba(255,255,255,.01)',
                 border: `1px solid ${isSelf ? 'rgba(250,204,21,.15)' : 'rgba(148,163,184,.08)'}`,
                 borderRadius: 12, opacity: m.is_active ? 1 : 0.65,

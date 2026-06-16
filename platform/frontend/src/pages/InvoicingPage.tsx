@@ -191,7 +191,7 @@ function DocRow({ doc, type, token, onRefresh }: { doc: Quote|Invoice; type: 'qu
   const d = doc as any;
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', background: 'rgba(255,255,255,.02)', border: '1px solid rgba(148,163,184,.06)', borderRadius: 12, transition: 'background .15s' }}
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: 'rgba(255,255,255,.02)', border: '1px solid rgba(148,163,184,.06)', borderRadius: 12, transition: 'background .15s', flexWrap: 'wrap' }}
       onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,.04)'}
       onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,.02)'}
     >

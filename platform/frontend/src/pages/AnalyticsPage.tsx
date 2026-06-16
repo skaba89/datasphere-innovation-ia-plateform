@@ -40,8 +40,8 @@ const TOOLTIP_STYLE = {
 
 const CHART_BG: React.CSSProperties = {
   background: 'rgba(10,18,38,.85)', border: '1px solid rgba(148,163,184,.08)',
-  borderRadius: 16, padding: '20px 22px',
-  backdropFilter: 'blur(24px)',
+  borderRadius: 16, padding: '16px clamp(12px,2vw,22px)',
+  backdropFilter: 'blur(24px)', overflowX: 'hidden', minWidth: 0,
 };
 
 function ChartTitle({ label, sub }: { label: string; sub?: string }) {

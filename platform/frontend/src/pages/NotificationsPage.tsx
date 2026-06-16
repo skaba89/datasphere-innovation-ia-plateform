@@ -184,7 +184,7 @@ export default function NotificationsPage() {
             return (
               <div key={n.id} onClick={() => !n.is_read && markRead(n.id)}
                 style={{
-                  display: 'flex', alignItems: 'flex-start', gap: 14, padding: '14px 16px',
+                  display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px 14px',
                   borderRadius: 12, cursor: 'pointer', transition: 'all .15s ease',
                   background: n.is_read ? 'rgba(255,255,255,.015)' : bg || 'rgba(255,255,255,.03)',
                   border: `1px solid ${n.is_read ? 'rgba(148,163,184,.05)' : 'rgba(148,163,184,.1)'}`,

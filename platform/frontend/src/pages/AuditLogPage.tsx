@@ -164,7 +164,7 @@ export default function AuditLogPage() {
               return (
                 <div key={log.id} style={{
                   display: 'grid', gridTemplateColumns: '60px 1fr 120px 140px 90px 90px', gap: 0,
-                  padding: '11px 16px', alignItems: 'center',
+                  padding: '11px 16px', alignItems: 'center', minWidth: 680,
                   borderBottom: i < logs.length - 1 ? '1px solid rgba(148,163,184,.04)' : 'none',
                   transition: 'background .12s',
                 }}
@@ -204,6 +204,7 @@ export default function AuditLogPage() {
         )}
 
         </div>{/* /scroll wrapper */}
+        </div>{/* end table-scroll */}
         {/* Pagination */}
         {totalPages > 1 && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid rgba(148,163,184,.06)', background: 'rgba(255,255,255,.01)' }}>
