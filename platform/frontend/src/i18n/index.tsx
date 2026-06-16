@@ -182,6 +182,26 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     'pricing.unlimited':   '∞',
 
 
+
+    // ── Tenders page ──────────────────────────────────────────────────────────
+    'tenders.module':         'Module stratégique',
+    'tenders.subtitle':       'Veille BOAMP · Qualification IA · Workflow automatisé · Livrable',
+    'tenders.search_btn':     'Chercher des AOs',
+    'tenders.import_pdf':     'Importer PDF',
+    'tenders.workflow_btn':   'Workflow IA',
+    'tenders.memoire_btn':    'Mémoire Technique',
+    'tenders.gonogo_btn':     'Go/No-Go IA',
+    'tenders.timeline_btn':   'Timeline',
+    'tenders.autoimport_btn': 'Auto-Import IA',
+    'tenders.boamp_title':    'Veille AO automatisée',
+    'tenders.boamp_subtitle': 'Interroge la veille backend, qualifie les AOs',
+    'tenders.keywords':       'Mots-clés de veille',
+    'tenders.search_ao':      'Chercher les AOs',
+    'tenders.reset':          'Réinitialiser',
+    'tenders.import_select':  'Importer la sélection',
+    'tenders.error_network':  'Serveur inaccessible — le backend démarre (30s). Réessayez.',
+    'tenders.no_results':     'Aucun AO trouvé. Essayez avec d\'autres mots-clés.',
+
     // ── Invoicing ─────────────────────────────────────────────────────────────
     'invoicing.title':          'Facturation',
     'invoicing.quotes':         'Devis',
@@ -560,6 +580,26 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     'pricing.unlimited':   'Unlimited',
 
 
+
+    // ── Tenders page ──────────────────────────────────────────────────────────
+    'tenders.module':         'Module stratégique',
+    'tenders.subtitle':       'Veille BOAMP · Qualification IA · Workflow automatisé · Livrable',
+    'tenders.search_btn':     'Chercher des AOs',
+    'tenders.import_pdf':     'Importer PDF',
+    'tenders.workflow_btn':   'Workflow IA',
+    'tenders.memoire_btn':    'Mémoire Technique',
+    'tenders.gonogo_btn':     'Go/No-Go IA',
+    'tenders.timeline_btn':   'Timeline',
+    'tenders.autoimport_btn': 'Auto-Import IA',
+    'tenders.boamp_title':    'Veille AO automatisée',
+    'tenders.boamp_subtitle': 'Interroge la veille backend, qualifie les AOs',
+    'tenders.keywords':       'Mots-clés de veille',
+    'tenders.search_ao':      'Chercher les AOs',
+    'tenders.reset':          'Réinitialiser',
+    'tenders.import_select':  'Importer la sélection',
+    'tenders.error_network':  'Serveur inaccessible — le backend démarre (30s). Réessayez.',
+    'tenders.no_results':     'Aucun AO trouvé. Essayez avec d\'autres mots-clés.',
+
     // ── Invoicing ─────────────────────────────────────────────────────────────
     'invoicing.title':          'Facturation',
     'invoicing.quotes':         'Devis',
@@ -757,6 +797,26 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     'common.unknown':           'Inconnu',
 
 
+
+    // ── Tenders page ──────────────────────────────────────────────────────────
+    'tenders.module':         'Module stratégique',
+    'tenders.subtitle':       'Veille BOAMP · Qualification IA · Workflow automatisé · Livrable',
+    'tenders.search_btn':     'Chercher des AOs',
+    'tenders.import_pdf':     'Importer PDF',
+    'tenders.workflow_btn':   'Workflow IA',
+    'tenders.memoire_btn':    'Mémoire Technique',
+    'tenders.gonogo_btn':     'Go/No-Go IA',
+    'tenders.timeline_btn':   'Timeline',
+    'tenders.autoimport_btn': 'Auto-Import IA',
+    'tenders.boamp_title':    'Veille AO automatisée',
+    'tenders.boamp_subtitle': 'Interroge la veille backend, qualifie les AOs',
+    'tenders.keywords':       'Mots-clés de veille',
+    'tenders.search_ao':      'Chercher les AOs',
+    'tenders.reset':          'Réinitialiser',
+    'tenders.import_select':  'Importer la sélection',
+    'tenders.error_network':  'Serveur inaccessible — le backend démarre (30s). Réessayez.',
+    'tenders.no_results':     'Aucun AO trouvé. Essayez avec d\'autres mots-clés.',
+
     // ── Invoicing ─────────────────────────────────────────────────────────────
 
     // ── Analytics ──────────────────────────────────────────────────────────────
@@ -790,6 +850,26 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     // ── Calculator ─────────────────────────────────────────────────────────────
 
     // ── Common extras ──────────────────────────────────────────────────────────
+
+
+    // ── Tenders page ──────────────────────────────────────────────────────────
+    'tenders.module':         'Strategic Module',
+    'tenders.subtitle':       'BOAMP monitoring · AI qualification · Automated workflow · Deliverable',
+    'tenders.search_btn':     'Search tenders',
+    'tenders.import_pdf':     'Import PDF',
+    'tenders.workflow_btn':   'AI Workflow',
+    'tenders.memoire_btn':    'Technical memo',
+    'tenders.gonogo_btn':     'AI Go/No-Go',
+    'tenders.timeline_btn':   'Timeline',
+    'tenders.autoimport_btn': 'AI Auto-Import',
+    'tenders.boamp_title':    'Automated tender monitoring',
+    'tenders.boamp_subtitle': 'Queries backend, qualifies tenders',
+    'tenders.keywords':       'Search keywords',
+    'tenders.search_ao':      'Search tenders',
+    'tenders.reset':          'Reset',
+    'tenders.import_select':  'Import selection',
+    'tenders.error_network':  'Server unreachable — backend starting (30s). Please retry.',
+    'tenders.no_results':     'No tenders found. Try different keywords.',
 
     // Audit
     'audit.title':  'Audit log',

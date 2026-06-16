@@ -40,7 +40,7 @@ function TenderWorkflowTimeline({ tenderId, token }: { tenderId: number; token: 
   }, [tenderId, token]);
 
   if (loading) return <div style={{color:'#475569',fontSize:'.82rem',padding:16}}>Chargement du workflow…</div>;
-  if (!workflow) return <div style={{color:'#475569',fontSize:'.82rem',padding:16}}>Aucun workflow trouvé pour cet AO.<br/>Lancez-le via le panneau Workflow IA.</div>;
+  if (!workflow) return <div style={{color:'#475569',fontSize:'.82rem',padding:16}}>Aucun workflow trouvé pour cet AO.<br/>Lancez-le via le panneau {t('tenders.workflow_btn')}.</div>;
 
   return <WorkflowTimeline workflow={workflow} token={token} onUpdate={() => {
     apiRequest<any>(`/workflow/tender/${tenderId}`, {}, token).then(w => setWorkflow(w)).catch(() => {});
@@ -147,31 +147,31 @@ export default function TenderPage() {
       <section className="panel">
         <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',flexWrap:'wrap',gap:12}}>
           <div>
-            <p className="eyebrow">Module stratégique</p>
+            <p className="eyebrow">{t('tenders.module')}</p>
             <h1>{t('tenders.title')}</h1>
-            <p className="subtitle">Veille BOAMP · Qualification IA · Workflow automatisé · Livrable</p>
+            <p className="subtitle">{t('tenders.subtitle')}</p>
           </div>
           <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center',marginTop:8}}>
             <button style={S.btn(showBOAMP)} onClick={()=>{setShowBOAMP(v=>!v);setShowWorkflow(false);}}>
-              <Search size={14}/> Chercher des AOs
+              <Search size={14}/> {t('tenders.search_btn')}
             </button>
             <button style={S.btn()} onClick={()=>setShowPDF(true)}>
-              <FileText size={14}/> Importer PDF
+              <FileText size={14}/> {t('tenders.import_pdf')}
             </button>
             <button style={S.btn(showWorkflow)} onClick={()=>{setShowWorkflow(v=>!v);setShowBOAMP(false);setShowMemoire(false);}}>
               <Zap size={14}/> Workflow IA
             </button>
             <button style={S.btn(showMemoire)} onClick={()=>{setShowMemoire(v=>!v);setShowWorkflow(false);setShowBOAMP(false);setShowGoNoGo(false);setShowTimeline(false);setShowAutoImport(false);}}>
-              <BookOpen size={14}/> Mémoire Technique
+              <BookOpen size={14}/> {t('tenders.memoire_btn')}
             </button>
             <button style={S.btn(showGoNoGo)} onClick={()=>{setShowGoNoGo(v=>!v);setShowMemoire(false);setShowWorkflow(false);setShowBOAMP(false);setShowTimeline(false);setShowAutoImport(false);}}>
-              <CheckCircle2 size={14}/> Go/No-Go IA
+              <CheckCircle2 size={14}/> {t('tenders.gonogo_btn')}
             </button>
             <button style={S.btn(showTimeline)} onClick={()=>{setShowTimeline(v=>!v);setShowGoNoGo(false);setShowMemoire(false);setShowWorkflow(false);setShowBOAMP(false);setShowAutoImport(false);}}>
-              <Zap size={14}/> Timeline
+              <Zap size={14}/> {t('tenders.timeline_btn')}
             </button>
             <button style={S.btn(showAutoImport)} onClick={()=>{setShowAutoImport(v=>!v);setShowTimeline(false);setShowGoNoGo(false);setShowMemoire(false);setShowWorkflow(false);setShowBOAMP(false);}}>
-              <Search size={14}/> Auto-Import IA
+              <Search size={14}/> {t('tenders.autoimport_btn')}
             </button>
           </div>
         </div>

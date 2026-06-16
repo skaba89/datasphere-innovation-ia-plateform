@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/index';
 import { useMemo, useState } from 'react';
 import { RefreshCw, Search, Sparkles } from 'lucide-react';
 
@@ -99,6 +100,7 @@ function recommendationLabel(candidate: AutoTenderCandidate): string {
 }
 
 export default function TenderAutoImportPanel({ token, onImported }: Props) {
+  const { t } = useI18n();
   const [query, setQuery] = useState('data IA digitalisation Guinée');
   const [source, setSource] = useState<'all' | 'boamp' | 'local'>('all');
   const [candidates, setCandidates] = useState<AutoTenderCandidate[]>(DEFAULT_CANDIDATES);
@@ -260,7 +262,7 @@ export default function TenderAutoImportPanel({ token, onImported }: Props) {
           </p>
         </div>
         <button className="team-primary-button" type="button" onClick={importSelected} disabled={loading}>
-          <Sparkles size={14} /> {loading ? 'Import…' : 'Importer la sélection'}
+          <Sparkles size={14} /> {loading ? 'Import…' : t('tenders.import_select')}
         </button>
       </div>
 

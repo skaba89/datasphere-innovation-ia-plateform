@@ -112,7 +112,23 @@ export async function apiRequest<T>(
   token?: string | null,
 ): Promise<T> {
   const activeToken = token ?? tokenStorage.get();
-  let response = await _fetch(path, options, activeToken);
+  let response: Response;
+  try {
+    response = await _fetch(path, options, activeToken);
+  } catch (networkErr) {
+    // Retry x1 après 2s (cold start Render free ~30-60s côté backend)
+    await new Promise(r => setTimeout(r, 2000));
+    try {
+      response = await _fetch(path, options, activeToken);
+    } catch {
+      // Message plus informatif que "Failed to fetch"
+      const msg = (networkErr as Error)?.message || 'Erreur réseau';
+      if (msg.includes('fetch') || msg.includes('network') || msg.includes('Failed')) {
+        throw new Error('Serveur inaccessible — le backend démarre peut-être (30s). Réessayez dans un instant.');
+      }
+      throw networkErr;
+    }
+  }
 
   // Silent token refresh on 401
   if (response.status === 401 && tokenStorage.getRefresh()) {
