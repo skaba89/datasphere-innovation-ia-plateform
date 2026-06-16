@@ -541,22 +541,31 @@ def export_deliverable_docx(
         if tender:
             buyer_name = tender.buyer_name
 
-    docx_bytes = markdown_to_docx(
-        title=deliverable.title,
-        content_markdown=deliverable.content_markdown or "",
-        author=f"{current_user.first_name or ''} {current_user.last_name or ''}".strip() or "DataSphere",
-        buyer_name=buyer_name,
-        confidential=True,
-    )
+    safe_title = "".join(c for c in (deliverable.title or "livrable") if c.isalnum() or c in " -_")[:50]
 
-    safe_title = "".join(c for c in deliverable.title if c.isalnum() or c in " -_")[:50]
-    filename = f"Livrable_{safe_title}.docx"
-
-    return Response(
-        content=docx_bytes,
-        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-    )
+    try:
+        docx_bytes = markdown_to_docx(
+            title=deliverable.title or "Livrable",
+            content_markdown=deliverable.content_markdown or deliverable.content or "",
+            author=f"{current_user.first_name or ''} {current_user.last_name or ''}".strip() or "DataSphere",
+            buyer_name=buyer_name,
+            confidential=True,
+        )
+        filename = f"Livrable_{safe_title}.docx"
+        return Response(
+            content=docx_bytes,
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+    except Exception as e:
+        # Fallback Markdown si python-docx échoue
+        md = deliverable.content_markdown or deliverable.content or ""
+        filename = f"Livrable_{safe_title}.md"
+        return Response(
+            content=md.encode("utf-8"),
+            media_type="text/markdown; charset=utf-8",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
 
 
 @router.get("/{deliverable_id}/export/pdf")
@@ -580,23 +589,36 @@ def export_deliverable_pdf(
         if tender:
             buyer_name = tender.buyer_name
 
+    safe_title = "".join(ch for ch in (deliverable.title or "livrable") if ch.isalnum() or ch in " -_")[:50]
+
     try:
-        pdf_bytes = markdown_to_pdf(
-            title=deliverable.title,
-            content_markdown=deliverable.content_markdown or "",
+        result = markdown_to_pdf(
+            title=deliverable.title or "Livrable",
+            content_markdown=deliverable.content_markdown or deliverable.content or "",
             author=f"{current_user.first_name or ''} {current_user.last_name or ''}".strip() or "DataSphere",
             buyer_name=buyer_name,
-            version=deliverable.version or 1,
+            version=getattr(deliverable, 'version', 1) or 1,
             confidential=True,
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"PDF generation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Export failed: {e}")
 
-    safe_title = "".join(ch for ch in deliverable.title if ch.isalnum() or ch in " -_")[:50]
+    # Détecter si WeasyPrint a produit du PDF ou du HTML (fallback)
+    is_html = isinstance(result, (str, bytes)) and (
+        result[:20].lstrip(b'\xef\xbb\xbf') if isinstance(result, bytes) else result[:20]
+    ).lstrip().startswith(b'<' if isinstance(result, bytes) else '<')
+
+    if is_html:
+        filename = f"Livrable_{safe_title}.html"
+        return Response(
+            content=result if isinstance(result, bytes) else result.encode("utf-8"),
+            media_type="text/html; charset=utf-8",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+
     filename = f"Livrable_{safe_title}.pdf"
-
     return Response(
-        content=pdf_bytes,
+        content=result,
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )

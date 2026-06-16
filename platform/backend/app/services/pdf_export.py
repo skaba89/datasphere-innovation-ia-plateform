@@ -316,7 +316,13 @@ def markdown_to_pdf(
     Convert deliverable Markdown to a professional PDF.
     Returns raw bytes ready for HTTP response.
     """
-    from weasyprint import HTML, CSS
+    # WeasyPrint optionnel — fallback HTML si absent (Render free sans Cairo/Pango)
+    _weasyprint_available = True
+    try:
+        from weasyprint import HTML as WHP, CSS as WCSS
+    except (ImportError, OSError):
+        _weasyprint_available = False
+        log.warning("WeasyPrint non disponible — fallback HTML")
 
     date_str = datetime.now().strftime('%d/%m/%Y')
 
@@ -348,12 +354,16 @@ def markdown_to_pdf(
 </body>
 </html>"""
 
-    try:
-        pdf_bytes = HTML(string=full_html).write_pdf(
-            stylesheets=[CSS(string=_CSS)]
-        )
-        log.info("PDF generated: %s (%d bytes)", title[:50], len(pdf_bytes))
-        return pdf_bytes
-    except Exception as e:
-        log.error("PDF generation failed: %s", e)
-        raise
+    if _weasyprint_available:
+        try:
+            pdf_bytes = WHP(string=full_html).write_pdf(
+                stylesheets=[WCSS(string=_CSS)]
+            )
+            log.info("PDF generated: %s (%d bytes)", title[:50], len(pdf_bytes))
+            return pdf_bytes
+        except Exception as e:
+            log.warning("WeasyPrint failed (%s) — fallback HTML", e)
+
+    # Fallback HTML — retourne le document comme HTML téléchargeable
+    log.info("Returning HTML fallback for: %s", title[:50])
+    return full_html.encode("utf-8")
