@@ -87,7 +87,6 @@ def _run_next_step(instance_id: int, session_factory) -> None:
             # Send completion email
             try:
                 from app.services.email_service import notify_workflow_completed
-                from app.models.workflow import WorkflowStep
                 from app.core.config import get_settings
                 deliverable_step = db.query(WorkflowStep).filter(
                     WorkflowStep.instance_id == instance_id,
