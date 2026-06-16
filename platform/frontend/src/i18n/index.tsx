@@ -58,7 +58,6 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
 
     // Tenders
     'tenders.title':            "Appels d'offres",
-    'tenders.import_pdf':       'Importer depuis PDF',
     'tenders.new':              'Nouvel AO',
     'tenders.status.go':        'Go',
     'tenders.status.no_go':     'No Go',
@@ -456,7 +455,6 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
 
     // Tenders
     'tenders.title':            'Tenders',
-    'tenders.import_pdf':       'Import from PDF',
     'tenders.new':              'New tender',
     'tenders.boamp':            'BOAMP scan',
     'tenders.workflow':         'Start workflow',
@@ -582,23 +580,6 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
 
 
     // ── Tenders page ──────────────────────────────────────────────────────────
-    'tenders.module':         'Module stratégique',
-    'tenders.subtitle':       'Veille BOAMP · Qualification IA · Workflow automatisé · Livrable',
-    'tenders.search_btn':     'Chercher des AOs',
-    'tenders.import_pdf':     'Importer PDF',
-    'tenders.workflow_btn':   'Workflow IA',
-    'tenders.memoire_btn':    'Mémoire Technique',
-    'tenders.gonogo_btn':     'Go/No-Go IA',
-    'tenders.timeline_btn':   'Timeline',
-    'tenders.autoimport_btn': 'Auto-Import IA',
-    'tenders.boamp_title':    'Veille AO automatisée',
-    'tenders.boamp_subtitle': 'Interroge la veille backend, qualifie les AOs',
-    'tenders.keywords':       'Mots-clés de veille',
-    'tenders.search_ao':      'Chercher les AOs',
-    'tenders.reset':          'Réinitialiser',
-    'tenders.import_select':  'Importer la sélection',
-    'tenders.error_network':  'Serveur inaccessible — le backend démarre (30s). Réessayez.',
-    'tenders.no_results':     'Aucun AO trouvé. Essayez avec d\'autres mots-clés.',
 
     // ── Invoicing ─────────────────────────────────────────────────────────────
     'invoicing.title':          'Facturation',
@@ -799,23 +780,6 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
 
 
     // ── Tenders page ──────────────────────────────────────────────────────────
-    'tenders.module':         'Module stratégique',
-    'tenders.subtitle':       'Veille BOAMP · Qualification IA · Workflow automatisé · Livrable',
-    'tenders.search_btn':     'Chercher des AOs',
-    'tenders.import_pdf':     'Importer PDF',
-    'tenders.workflow_btn':   'Workflow IA',
-    'tenders.memoire_btn':    'Mémoire Technique',
-    'tenders.gonogo_btn':     'Go/No-Go IA',
-    'tenders.timeline_btn':   'Timeline',
-    'tenders.autoimport_btn': 'Auto-Import IA',
-    'tenders.boamp_title':    'Veille AO automatisée',
-    'tenders.boamp_subtitle': 'Interroge la veille backend, qualifie les AOs',
-    'tenders.keywords':       'Mots-clés de veille',
-    'tenders.search_ao':      'Chercher les AOs',
-    'tenders.reset':          'Réinitialiser',
-    'tenders.import_select':  'Importer la sélection',
-    'tenders.error_network':  'Serveur inaccessible — le backend démarre (30s). Réessayez.',
-    'tenders.no_results':     'Aucun AO trouvé. Essayez avec d\'autres mots-clés.',
 
     // ── Invoicing ─────────────────────────────────────────────────────────────
 
