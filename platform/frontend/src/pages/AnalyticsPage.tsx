@@ -108,7 +108,7 @@ function OverviewTab({ timeline, pipeline }: { timeline: any; pipeline: Pipeline
         <StatChip label="Workflows"    value={timeline.totals?.wf_completes ?? 0} color={C.purple} />
         <StatChip label="Livrables"    value={timeline.totals?.livrables ?? 0}    color={C.gold} />
         <StatChip label="Gagnés"       value={timeline.totals?.gagnes ?? 0}       color={C.green} />
-        <StatChip label="Win rate moy" value={`${months.length ? Math.round(months.reduce((s:number,m:any)=>s+m.taux_succes,0)/Math.max(months.filter((m:any)=>m.ao_detectes>0).length,1))  }%`} color={C.amber} />
+        <StatChip label="Win rate moy" value={months.length ? `${Math.round(months.reduce((s:number,m:any)=>s+m.taux_succes,0)/Math.max(months.filter((m:any)=>m.ao_detectes>0).length,1))}%` : "0%"} color={C.amber} />
       </div>
 
       {/* Main timeline */}

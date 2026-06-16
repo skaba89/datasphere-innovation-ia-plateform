@@ -203,8 +203,7 @@ export default function AuditLogPage() {
           </div>
         )}
 
-        </div>{/* /scroll wrapper */}
-        </div>{/* end table-scroll */}
+        </div>{/* end scroll wrapper */}
         {/* Pagination */}
         {totalPages > 1 && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid rgba(148,163,184,.06)', background: 'rgba(255,255,255,.01)' }}>
