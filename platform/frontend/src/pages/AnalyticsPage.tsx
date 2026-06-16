@@ -5,11 +5,82 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer,
-  PieChart, Pie, Cell,
-  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+  // @ts-ignore
+  Legend,
 } from 'recharts';
+// PieChart, RadarChart — remplacés par SVG natif (types instables recharts sur Node 24)
+
+// ── SVG remplacements pour PieChart/RadarChart (types recharts instables Node 24) ──
+
+interface PieSlice { name: string; value: number; color: string; fill?: string; }
+
+function SvgPieChart({ data, width = 200, height = 160, innerRadius = 0, outerRadius = 70 }: {
+  data: PieSlice[]; width?: number; height?: number; innerRadius?: number; outerRadius?: number;
+}) {
+  const total = data.reduce((s, d) => s + (d.value || 0), 0);
+  if (!total) return null;
+  const cx = width / 2, cy = height / 2;
+  let angle = -Math.PI / 2;
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+      {data.filter(d => d.value > 0).map((d, i) => {
+        const slice = (d.value / total) * Math.PI * 2;
+        const x1 = cx + outerRadius * Math.cos(angle);
+        const y1 = cy + outerRadius * Math.sin(angle);
+        const x2 = cx + outerRadius * Math.cos(angle + slice);
+        const y2 = cy + outerRadius * Math.sin(angle + slice);
+        const xi1 = cx + innerRadius * Math.cos(angle);
+        const yi1 = cy + innerRadius * Math.sin(angle);
+        const xi2 = cx + innerRadius * Math.cos(angle + slice);
+        const yi2 = cy + innerRadius * Math.sin(angle + slice);
+        const large = slice > Math.PI ? 1 : 0;
+        const path = innerRadius > 0
+          ? `M ${xi1} ${yi1} L ${x1} ${y1} A ${outerRadius} ${outerRadius} 0 ${large} 1 ${x2} ${y2} L ${xi2} ${yi2} A ${innerRadius} ${innerRadius} 0 ${large} 0 ${xi1} ${yi1} Z`
+          : `M ${cx} ${cy} L ${x1} ${y1} A ${outerRadius} ${outerRadius} 0 ${large} 1 ${x2} ${y2} Z`;
+        angle += slice;
+        return <path key={i} d={path} fill={d.color || d.fill || '#64748b'} opacity={0.85} stroke="#060d1a" strokeWidth={1} />;
+      })}
+    </svg>
+  );
+}
+
+function SvgRadarChart({ data, width = 260, height = 200 }: {
+  data: { subject: string; A: number }[]; width?: number; height?: number;
+}) {
+  const cx = width / 2, cy = height / 2, r = Math.min(width, height) / 2 - 24;
+  const n = data.length;
+  if (!n) return null;
+  const maxVal = Math.max(...data.map(d => d.A), 1);
+  const pts = data.map((d, i) => {
+    const a = (i / n) * Math.PI * 2 - Math.PI / 2;
+    const ratio = d.A / maxVal;
+    return { x: cx + r * ratio * Math.cos(a), y: cy + r * ratio * Math.sin(a), lx: cx + (r + 14) * Math.cos(a), ly: cy + (r + 14) * Math.sin(a), label: d.subject };
+  });
+  const polyline = pts.map(p => `${p.x},${p.y}`).join(' ');
+  const gridLevels = [0.25, 0.5, 0.75, 1];
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+      {gridLevels.map(level => {
+        const gpts = data.map((_, i) => {
+          const a = (i / n) * Math.PI * 2 - Math.PI / 2;
+          return `${cx + r * level * Math.cos(a)},${cy + r * level * Math.sin(a)}`;
+        }).join(' ');
+        return <polygon key={level} points={gpts} fill="none" stroke="rgba(148,163,184,.1)" strokeWidth={1} />;
+      })}
+      {data.map((_, i) => {
+        const a = (i / n) * Math.PI * 2 - Math.PI / 2;
+        return <line key={i} x1={cx} y1={cy} x2={cx + r * Math.cos(a)} y2={cy + r * Math.sin(a)} stroke="rgba(148,163,184,.08)" strokeWidth={1} />;
+      })}
+      <polygon points={polyline} fill={`${C.blue}18`} stroke={C.blue} strokeWidth={1.5} />
+      {pts.map((p, i) => (
+        <text key={i} x={p.lx} y={p.ly} textAnchor="middle" dominantBaseline="middle" fontSize={8} fill="#475569">{p.label}</text>
+      ))}
+    </svg>
+  );
+}
+
 import {
   BarChart2, RefreshCw, TrendingUp, Target, Zap,
   Trophy, Activity, Calendar, ArrowUpRight,
@@ -154,12 +225,7 @@ function OverviewTab({ timeline, pipeline }: { timeline: any; pipeline: Pipeline
         <div style={{ ...CHART_BG, display: 'flex', flexDirection: 'column' }}>
           <ChartTitle label="Répartition activité" />
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <PieChart width={200} height={160}>
-              <Pie data={pieData.filter(d=>d.value>0)} cx={100} cy={80} innerRadius={45} outerRadius={70} paddingAngle={3} dataKey="value">
-                {pieData.map((entry, i) => <Cell key={i} fill={entry.color} opacity={0.85} />)}
-              </Pie>
-              <Tooltip content={<CustomTooltip />} />
-            </PieChart>
+            <SvgPieChart data={pieData.filter(d=>d.value>0)} width={200} height={160} innerRadius={45} outerRadius={70} />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 4, marginTop: 4 }}>
             {pieData.map(d => (
@@ -211,14 +277,9 @@ function PipelineTab({ pipeline }: { pipeline: PipelineAnalytics | null }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
         <div style={CHART_BG}>
           <ChartTitle label="Décisions Go/No-Go" />
-          <ResponsiveContainer width="100%" height={200}>
-            <PieChart>
-              <Pie data={decisionData} cx="50%" cy="50%" outerRadius={70} dataKey="value" label={({ name, value }: { name: string; value: number }) => `${name}: ${value}`} labelLine={false}>
-                {decisionData.map((d, i) => <Cell key={i} fill={d.fill} opacity={0.85} />)}
-              </Pie>
-              <Tooltip content={<CustomTooltip />} />
-            </PieChart>
-          </ResponsiveContainer>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0' }}>
+            <SvgPieChart data={decisionData.map(d => ({ ...d, color: d.fill }))} width={200} height={200} outerRadius={70} />
+          </div>
         </div>
 
         <div style={CHART_BG}>
@@ -236,12 +297,7 @@ function PipelineTab({ pipeline }: { pipeline: PipelineAnalytics | null }) {
         <div style={CHART_BG}>
           <ChartTitle label="Radar performance" />
           <ResponsiveContainer width="100%" height={200}>
-            <RadarChart data={radarData} margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
-              <PolarGrid stroke="rgba(148,163,184,.1)" />
-              <PolarAngleAxis dataKey="subject" tick={{ fontSize: 9, fill: '#475569' }} />
-              <PolarRadiusAxis tick={false} axisLine={false} />
-              <Radar name="Métriques" dataKey="A" stroke={C.blue} fill={C.blue} fillOpacity={0.15} strokeWidth={1.5} />
-            </RadarChart>
+            <SvgRadarChart data={radarData} width={200} height={200} />
           </ResponsiveContainer>
         </div>
       </div>
@@ -296,11 +352,7 @@ function PerformanceTab({ perf }: { perf: any }) {
               <XAxis dataKey="range" tick={{ fontSize: 10, fill: '#475569' }} tickLine={false} axisLine={false} />
               <YAxis tick={{ fontSize: 10, fill: '#475569' }} tickLine={false} axisLine={false} />
               <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="count" name="AOs" radius={[4,4,0,0]} opacity={0.85}>
-                {scoreDistrib.map((entry, i) => (
-                  <Cell key={i} fill={i >= 3 ? C.green : i >= 2 ? C.amber : C.red} />
-                ))}
-              </Bar>
+              <Bar dataKey="count" name="AOs" radius={[4,4,0,0]} opacity={0.85} fill={C.blue} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -373,12 +425,7 @@ function ActiviteTab({ timeline, pipeline }: { timeline: any; pipeline: Pipeline
         <div style={CHART_BG}>
           <ChartTitle label="Agents IA — état des actions" />
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
-            <PieChart width={200} height={150}>
-              <Pie data={agentData.filter(d=>d.value>0)} cx={100} cy={75} outerRadius={55} innerRadius={30} paddingAngle={3} dataKey="value">
-                {agentData.map((d, i) => <Cell key={i} fill={d.fill} opacity={0.85} />)}
-              </Pie>
-              <Tooltip content={<CustomTooltip />} />
-            </PieChart>
+            <SvgPieChart data={agentData.filter(d=>d.value>0).map(d => ({ ...d, color: d.fill }))} width={200} height={150} innerRadius={30} outerRadius={55} />
           </div>
           {agentData.map(d => (
             <div key={d.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0', borderBottom: '1px solid rgba(148,163,184,.04)', fontSize: '.76rem' }}>
