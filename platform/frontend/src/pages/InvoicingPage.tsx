@@ -22,17 +22,17 @@ interface Quote   { id:number; reference:string; title:string; client_name:strin
 interface Invoice { id:number; reference:string; title:string; client_name:string; status:string; amount_ht:number; amount_ttc:number; due_date?:string; paid_at?:string; created_at:string; }
 
 const QUOTE_STATUS: Record<string, {label:string; color:string; bg:string}> = {
-  draft:     { label: t('invoicing.draft'),  color: '#64748b', bg: 'rgba(100,116,139,.08)' },
-  sent:      { label: t('invoicing.sent'),    color: '#3b82f6', bg: 'rgba(59,130,246,.08)'  },
+  draft:     { label: 'Brouillon',  color: '#64748b', bg: 'rgba(100,116,139,.08)' },
+  sent:      { label: 'Envoyé',    color: '#3b82f6', bg: 'rgba(59,130,246,.08)'  },
   accepted:  { label: 'Accepté',   color: '#22c55e', bg: 'rgba(34,197,94,.08)'   },
   rejected:  { label: 'Refusé',    color: '#ef4444', bg: 'rgba(239,68,68,.08)'   },
   converted: { label: 'Converti',  color: '#8b5cf6', bg: 'rgba(139,92,246,.08)'  },
 };
 const INVOICE_STATUS: Record<string, {label:string; color:string; bg:string}> = {
-  draft:     { label: t('invoicing.draft'),  color: '#64748b', bg: 'rgba(100,116,139,.08)' },
+  draft:     { label: 'Brouillon',  color: '#64748b', bg: 'rgba(100,116,139,.08)' },
   sent:      { label: 'Émise',     color: '#3b82f6', bg: 'rgba(59,130,246,.08)'  },
   paid:      { label: 'Payée',     color: '#22c55e', bg: 'rgba(34,197,94,.08)'   },
-  overdue:   { label: t('invoicing.overdue'), color: '#ef4444', bg: 'rgba(239,68,68,.08)'   },
+  overdue:   { label: 'En retard', color: '#ef4444', bg: 'rgba(239,68,68,.08)'   },
   cancelled: { label: 'Annulée',   color: '#94a3b8', bg: 'rgba(148,163,184,.08)' },
 };
 

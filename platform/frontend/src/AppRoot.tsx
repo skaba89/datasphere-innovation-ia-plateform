@@ -108,6 +108,7 @@ function ForcePasswordChange({
   user: CurrentUser;
   onChanged: () => void;
 }) {
+  const { lang } = useI18n();
   const [current, setCurrent]   = useState('');
   const [newPwd,  setNewPwd]    = useState('');
   const [confirm, setConfirm]   = useState('');

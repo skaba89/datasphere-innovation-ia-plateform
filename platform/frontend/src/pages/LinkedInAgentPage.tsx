@@ -392,6 +392,7 @@ export default function LinkedInAgentPage() {
 
 // ── Calendrier éditorial ──────────────────────────────────────────────────────
 function LinkedInCalendar({ token }: { token: string }) {
+  const { t } = useI18n();
   const [posts, setPosts]   = useState<any[]>([]);
   const [stats, setStats]   = useState<any>(null);
   const [loading, setLoading] = useState(true);

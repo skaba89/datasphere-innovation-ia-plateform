@@ -102,7 +102,7 @@ export default function SchedulerPanel() {
 
   async function pauseResume() {
     if (!status) return
-  const { t } = useI18n();;
+  const { t } = useI18n();
     const path = status.running ? '/scheduler/pause' : '/scheduler/resume';
     try {
       await apiRequest(path, { method: 'POST' }, token);

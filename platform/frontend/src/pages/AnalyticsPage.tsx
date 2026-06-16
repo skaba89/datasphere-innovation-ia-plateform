@@ -160,6 +160,7 @@ function CustomTooltip({ active, payload, label }: any) {
 
 // ── Tab: Overview ─────────────────────────────────────────────────────────────
 function OverviewTab({ timeline, pipeline }: { timeline: any; pipeline: PipelineAnalytics | null }) {
+  const { t } = useI18n();
   if (!timeline) return <div style={{ color: '#475569', padding: 32, textAlign: 'center' }}>Chargement…</div>;
 
   const months = timeline.months ?? [];
@@ -323,6 +324,7 @@ function PipelineTab({ pipeline }: { pipeline: PipelineAnalytics | null }) {
 
 // ── Tab: Performance ──────────────────────────────────────────────────────────
 function PerformanceTab({ perf }: { perf: any }) {
+  const { t } = useI18n();
   if (!perf) return <div style={{ color: '#475569', padding: 32 }}>Données indisponibles.</div>;
 
   const scoreDistrib = [
@@ -383,6 +385,7 @@ function PerformanceTab({ perf }: { perf: any }) {
 
 // ── Tab: Activité ─────────────────────────────────────────────────────────────
 function ActiviteTab({ timeline, pipeline }: { timeline: any; pipeline: PipelineAnalytics | null }) {
+  const { t } = useI18n();
   if (!timeline || !pipeline) return null;
 
   const months = timeline.months ?? [];

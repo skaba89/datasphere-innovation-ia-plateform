@@ -145,6 +145,7 @@ function RecentOpps({ token }: { token: string }) {
 }
 
 function ConversionFunnel({ data }: { data: DashboardData }) {
+  const { t } = useI18n();
   const steps = [
     { label: t('crm.organizations'), value: data.crm.organizations, color: '#3b82f6' },
     { label: t('crm.opportunities'), value: data.crm.opportunities_total, color: '#8b5cf6' },

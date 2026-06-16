@@ -1,4 +1,3 @@
-import { useI18n } from '../i18n/index';
 import { useEffect, useState } from 'react';
 import { Activity, AlertTriangle, CheckCircle2, RefreshCw, Server, XCircle } from 'lucide-react';
 import { apiRequest, tokenStorage } from '../api/client';
@@ -9,19 +8,18 @@ const STATUS_CONFIG = {
   attention: { color: '#f97316', icon: AlertTriangle, label: 'Attention' },
   degraded:  { color: '#ef4444', icon: XCircle,      label: 'Dégradé' },
   up:        { color: '#22c55e', icon: CheckCircle2, label: 'Opérationnel' },
-  running:   { color: '#22c55e', icon: CheckCircle2, label: t('ai.active') },
+  running:   { color: '#22c55e', icon: CheckCircle2, label: 'Actif' },
   stopped:   { color: '#64748b', icon: XCircle,      label: 'Arrêté' },
   configured: { color: '#22c55e', icon: CheckCircle2, label: 'Configuré' },
   preview_only: { color: '#f97316', icon: AlertTriangle, label: 'Preview seulement' },
   simulation: { color: '#8b5cf6', icon: Activity,   label: 'Simulation' },
   live:      { color: '#22c55e', icon: CheckCircle2, label: 'Live LLM' },
-  error:     { color: '#ef4444', icon: XCircle,      label: t('common.error') },
+  error:     { color: '#ef4444', icon: XCircle,      label: 'Erreur' },
   ok:        { color: '#22c55e', icon: CheckCircle2, label: 'OK' },
 };
 
 function fmtDate(iso: string) {
-  return
-  const { t } = useI18n(); new Date(iso).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  return new Date(iso).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
 function StatusBadge({ status }: { status: string }) {
