@@ -111,7 +111,7 @@ export default function SearchPage() {
   }, {});
 
   const entityOrder = ['tender', 'deliverable', 'opportunity', 'organization', 'contact'];
-  const hasRagResults = ragData => ragData && (ragData.deliverables?.length || ragData.tenders?.length);
+  const hasRagResults = (ragData: RagResult | null): boolean => !!(ragData && (ragData.deliverables?.length || ragData.tenders?.length));
 
   return (
     <div style={{ maxWidth: 820, margin: '0 auto', padding: 'clamp(20px,3vw,40px) clamp(12px,3vw,24px)', display: 'grid', gap: 16 }}>

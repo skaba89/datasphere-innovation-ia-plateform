@@ -2,6 +2,9 @@ import { useEffect, useState, useCallback } from 'react';
 import { Copy, ExternalLink, RefreshCw, Send, Sparkles, CheckCircle, Link2, LogOut, AlertTriangle } from 'lucide-react';
 import { apiRequest, tokenStorage } from '../api/client';
 
+type PageView = 'generate' | 'calendar';
+
+
 interface GeneratedPost {
   content: string; topic: string; topic_type: string;
   provider: string; word_count: number; char_count: number;

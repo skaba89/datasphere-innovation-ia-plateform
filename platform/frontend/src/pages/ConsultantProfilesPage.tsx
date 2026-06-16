@@ -136,6 +136,23 @@ export default function ConsultantProfilesPage() {
     a.click();
   }
 
+  async function exportPdf() {
+    if (!cvResult) return;
+    try {
+      const API = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+      const r = await fetch(`${API}/cv/${cvResult.id}/export/pdf`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const ct = r.headers.get('content-type') || '';
+      a.href = url;
+      a.download = `CV_${cvResult.cv.personal.last_name}_${cvResult.cv.personal.first_name}.${ct.includes('pdf') ? 'pdf' : 'html'}`;
+      a.click(); URL.revokeObjectURL(url);
+    } catch { alert('Erreur export PDF'); }
+  }
+
   async function exportHtml() {
     if (!cvResult) return;
     const r = await fetch(`/api/v1/cv/${cvResult.id}/export/html`, {

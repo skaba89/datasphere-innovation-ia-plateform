@@ -3,13 +3,18 @@
  * Recharts · Graphes temporels · Win rate · Pipeline · Heatmap
  */
 import { useEffect, useState, useCallback } from 'react';
+// @ts-ignore — recharts v3 types instables sur Node 24
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
-  PieChart, Pie, Cell, RadarChart, Radar, PolarGrid,
-  PolarAngleAxis, PolarRadiusAxis,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer,
 } from 'recharts';
+// @ts-ignore
+import { PieChart, Pie, Cell } from 'recharts';
+// @ts-ignore
+import { RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
+// @ts-ignore
+import { Legend } from 'recharts';
 import {
   BarChart2, RefreshCw, TrendingUp, Target, Zap,
   Trophy, Activity, Calendar, ArrowUpRight,
@@ -213,7 +218,7 @@ function PipelineTab({ pipeline }: { pipeline: PipelineAnalytics | null }) {
           <ChartTitle label="Décisions Go/No-Go" />
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>
-              <Pie data={decisionData} cx="50%" cy="50%" outerRadius={70} dataKey="value" label={({ name, value }) => `${name}: ${value}`} labelLine={false}>
+              <Pie data={decisionData} cx="50%" cy="50%" outerRadius={70} dataKey="value" label={({ name, value }: { name: string; value: number }) => `${name}: ${value}`} labelLine={false}>
                 {decisionData.map((d, i) => <Cell key={i} fill={d.fill} opacity={0.85} />)}
               </Pie>
               <Tooltip content={<CustomTooltip />} />
