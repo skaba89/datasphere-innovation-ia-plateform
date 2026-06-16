@@ -257,7 +257,7 @@ export default function LinkedInAgentPage() {
         <OAuthPanel token={token} onStatusChange={setOauthStatus} />
       </section>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 16, alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16, alignItems: 'start' }}>
         {/* Left — Config */}
         <div style={{ display: 'grid', gap: 12 }}>
           <section className="panel">

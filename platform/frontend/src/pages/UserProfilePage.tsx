@@ -174,7 +174,7 @@ export default function UserProfilePage() {
   const availLabel = AVAILABILITY_OPTIONS.find(a => a.value === profile?.availability)?.label;
 
   return (
-    <div style={{ maxWidth: 780, margin: '0 auto', padding: 'clamp(16px,3vw,32px) clamp(12px,3vw,24px)', display: 'grid', gap: 20 }}>
+    <div style={{ maxWidth: 780, margin: '0 auto', padding: 'clamp(12px,3vw,32px) clamp(12px,3vw,24px)', display: 'grid', gap: 16, width: '100%', boxSizing: 'border-box' as const }}>
 
       {/* ── Avatar + identité ───────────────────────────────────────────── */}
       <div style={{ ...card, padding: 26, display: 'flex', gap: 20, alignItems: 'center', background: 'linear-gradient(135deg,rgba(250,204,21,.04),rgba(12,20,37,.95))' }}>
@@ -233,7 +233,7 @@ export default function UserProfilePage() {
             <span style={{ fontWeight: 800, fontSize: '.9rem' }}>Modifier le profil</span>
           </div>
           <div style={{ display: 'grid', gap: 16 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
               <div>
                 <label style={lbl}>Prénom</label>
                 <input style={inp} value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Mamadou" />
@@ -247,7 +247,7 @@ export default function UserProfilePage() {
               <label style={lbl}>Biographie</label>
               <textarea style={{ ...inp, resize: 'vertical' as const }} rows={3} value={bio} onChange={e => setBio(e.target.value)} placeholder="Data Engineer senior, spécialisé Snowflake & dbt…" />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
               <div>
                 <label style={lbl}><MapPin size={11} style={{ marginRight: 4 }} />Localisation</label>
                 <input style={inp} value={location} onChange={e => setLocation(e.target.value)} placeholder="Paris, France" />

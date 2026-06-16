@@ -216,7 +216,7 @@ export default function IntelligencePage() {
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 10 }}>
         {/* Pipeline health */}
         <section className="panel">
           <h3 style={{ margin: '0 0 14px', fontSize: '.85rem', fontWeight: 800, color: '#94a3b8' }}>
@@ -349,7 +349,7 @@ export default function IntelligencePage() {
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       {/* Go/No-Go Radar */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
         <section className="panel">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
             <span style={{ fontSize: '.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.06em' }}>Radar Go/No-Go</span>

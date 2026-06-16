@@ -512,3 +512,239 @@ input.ds-input, select.ds-input, textarea.ds-input {
   body { background: #fff !important; color: #000 !important; }
   .panel, .card { box-shadow: none !important; border: 1px solid #e2e8f0 !important; }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE GRIDS — utilitaires globaux
+   Usage: className="rg-2" rg-3 rg-4 rg-sidebar
+   ══════════════════════════════════════════════════════════════ */
+
+/* 2 colonnes → 1 sous 640px */
+.rg-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+/* 3 colonnes → 2 sous 900px → 1 sous 600px */
+.rg-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+/* 4 colonnes auto */
+.rg-4 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+/* Colonne principale + sidebar fixe */
+.rg-sidebar {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 16px;
+  align-items: start;
+}
+/* KPI cards — auto-fit */
+.rg-kpi {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+/* Form 2 cols */
+.rg-form-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .rg-3         { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rg-sidebar   { grid-template-columns: 1fr; }
+  .rg-2         { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .rg-2, .rg-3, .rg-4, .rg-sidebar, .rg-form-2 {
+    grid-template-columns: 1fr;
+  }
+  /* Overflow protection globale */
+  * { max-width: 100%; }
+  img, video, canvas, svg { max-width: 100%; height: auto; }
+  /* Tables scroll horizontal */
+  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  /* Flex wrap forcé */
+  .flex-nowrap-mobile { flex-wrap: wrap !important; }
+  /* Texte trop long */
+  .app-shell h1 { font-size: clamp(1.3rem, 5vw, 2rem); }
+}
+@media (max-width: 480px) {
+  .rg-kpi { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .app-shell { padding: 12px 12px 80px; }
+}
+
+/* Table horizontale scroll */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.table-scroll > * { min-width: 600px; }
+
+/* Flex row → column sur mobile */
+.flex-col-mobile { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE GUARDS — Anti-débordement global
+   Appliqués automatiquement sur toutes les pages
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Protection maximale contre overflow ────────────────────── */
+* {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;          /* Permet aux flex/grid items de rétrécir */
+}
+
+img, video, canvas, svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ── Tables responsives globales ────────────────────────────── */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* ── Texte long — protection débordement ────────────────────── */
+p, span, div, h1, h2, h3, h4 {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* ── Classes utilitaires responsive ────────────────────────── */
+
+/* Grille 2 colonnes → 1 colonne sous 640px */
+.rg-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 12px;
+}
+
+/* Grille 3 colonnes → 2 col sous 900px → 1 col sous 640px */
+.rg-3 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 12px;
+}
+
+/* Grille 4 colonnes KPI */
+.rg-4 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
+  gap: 10px;
+}
+
+/* Grille avec sidebar fixe droite */
+.rg-sidebar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(240px, 28vw, 320px);
+  gap: 16px;
+  align-items: start;
+}
+
+/* Grille KPI compteurs */
+.rg-kpi {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
+  gap: 10px;
+}
+
+/* Grille formulaire 2 colonnes */
+.rg-form-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 14px;
+}
+
+/* Scroll horizontal pour tables larges */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.table-scroll > * {
+  min-width: max-content;
+}
+
+/* ── Breakpoint 900px ────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .rg-sidebar {
+    grid-template-columns: 1fr;
+  }
+
+  .split-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Padding pages réduit */
+  .app-shell {
+    padding: 16px 16px 80px;
+  }
+}
+
+/* ── Breakpoint 640px ────────────────────────────────────────── */
+@media (max-width: 640px) {
+
+  /* Toutes les grilles passent en 1 colonne */
+  .rg-2, .rg-3, .rg-4, .rg-sidebar, .rg-kpi, .rg-form-2 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Tabs scrollables horizontalement */
+  .tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+
+  /* Réduire tailles police headers */
+  h1 { font-size: clamp(1.4rem, 6vw, 1.8rem) !important; }
+  h2 { font-size: clamp(1rem, 4vw, 1.2rem) !important; }
+
+  /* Padding réduit panels */
+  .panel {
+    padding: 14px 16px !important;
+  }
+
+  /* Boutons d'action empilés */
+  .btn-group {
+    flex-direction: column;
+    width: 100%;
+  }
+  .btn-group > * {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Forms pleine largeur */
+  input, select, textarea, button[type="submit"] {
+    width: 100% !important;
+    box-sizing: border-box;
+  }
+
+  /* Masquer colonnes optionnelles dans les tables */
+  .hide-mobile { display: none !important; }
+}
+
+/* ── Breakpoint 480px ────────────────────────────────────────── */
+@media (max-width: 480px) {
+  /* KPI 2 colonnes */
+  .rg-kpi {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .app-shell {
+    padding: 12px 12px 72px;
+    gap: 12px;
+  }
+}

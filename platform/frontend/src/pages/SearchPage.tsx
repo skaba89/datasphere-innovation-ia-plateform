@@ -163,7 +163,7 @@ export default function SearchPage() {
           <h3 style={{ fontSize: '.8rem', fontWeight: 700, color: '#64748b', margin: '0 0 14px' }}>
             Chercher dans
           </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
             {entityOrder.map(type => {
               const meta = ENTITY_META[type];
               if (!meta) return null;

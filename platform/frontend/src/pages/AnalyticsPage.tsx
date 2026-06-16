@@ -138,7 +138,7 @@ function OverviewTab({ timeline, pipeline }: { timeline: any; pipeline: Pipeline
       </div>
 
       {/* Win rate + Pie */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: 16 }}>
         <div style={CHART_BG}>
           <ChartTitle label="Évolution taux de succès" sub="% AOs gagnés vs détectés par mois" />
           <ResponsiveContainer width="100%" height={180}>
@@ -161,7 +161,7 @@ function OverviewTab({ timeline, pipeline }: { timeline: any; pipeline: Pipeline
               <Tooltip content={<CustomTooltip />} />
             </PieChart>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, marginTop: 4 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 4, marginTop: 4 }}>
             {pieData.map(d => (
               <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '.68rem', color: '#64748b' }}>
                 <div style={{ width: 6, height: 6, borderRadius: '50%', background: d.color, flexShrink: 0 }} />
@@ -208,7 +208,7 @@ function PipelineTab({ pipeline }: { pipeline: PipelineAnalytics | null }) {
         <StatChip label="Pipeline €"    value={new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(opportunities.pipeline_value ?? 0)} color={C.purple} />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
         <div style={CHART_BG}>
           <ChartTitle label="Décisions Go/No-Go" />
           <ResponsiveContainer width="100%" height={200}>
@@ -287,7 +287,7 @@ function PerformanceTab({ perf }: { perf: any }) {
         <StatChip label="Délai moyen réponse" value={`${perf.avg_response_days ?? 0}j`} color={C.purple} />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 16 }}>
         <div style={CHART_BG}>
           <ChartTitle label="Distribution des scores Go/No-Go" sub="Nombre d'AOs par tranche de score" />
           <ResponsiveContainer width="100%" height={180}>
@@ -353,7 +353,7 @@ function ActiviteTab({ timeline, pipeline }: { timeline: any; pipeline: Pipeline
         <StatChip label="Exécutions aujourd'hui" value={scheduler.executions_today ?? 0} color={C.purple} />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) clamp(240px, 28vw, 300px)', gap: 16 }}>
         <div style={CHART_BG}>
           <ChartTitle label="Flux mensuel d'activité" sub="Évolution croisée des métriques" />
           <ResponsiveContainer width="100%" height={200}>

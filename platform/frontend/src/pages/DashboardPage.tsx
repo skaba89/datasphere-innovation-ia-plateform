@@ -227,7 +227,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── 2 colonnes ──────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 16, alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: 16, alignItems: 'start' }}>
 
         {/* Charts */}
         <div style={{ background: 'rgba(12,22,45,.8)', border: '1px solid rgba(148,163,184,.08)', borderRadius: 20, overflow: 'hidden', backdropFilter: 'blur(24px)' }}>

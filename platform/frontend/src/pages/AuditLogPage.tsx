@@ -135,8 +135,10 @@ export default function AuditLogPage() {
 
       {/* Table */}
       <div style={{ background: 'rgba(10,18,38,.85)', border: '1px solid rgba(148,163,184,.08)', borderRadius: 16, overflow: 'hidden', backdropFilter: 'blur(24px)' }}>
+        {/* Scroll wrapper mobile */}
+        <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
         {/* Header row */}
-        <div style={{ display: 'grid', gridTemplateColumns: '60px 1fr 120px 140px 90px 90px', gap: 0, padding: '10px 16px', borderBottom: '1px solid rgba(148,163,184,.06)', background: 'rgba(255,255,255,.02)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '60px 1fr 120px 140px 90px 90px', gap: 0, padding: '10px 16px', borderBottom: '1px solid rgba(148,163,184,.06)', background: 'rgba(255,255,255,.02)', minWidth: 700 }}>
           {['ID','Utilisateur · Action · Ressource','Statut','Date','IP','Détails'].map(h => (
             <div key={h} style={{ fontSize: '.66rem', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '.08em' }}>{h}</div>
           ))}
@@ -201,6 +203,7 @@ export default function AuditLogPage() {
           </div>
         )}
 
+        </div>{/* /scroll wrapper */}
         {/* Pagination */}
         {totalPages > 1 && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid rgba(148,163,184,.06)', background: 'rgba(255,255,255,.01)' }}>

@@ -317,7 +317,7 @@ function QuickCSVDownloads({ token }: { token: string | null }) {
       <h3 style={{ margin: '0 0 8px', fontSize: '.82rem', fontWeight: 800, color: '#facc15' }}>
         ⚡ Export rapide CSV (serveur)
       </h3>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 8 }}>
         {downloads.map(d => (
           <button key={d.path} onClick={() => download(d.path, d.file)}
             style={{
@@ -439,7 +439,7 @@ export default function DataExportPage() {
       {lastUpdated && <p className="compact-subtitle">Dernière actualisation : {new Date(lastUpdated).toLocaleString('fr-FR')}</p>}
 
       {/* Quick CSV + Import CSV + Rapport hebdo */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 8 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 8 }}>
 
         {/* Export CSV rapide */}
         <section className="panel" style={{ padding: '18px 20px' }}>

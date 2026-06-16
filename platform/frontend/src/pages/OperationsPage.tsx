@@ -96,7 +96,7 @@ function BOAMPConfigPanel({ token }: { token: string | null }) {
       </div>
 
       {/* Score + Limit */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
         <div>
           <label style={{ fontSize: '.75rem', color: '#64748b', fontWeight: 700, display: 'block', marginBottom: 6 }}>
             SCORE MINIMUM : {threshold}/100

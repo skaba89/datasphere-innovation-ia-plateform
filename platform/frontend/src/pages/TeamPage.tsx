@@ -398,7 +398,7 @@ export default function TeamPage() {
                       </span>
                     )}
                   </div>
-                  <div style={{ fontSize: '.76rem', color: '#475569' }}>
+                  <div style={{ fontSize: '.76rem', color: '#475569', overflow: 'hidden', textOverflow: 'ellipsis', wordBreak: 'break-all' }}>
                     {m.email}
                     {m.first_name && <span style={{ color: '#334155' }}> · {m.email}</span>}
                     <span style={{ color: '#334155', marginLeft: 8 }}>Depuis {fmtDate(m.created_at)}</span>
@@ -412,7 +412,7 @@ export default function TeamPage() {
 
                 {/* Admin actions */}
                 {isAdmin && !isSelf && (
-                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                  <div style={{ display: 'flex', gap: 6, flexShrink: 0, flexWrap: 'wrap' }}>
                     {/* Changer le rôle */}
                     {m.is_active && (
                       <select value={m.role} onChange={e => changeRole(m, e.target.value)}

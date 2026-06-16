@@ -229,7 +229,7 @@ function NewOpportunityForm({ token, onSaved, onCancel }: { token: string | null
           {orgs.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
         </select>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
         <div>
           <label style={{ display: 'block', fontSize: '.72rem', color: '#64748b', marginBottom: 5, textTransform: 'uppercase' as const, letterSpacing: '.05em', fontWeight: 700 }}>Type</label>
           <select style={{ ...inp }} value={type} onChange={e => setType(e.target.value)}>
@@ -347,7 +347,7 @@ export default function CommercialPage() {
               </div>
 
               {/* 2-col layout */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: 16, alignItems: 'start' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16, alignItems: 'start' }}>
 
                 {/* Funnel */}
                 <div style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(148,163,184,.08)', borderRadius: 14, padding: '20px 20px 16px' }}>

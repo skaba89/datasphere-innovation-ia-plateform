@@ -231,7 +231,7 @@ export default function ConsultantProfilesPage() {
         </div>
       </section>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '340px 1fr', gap: 16, alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 16, alignItems: 'start' }}>
 
         {/* ── LEFT PANEL : Form ────────────────────────────────────────────── */}
         <div style={{ display: 'grid', gap: 12 }}>

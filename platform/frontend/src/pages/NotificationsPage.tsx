@@ -132,7 +132,7 @@ export default function NotificationsPage() {
       </div>
 
       {/* Filtres */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: 4 }}>
         {(['all','unread','read'] as const).map(f => (
           <button key={f} onClick={() => setFilter(f)} style={{
             padding: '6px 14px', borderRadius: 8, fontSize: '.78rem', fontWeight: 700, cursor: 'pointer',

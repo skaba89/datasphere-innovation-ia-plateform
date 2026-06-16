@@ -90,8 +90,8 @@ function QuoteForm({ token, onSaved }: { token: string|null; onSaved: () => void
   const lbl: React.CSSProperties = { display: 'block', fontSize: '.72rem', fontWeight: 700, color: '#64748b', marginBottom: 5, textTransform: 'uppercase' as const, letterSpacing: '.05em' };
 
   return (
-    <div style={{ maxWidth: 700, display: 'grid', gap: 16 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+    <div style={{ maxWidth: '100%', display: 'grid', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
         <div style={{ gridColumn: '1/-1' }}>
           <label style={lbl}>Intitulé de la mission *</label>
           <input style={inp} value={form.title} onChange={e => setForm(f=>({...f,title:e.target.value}))} placeholder="Mission Data Engineering — Client XYZ" />
@@ -205,7 +205,7 @@ function DocRow({ doc, type, token, onRefresh }: { doc: Quote|Invoice; type: 'qu
         <div style={{ fontSize: '.84rem', fontWeight: 800, color: '#f1f5f9' }}>{fmtEur(d.amount_ttc)}</div>
         <div style={{ fontSize: '.7rem', color: '#475569' }}>TTC</div>
       </div>
-      <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+      <div style={{ display: 'flex', gap: 6, flexShrink: 0, flexWrap: 'wrap' }}>
         {type === 'quote' && d.status === 'accepted' && (
           <button onClick={convertToInvoice} disabled={converting} title="Convertir en facture"
             style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 7, border: '1px solid rgba(139,92,246,.25)', background: 'rgba(139,92,246,.08)', color: '#c4b5fd', cursor: 'pointer', fontSize: '.74rem', fontWeight: 600 }}>
@@ -288,7 +288,7 @@ export default function InvoicingPage() {
             <KpiCard icon={CheckCircle2} label="Factures payées"      value={String(stats.invoices_paid)}      color="#22c55e" sub={fmtEur(stats.invoices_paid_ttc) + ' TTC encaissés'} />
             <KpiCard icon={AlertTriangle}label="Factures en retard"   value={String(stats.invoices_overdue)}   color="#ef4444" />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
             {/* Derniers devis */}
             <div style={{ background: 'rgba(10,18,38,.85)', border: '1px solid rgba(148,163,184,.08)', borderRadius: 16, overflow: 'hidden' }}>
               <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(148,163,184,.06)', display: 'flex', alignItems: 'center', gap: 8 }}>

@@ -239,7 +239,7 @@ export default function PricingPage({ workspaceId, currentPlan = 'free', onSucce
               </div>
 
               {/* Limits */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 20, padding: '12px', background: 'rgba(0,0,0,.2)', borderRadius: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 6, marginBottom: 20, padding: '12px', background: 'rgba(0,0,0,.2)', borderRadius: 10 }}>
                 {[
                   { label: 'Membres',      v: plan.limits.members },
                   { label: 'AO/mois',      v: plan.limits.tenders },
