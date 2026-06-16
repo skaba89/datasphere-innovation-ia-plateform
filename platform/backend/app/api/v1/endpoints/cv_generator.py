@@ -167,6 +167,45 @@ def export_cv_html(cv_id: int, current_user: User = Depends(get_current_user)):
     )
 
 
+
+@router.get("/{cv_id}/export/pdf")
+def export_cv_pdf(cv_id: int, current_user: User = Depends(get_current_user)):
+    """Export CV as PDF via WeasyPrint (fallback HTML si WeasyPrint absent)."""
+    cv = _cv_store.get(cv_id)
+    if not cv:
+        raise HTTPException(status_code=404, detail="CV non trouvé")
+
+    md = cv_to_markdown(cv)
+    p  = cv["cv"]["personal"]
+    html = _md_to_html(md, p)
+    filename = f"CV_{p['last_name']}_{p['first_name']}.pdf"
+
+    try:
+        from weasyprint import HTML as WHTML
+        pdf_bytes = WHTML(string=html).write_pdf()
+        from fastapi.responses import Response
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+    except (ImportError, Exception):
+        # Fallback HTML si WeasyPrint indisponible
+        return HTMLResponse(
+            content=html,
+            headers={"Content-Disposition": f'attachment; filename="{p["last_name"]}_{p["first_name"]}.html"'},
+        )
+
+
+@router.get("/{cv_id}/export/json")
+def export_cv_json(cv_id: int, current_user: User = Depends(get_current_user)):
+    """Export CV as raw JSON (pour intégration ou debugging)."""
+    cv = _cv_store.get(cv_id)
+    if not cv:
+        raise HTTPException(status_code=404, detail="CV non trouvé")
+    return cv
+
+
 def _md_to_html(md: str, personal: dict) -> str:
     """Convert Markdown CV to styled HTML."""
     import re

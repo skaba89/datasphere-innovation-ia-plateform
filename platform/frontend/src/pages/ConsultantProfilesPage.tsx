@@ -414,6 +414,10 @@ export default function ConsultantProfilesPage() {
                                display: 'flex', alignItems: 'center', gap: 5, fontSize: '.75rem', fontWeight: 600 }}>
                       <Copy size={12} />{copied ? 'Copié !' : 'Copier'}
                     </button>
+                    <button onClick={exportPdf}
+                      style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: '1px solid rgba(239,68,68,.25)', background: 'rgba(239,68,68,.06)', color: '#fca5a5', cursor: 'pointer', fontSize: '.78rem', fontWeight: 700 }}>
+                      📄 PDF
+                    </button>
                     <button onClick={exportMd}
                       style={{ padding: '7px 10px', borderRadius: 8, border: '1px solid rgba(148,163,184,.2)',
                                background: 'none', color: '#64748b', cursor: 'pointer',

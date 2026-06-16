@@ -592,6 +592,20 @@ export default function AppRoot() {
       } else if (event.type === 'workflow.completed') {
         addToast({ id: `wf-${Date.now()}`, type: 'success', title: '🎉 Workflow terminé !',
           message: 'Le mémoire technique est prêt à consulter', at: Date.now() });
+      } else if (event.type === 'notification') {
+        const priority = (event as any).priority || 'medium';
+        addToast({ id: `notif-${Date.now()}`, type: priority === 'high' ? 'warning' : 'info',
+          title: (event as any).title || 'Nouvelle notification',
+          message: (event as any).message || '', at: Date.now() });
+      } else if (event.type === 'action_approved') {
+        addToast({ id: `action-${Date.now()}`, type: 'success', title: '✅ Action approuvée',
+          message: `« ${(event as any).title || 'Action'} » a été approuvée`, at: Date.now() });
+      } else if ((event.type as string) === 'deliverable.approved') {
+        addToast({ id: `deliv-${Date.now()}`, type: 'success', title: '📄 Livrable approuvé',
+          message: `« ${(event as any).title || 'Livrable'} » vient d'être approuvé`, at: Date.now() });
+      } else if ((event.type as string) === 'deliverable.created') {
+        addToast({ id: `deliv-c-${Date.now()}`, type: 'info', title: '📝 Nouveau livrable',
+          message: `« ${(event as any).title || 'Livrable'} » créé`, at: Date.now() });
       }
     },
   });
