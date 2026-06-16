@@ -119,6 +119,31 @@ export default function DeliverablePage() {
     return `${API_BASE}/deliverables/${id}/export/${fmt}?token=${token}`;
   }
 
+  async function downloadExport(id: number, fmt: string) {
+    const url = exportUrl(id, fmt);
+    try {
+      const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        setMsg(`❌ Export ${fmt.toUpperCase()} : ${err.detail || resp.statusText}`);
+        return;
+      }
+      const blob = await resp.blob();
+      const ext  = fmt === 'pdf' ? 'pdf' : fmt === 'markdown' ? 'md' : fmt;
+      const ct   = resp.headers.get('content-type') || '';
+      const finalExt = ct.includes('pdf') ? 'pdf' : ct.includes('html') ? 'html' : ext;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `livrable-${id}.${finalExt}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+    } catch (e) {
+      setMsg(`❌ Erreur export : ${String(e).slice(0, 80)}`);
+    }
+  }
+
   if (!token) return (
     <main className="app-shell"><section className="panel"><h1>{t('deliverables.title')}</h1><p>Connecte-toi d'abord.</p></section></main>
   );
@@ -229,23 +254,21 @@ export default function DeliverablePage() {
                   {/* Actions */}
                   <div style={{ display: 'flex', gap: 6, flexShrink: 0, alignItems: 'center' }} onClick={e => e.stopPropagation()}>
                     {/* Export buttons */}
-                    <a href={`${API_BASE}/deliverables/${d.id}/export/pdf`} target="_blank" rel="noopener noreferrer"
+                    <button onClick={() => downloadExport(d.id, 'pdf')}
                        title="Exporter PDF"
-                       style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid rgba(148,163,184,.15)', background: 'rgba(239,68,68,.06)', color: '#fca5a5', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4, fontSize: '.72rem' }}>
+                       style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid rgba(148,163,184,.15)', background: 'rgba(239,68,68,.06)', color: '#fca5a5', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: '.72rem' }}>
                       <Download size={11} /> PDF
-                    </a>
-                    <a href={`${API_BASE}/deliverables/${d.id}/export/markdown`} target="_blank" rel="noopener noreferrer"
+                    </button>
+                    <button onClick={() => downloadExport(d.id, 'markdown')}
                        title="Télécharger Markdown"
-                       download
-                       style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid rgba(148,163,184,.15)', background: 'rgba(14,165,233,.06)', color: '#38bdf8', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4, fontSize: '.72rem' }}>
+                       style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid rgba(148,163,184,.15)', background: 'rgba(14,165,233,.06)', color: '#38bdf8', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: '.72rem' }}>
                       <Download size={11} /> MD
-                    </a>
-                    <a href={`/api/v1/deliverables/${d.id}/export/docx`} target="_blank" rel="noopener noreferrer"
+                    </button>
+                    <button onClick={() => downloadExport(d.id, 'docx')}
                        title="Télécharger Word"
-                       download
-                       style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid rgba(37,99,235,.3)', background: 'rgba(37,99,235,.06)', color: '#93c5fd', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4, fontSize: '.72rem' }}>
+                       style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid rgba(37,99,235,.3)', background: 'rgba(37,99,235,.06)', color: '#93c5fd', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: '.72rem' }}>
                       <Download size={11} /> DOCX
-                    </a>
+                    </button>
 
                     {/* Edit */}
                     <button onClick={() => { setEditing(isEd ? null : d.id); setEditContent(d.content_markdown ?? ''); setExpanded(d.id); }}

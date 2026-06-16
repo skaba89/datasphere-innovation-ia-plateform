@@ -646,3 +646,28 @@ def generate_content_for_deliverable(
     db.refresh(deliverable)
 
     return {"content": content_text, "provider": provider, "deliverable_id": deliverable_id}
+
+
+@router.get("/{deliverable_id}/export/markdown")
+def export_deliverable_markdown(
+    deliverable_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Export deliverable as raw Markdown (.md) file."""
+    from fastapi.responses import Response
+
+    deliverable = get_deliverable(db, deliverable_id)
+    if not deliverable:
+        raise HTTPException(status_code=404, detail="Deliverable not found")
+
+    md_content = deliverable.content_markdown or deliverable.content or ""
+    if not md_content:
+        raise HTTPException(status_code=404, detail="Aucun contenu Markdown disponible")
+
+    filename = f"livrable-{deliverable_id}.md"
+    return Response(
+        content=md_content.encode("utf-8"),
+        media_type="text/markdown; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
