@@ -3,18 +3,13 @@
  * Recharts · Graphes temporels · Win rate · Pipeline · Heatmap
  */
 import { useEffect, useState, useCallback } from 'react';
-// @ts-ignore — recharts v3 types instables sur Node 24
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
-  XAxis, YAxis, CartesianGrid, Tooltip,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer,
+  PieChart, Pie, Cell,
+  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from 'recharts';
-// @ts-ignore
-import { PieChart, Pie, Cell } from 'recharts';
-// @ts-ignore
-import { RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
-// @ts-ignore
-import { Legend } from 'recharts';
 import {
   BarChart2, RefreshCw, TrendingUp, Target, Zap,
   Trophy, Activity, Calendar, ArrowUpRight,

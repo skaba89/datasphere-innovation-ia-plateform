@@ -32,7 +32,7 @@
     "lucide-react": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "recharts": "^3.8.1",
+    "recharts": "^2.12.7",
     "typescript": "latest",
     "vite": "latest"
   },
