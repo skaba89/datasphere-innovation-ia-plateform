@@ -686,150 +686,78 @@ def bulk_index_tenders(db, limit: int = 200) -> dict:
         log.warning("bulk_index_tenders error: %s", e)
         return {"indexed": 0, "error": str(e)}
 
-
 # ══════════════════════════════════════════════════════════════════════════════
-# RAG v2.2 — Extension AOs (CCTP) + recherche sémantique unifiée
+# enhance_prompt_with_rag — enrichissement du prompt avec contexte RAG
 # ══════════════════════════════════════════════════════════════════════════════
 
-def index_tender(db, tender_id: int) -> bool:
-    """Indexe le contenu d'un AO dans la table embeddings."""
-    try:
-        from app.models.tender import Tender
-        t = db.query(Tender).filter(Tender.id == tender_id).first()
-        if not t:
-            return False
-        text = " ".join(filter(None, [
-            t.title or "",
-            t.summary or "",
-            getattr(t, "description", "") or "",
-            getattr(t, "buyer_name", "") or "",
-            getattr(t, "sector", "") or "",
-        ])).strip()
-        if not text:
-            return False
-        return store_embedding(db, tender_id, text[:6000])
-    except Exception as e:
-        log.warning("index_tender error: %s", e)
-        return False
-
-
-def _search_tenders_tfidf(db, query: str, limit: int = 5) -> list[dict]:
-    """Recherche TF-IDF sur les AOs."""
-    try:
-        from app.models.tender import Tender
-        candidates = db.query(Tender).order_by(Tender.created_at.desc()).limit(100).all()
-    except Exception as e:
-        log.warning("TF-IDF tender DB error: %s", e)
-        return []
-
-    if not candidates:
-        return []
-
-    query_tokens = _tokenize(query)
-    if not query_tokens:
-        return []
-
-    corpus_df: Counter = Counter()
-    doc_tokens_list = []
-    for t in candidates:
-        tokens = _tokenize(f"{t.title or ''} {getattr(t, 'summary', '') or ''}")
-        doc_tokens_list.append(tokens)
-        corpus_df.update(set(tokens))
-
-    n = len(candidates)
-    scored = [
-        (_tfidf_score(query_tokens, tok, corpus_df, n), t)
-        for t, tok in zip(candidates, doc_tokens_list)
-    ]
-    scored = [(s, t) for s, t in scored if s > 0]
-    scored.sort(key=lambda x: x[0], reverse=True)
-
-    return [
-        {
-            "id": t.id, "title": t.title,
-            "buyer": getattr(t, "buyer_name", "") or "",
-            "score": round(s, 4), "source": "tfidf",
-            "status": getattr(t, "status", ""),
-            "go_score": getattr(t, "go_no_go_score", 0) or 0,
-        }
-        for s, t in scored[:limit]
-    ]
-
-
-def search_tenders_by_semantic(db, query: str, limit: int = 5) -> list[dict]:
-    """Recherche sémantique sur les AOs — vectoriel si dispo, TF-IDF sinon."""
-    try:
-        from app.models.tender import Tender
-        vec_results = vector_search(db, query, limit=limit * 2)
-        if vec_results:
-            ids = [r["deliverable_id"] for r in vec_results]
-            tenders = {t.id: t for t in db.query(Tender).filter(Tender.id.in_(ids)).all()}
-            hits = []
-            for r in vec_results:
-                t = tenders.get(r["deliverable_id"])
-                if t:
-                    hits.append({
-                        "id": t.id, "title": t.title,
-                        "buyer": getattr(t, "buyer_name", "") or "",
-                        "score": round(r["similarity"], 4), "source": "vector",
-                        "status": getattr(t, "status", ""),
-                        "go_score": getattr(t, "go_no_go_score", 0) or 0,
-                    })
-            if hits:
-                return hits[:limit]
-    except Exception as e:
-        log.warning("vector tender search error: %s", e)
-
-    return _search_tenders_tfidf(db, query, limit)
-
-
-def unified_search(db, query: str, limit: int = 5,
-                   include_deliverables: bool = True,
-                   include_tenders: bool = True) -> dict:
+def enhance_prompt_with_rag(
+    db,
+    base_prompt: str,
+    title: str = "",
+    content_hint: str = "",
+    deliverable_type: str = "technical_proposal",
+    max_similar: int = 3,
+) -> tuple[str, list[dict]]:
     """
-    RAG unifié — cherche simultanément dans livrables approuvés ET AOs.
-    Retourne {'deliverables': [...], 'tenders': [...], 'rag_context': str}
+    Enrichit un prompt LLM avec le contexte des livrables similaires approuvés
+    et des AOs similaires trouvés via RAG (vectoriel ou TF-IDF).
+
+    Retourne : (enhanced_prompt: str, rag_sources: list[dict])
+
+    Le prompt enrichi inclut une section "Exemples de livrables similaires approuvés"
+    qui guide le LLM pour produire un contenu de meilleure qualité.
     """
-    results: dict = {"deliverables": [], "tenders": [], "rag_context": ""}
+    rag_sources: list[dict] = []
+    rag_context = ""
 
-    if include_deliverables:
-        results["deliverables"] = find_similar_deliverables(db, query, limit=limit)
+    try:
+        # 1. Chercher des livrables similaires approuvés
+        query = f"{title} {content_hint}".strip() or "mémoire technique data engineering"
+        similar = find_similar_deliverables(
+            db,
+            query_title=title or "mémoire technique",
+            query_content=content_hint,
+            deliverable_type=deliverable_type,
+            limit=max_similar,
+        )
 
-    if include_tenders:
-        results["tenders"] = search_tenders_by_semantic(db, query, limit=limit)
-
-    ctx_parts = []
-    if results["deliverables"]:
-        ctx_parts.append(build_rag_context(results["deliverables"]))
-    if results["tenders"]:
-        lines = ["\n\n### AOs similaires détectés (RAG)\n"]
-        for t in results["tenders"]:
-            lines.append(
-                f"- **{t['title']}** (acheteur: {t.get('buyer', '—')}) "
-                f"— score: {t.get('go_score', 0)}/100 [{t['source']}]"
+        if similar:
+            rag_sources.extend(similar)
+            rag_context += build_rag_context(similar)
+            log.info(
+                "enhance_prompt_with_rag: %d livrables similaires trouvés (source: %s)",
+                len(similar),
+                similar[0].get("source", "?"),
             )
-        ctx_parts.append("\n".join(lines))
 
-    results["rag_context"] = "\n".join(ctx_parts)
-    return results
+        # 2. Chercher des AOs similaires
+        tender_results = search_tenders_by_semantic(db, query=query, limit=2)
+        if tender_results:
+            rag_sources.extend(tender_results)
+            ao_ctx = "\n\n### AOs similaires référencés\n"
+            for t in tender_results:
+                ao_ctx += f"- **{t.get('title', '?')}** (acheteur: {t.get('buyer', '—')}, score: {t.get('go_score', 0)}/100)\n"
+            rag_context += ao_ctx
 
-
-def bulk_index_tenders(db, limit: int = 200) -> dict:
-    """Indexe en masse tous les AOs existants non encore vectorisés."""
-    try:
-        from app.models.tender import Tender
-        from sqlalchemy import text as sql_text
-        already_indexed = set(
-            r[0] for r in db.execute(
-                sql_text("SELECT deliverable_id FROM deliverable_embeddings")
-            ).fetchall()
-        )
-        tenders = db.query(Tender).limit(limit).all()
-        indexed = sum(
-            1 for t in tenders
-            if t.id not in already_indexed and index_tender(db, t.id)
-        )
-        return {"indexed": indexed, "total": len(tenders)}
     except Exception as e:
-        log.warning("bulk_index_tenders error: %s", e)
-        return {"indexed": 0, "error": str(e)}
+        log.warning("enhance_prompt_with_rag: RAG lookup failed — %s", e)
+        # Continuer sans contexte RAG — le prompt de base reste intact
+
+    if not rag_context.strip():
+        # Aucun contexte disponible — retourner le prompt de base tel quel
+        return base_prompt, []
+
+    enhanced_prompt = f"""{base_prompt}
+
+---
+
+{rag_context}
+
+---
+
+**Important** : Utilise les exemples ci-dessus comme référence de qualité et de style, 
+mais produis un contenu 100% original adapté à cet AO spécifique. 
+Ne copie pas le contenu des exemples — inspire-toi de leur structure et niveau de détail.
+"""
+
+    return enhanced_prompt, rag_sources
