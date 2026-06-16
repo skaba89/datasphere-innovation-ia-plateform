@@ -603,25 +603,24 @@ def export_deliverable_pdf(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Export failed: {e}")
 
-    # Détecter si WeasyPrint a produit du PDF ou du HTML (fallback)
-    is_html = isinstance(result, (str, bytes)) and (
-        result[:20].lstrip(b'\xef\xbb\xbf') if isinstance(result, bytes) else result[:20]
-    ).lstrip().startswith(b'<' if isinstance(result, bytes) else '<')
+    # Détecter PDF vs HTML fallback
+    # PDF commence par %PDF-, HTML par <!DOCTYPE ou <html
+    result_bytes = result if isinstance(result, bytes) else result.encode("utf-8")
+    is_pdf = result_bytes[:5] == b'%PDF-'
 
-    if is_html:
-        filename = f"Livrable_{safe_title}.html"
+    if is_pdf:
         return Response(
-            content=result if isinstance(result, bytes) else result.encode("utf-8"),
-            media_type="text/html; charset=utf-8",
-            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+            content=result_bytes,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'attachment; filename="Livrable_{safe_title}.pdf"'},
         )
-
-    filename = f"Livrable_{safe_title}.pdf"
-    return Response(
-        content=result,
-        media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-    )
+    else:
+        # Fallback HTML — ouvrable dans le navigateur, imprimable en PDF
+        return Response(
+            content=result_bytes,
+            media_type="text/html; charset=utf-8",
+            headers={"Content-Disposition": f'attachment; filename="Livrable_{safe_title}.html"'},
+        )
 
 
 @router.post("/{deliverable_id}/generate")

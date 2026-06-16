@@ -234,9 +234,9 @@ export default function DeliverablePage() {
             return (
               <section key={d.id} className="panel" style={{ padding: 0, overflow: 'hidden', border: `1px solid ${STATUS_COLOR[d.status] ?? '#334155'}25` }}>
                 {/* Header */}
-                <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'flex-start', gap: 12, cursor: 'pointer' }}
+                <div style={{ padding: '12px 14px', display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', flexWrap: 'wrap' }}
                      onClick={() => { setExpanded(isExp ? null : d.id); setEditing(null); }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ flex: 1, minWidth: 200 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
                       <span style={{ fontWeight: 800, fontSize: '.92rem', color: '#e2e8f0' }}>{d.title}</span>
                       <span style={{ fontSize: '.68rem', padding: '1px 7px', borderRadius: 99, background: `${STATUS_COLOR[d.status]}15`, color: STATUS_COLOR[d.status], border: `1px solid ${STATUS_COLOR[d.status]}30`, fontWeight: 700, textTransform: 'capitalize' as const }}>
@@ -252,22 +252,19 @@ export default function DeliverablePage() {
                   </div>
 
                   {/* Actions */}
-                  <div style={{ display: 'flex', gap: 6, flexShrink: 0, alignItems: 'center' }} onClick={e => e.stopPropagation()}>
+                  <div style={{ display: 'flex', gap: 4, flexShrink: 0, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }} onClick={e => e.stopPropagation()}>
                     {/* Export buttons */}
-                    <button onClick={() => downloadExport(d.id, 'pdf')}
-                       title="Exporter PDF"
-                       style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid rgba(148,163,184,.15)', background: 'rgba(239,68,68,.06)', color: '#fca5a5', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: '.72rem' }}>
-                      <Download size={11} /> PDF
+                    <button onClick={() => downloadExport(d.id, 'pdf')} title="Exporter PDF"
+                       style={{ padding: '5px 8px', borderRadius: 7, border: '1px solid rgba(239,68,68,.25)', background: 'rgba(239,68,68,.06)', color: '#fca5a5', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3, fontSize: '.7rem', fontWeight: 700 }}>
+                      <Download size={10} /> PDF
                     </button>
-                    <button onClick={() => downloadExport(d.id, 'markdown')}
-                       title="Télécharger Markdown"
-                       style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid rgba(148,163,184,.15)', background: 'rgba(14,165,233,.06)', color: '#38bdf8', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: '.72rem' }}>
-                      <Download size={11} /> MD
+                    <button onClick={() => downloadExport(d.id, 'markdown')} title="Markdown"
+                       style={{ padding: '5px 8px', borderRadius: 7, border: '1px solid rgba(14,165,233,.2)', background: 'rgba(14,165,233,.06)', color: '#38bdf8', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3, fontSize: '.7rem', fontWeight: 700 }}>
+                      <Download size={10} /> MD
                     </button>
-                    <button onClick={() => downloadExport(d.id, 'docx')}
-                       title="Télécharger Word"
-                       style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid rgba(37,99,235,.3)', background: 'rgba(37,99,235,.06)', color: '#93c5fd', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: '.72rem' }}>
-                      <Download size={11} /> DOCX
+                    <button onClick={() => downloadExport(d.id, 'docx')} title="Word"
+                       style={{ padding: '5px 8px', borderRadius: 7, border: '1px solid rgba(37,99,235,.25)', background: 'rgba(37,99,235,.06)', color: '#93c5fd', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3, fontSize: '.7rem', fontWeight: 700 }}>
+                      <Download size={10} /> DOCX
                     </button>
 
                     {/* Edit */}
