@@ -52,6 +52,7 @@ const S = {
 };
 
 function OAuthPanel({ token, onStatusChange }: { token: string; onStatusChange: (s: OAuthStatus) => void }) {
+  const { lang } = useI18n();
   const [status, setStatus] = useState<OAuthStatus | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [revoking, setRevoking] = useState(false);
@@ -75,6 +76,7 @@ function OAuthPanel({ token, onStatusChange }: { token: string; onStatusChange: 
   }, [loadStatus]);
 
   async function connect() {
+  const { lang } = useI18n();
     setConnecting(true);
     try {
       const res = await apiRequest<AuthUrlResponse>('/linkedin/oauth/auth-url', {}, token);
@@ -88,6 +90,7 @@ function OAuthPanel({ token, onStatusChange }: { token: string; onStatusChange: 
   }
 
   async function revoke() {
+  const { lang } = useI18n();
     setRevoking(true);
     try {
       await apiRequest('/linkedin/oauth/revoke', { method: 'POST' }, token);
@@ -178,6 +181,7 @@ export default function LinkedInAgentPage() {
   }, [token]);
 
   async function generate() {
+  const { lang } = useI18n();
     setGenerating(true); setPost(null); setPubResult(null);
     try {
       let result: GeneratedPost;
@@ -198,6 +202,7 @@ export default function LinkedInAgentPage() {
   }
 
   async function publish() {
+  const { lang } = useI18n();
     if (!oauthStatus?.has_token || oauthStatus.is_expired) {
       alert('Connectez d\'abord votre compte LinkedIn via OAuth.');
       return;
@@ -215,6 +220,7 @@ export default function LinkedInAgentPage() {
   }
 
   function copy() {
+  const { lang } = useI18n();
     navigator.clipboard.writeText(editedContent);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);

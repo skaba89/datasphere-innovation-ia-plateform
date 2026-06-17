@@ -145,6 +145,7 @@ function StatChip({ label, value, color = C.gold, delta }: { label: string; valu
 
 // ── Custom Tooltip ────────────────────────────────────────────────────────────
 function CustomTooltip({ active, payload, label }: any) {
+  const { lang } = useI18n();
   if (!active || !payload?.length) return null;
   return (
     <div style={{ background: '#0c1425', border: '1px solid rgba(148,163,184,.15)', borderRadius: 10, padding: '10px 14px', fontSize: '.78rem' }}>
@@ -162,6 +163,7 @@ function CustomTooltip({ active, payload, label }: any) {
 
 // ── Tab: Overview ─────────────────────────────────────────────────────────────
 function OverviewTab({ timeline, pipeline }: { timeline: any; pipeline: PipelineAnalytics | null }) {
+  const { lang } = useI18n();
   const { t } = useI18n();
   if (!timeline) return <div style={{ color: '#475569', padding: 32, textAlign: 'center' }}>Chargement…</div>;
 
@@ -247,6 +249,7 @@ function OverviewTab({ timeline, pipeline }: { timeline: any; pipeline: Pipeline
 
 // ── Tab: Pipeline ─────────────────────────────────────────────────────────────
 function PipelineTab({ pipeline }: { pipeline: PipelineAnalytics | null }) {
+  const { lang } = useI18n();
   if (!pipeline) return null;
   const { tenders, opportunities, deliverables } = pipeline;
 
@@ -326,6 +329,7 @@ function PipelineTab({ pipeline }: { pipeline: PipelineAnalytics | null }) {
 
 // ── Tab: Performance ──────────────────────────────────────────────────────────
 function PerformanceTab({ perf }: { perf: any }) {
+  const { lang } = useI18n();
   const { t } = useI18n();
   if (!perf) return <div style={{ color: '#475569', padding: 32 }}>Données indisponibles.</div>;
 
@@ -387,6 +391,7 @@ function PerformanceTab({ perf }: { perf: any }) {
 
 // ── Tab: Activité ─────────────────────────────────────────────────────────────
 function ActiviteTab({ timeline, pipeline }: { timeline: any; pipeline: PipelineAnalytics | null }) {
+  const { lang } = useI18n();
   const { t } = useI18n();
   if (!timeline || !pipeline) return null;
 
@@ -540,6 +545,7 @@ export default function AnalyticsPage() {
 
 // ── ForecastTab — Prévision pipeline 90 jours ─────────────────────────────
 function ForecastTab({ token }: { token: string | null }) {
+  const { lang } = useI18n();
   const { t } = useI18n();
   const [data, setData]     = React.useState<any>(null);
   const [loading, setLoading] = React.useState(true);

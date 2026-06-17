@@ -423,6 +423,7 @@ function BOAMPPanel({ token, onImported }: { token: string|null; onImported: (id
   const [msg, setMsg] = useState('');
 
   async function scoreWithAI(tenderId: number) {
+  const { lang } = useI18n();
     setScoringId(tenderId);
     try {
       const result = await apiRequest<any>(`/tenders/${tenderId}/score-ai`, { method: 'POST' }, token);
@@ -436,6 +437,7 @@ function BOAMPPanel({ token, onImported }: { token: string|null; onImported: (id
   }
 
   async function search() {
+  const { lang } = useI18n();
     setLoading(true); setMsg(''); setResults([]);
     try {
       const r = await apiRequest<BOAMPResult[]>(`/tender-watch/search?q=${encodeURIComponent(query)}&limit=20`, {}, token);

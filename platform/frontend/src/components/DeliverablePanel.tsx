@@ -134,6 +134,7 @@ export function DeliverablePanel({ token }: Props) {
   }
 
   async function updateStatus(id: number, action: 'review' | 'approve', name: string) {
+  const { lang } = useI18n();
     setLoading(true);
     setError(null);
     try {
@@ -152,10 +153,12 @@ export function DeliverablePanel({ token }: Props) {
   const [confirmDelId, setConfirmDelId] = useState<number | null>(null);
 
   async function deleteDeliverable(id: number) {
+  const { lang } = useI18n();
     setConfirmDelId(id);
   }
 
-  async function doDeleteDeliverable(id: number) {    setLoading(true);
+  async function doDeleteDeliverable(id: number) {
+  const { lang } = useI18n();    setLoading(true);
     setError(null);
     try {
       await apiRequest(`/deliverables/${id}`, { method: 'DELETE' }, token);
@@ -169,6 +172,7 @@ export function DeliverablePanel({ token }: Props) {
   }
 
   function downloadHref(id: number, fmt: 'markdown' | 'html' | 'pdf') {
+  const { lang } = useI18n();
     return `${API_BASE}/deliverables/${id}/export/${fmt}?token=${encodeURIComponent(tokenStorage.get() ?? '')}`;
   }
 
