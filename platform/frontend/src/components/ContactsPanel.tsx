@@ -32,7 +32,6 @@ function ContactForm({
   const token = tokenStorage.get();
 
   async function submit() {
-  const { lang } = useI18n();
     setSaving(true); setError(null);
     try {
       const path = initial?.id ? `/contacts/${initial.id}` : '/contacts';
@@ -108,6 +107,7 @@ function ContactForm({
 // ── Main panel ────────────────────────────────────────────────────────────────
 
 export default function ContactsPanel() {
+  const { lang } = useI18n();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [orgs, setOrgs] = useState<Organization[]>([]);
   const [search, setSearch] = useState('');
@@ -120,7 +120,6 @@ export default function ContactsPanel() {
   const token = tokenStorage.get();
 
   async function loadAll() {
-  const { lang } = useI18n();
     setLoading(true);
     try {
       const [cs, os] = await Promise.all([
@@ -135,19 +134,16 @@ export default function ContactsPanel() {
   useEffect(() => { loadAll(); }, [filterOrgId, search]);
 
   async function deleteContact(id: number) {
-  const { lang } = useI18n();
     setConfirmDeleteId(id);
   }
 
   async function doDeleteContact(id: number) {
-  const { lang } = useI18n();
     await apiRequest(`/contacts/${id}`, { method: 'DELETE' }, token);
     setContacts(cs => cs.filter(c => c.id !== id));
     setConfirmDeleteId(null);
   }
 
   function getOrgName(id: number): string {
-  const { lang } = useI18n();
     return orgs.find(o => o.id === id)?.name ?? `Org #${id}`;
   }
 

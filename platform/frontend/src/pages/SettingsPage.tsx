@@ -59,7 +59,6 @@ function ServiceCard({ icon: Icon, label, ok, detail, color = '#64748b', extra }
   icon: React.ElementType; label: string; ok: boolean;
   detail?: string; color?: string; extra?: React.ReactNode;
 }) {
-  const { lang } = useI18n();
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px',
@@ -152,7 +151,6 @@ export default function SettingsPage() {
   const [testing, setTesting] = useState(false);
 
   async function load() {
-  const { lang } = useI18n();
     setLoading(true);
     try {
       const [h, d] = await Promise.all([
@@ -167,7 +165,6 @@ export default function SettingsPage() {
   useEffect(() => { load(); }, []);
 
   async function sendTestEmail() {
-  const { lang } = useI18n();
     if (!testEmail) return;
     setTesting(true); setTestResult(null);
     try {

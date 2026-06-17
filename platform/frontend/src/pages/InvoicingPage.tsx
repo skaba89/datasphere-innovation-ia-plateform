@@ -181,7 +181,6 @@ function DocRow({ doc, type, token, onRefresh }: { doc: Quote|Invoice; type: 'qu
   }
 
   async function convertToInvoice() {
-  const { lang } = useI18n();
     setConverting(true);
     try {
       await apiRequest(`/invoices/quotes/${doc.id}/convert`, { method: 'POST' }, token);

@@ -29,7 +29,7 @@ const S = {
 
 // Wrapper local : charge le workflow d'un AO et le passe à WorkflowTimeline
 function TenderWorkflowTimeline({ tenderId, token }: { tenderId: number; token: string | null }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [workflow, setWorkflow] = React.useState<any>(null);
   const [loading, setLoading]   = React.useState(true);
 
@@ -412,7 +412,6 @@ export default function TenderPage() {
 // ── BOAMP Search Panel ────────────────────────────────────────────────────────
 
 function BOAMPPanel({ token, onImported }: { token: string|null; onImported: (id:number)=>void }) {
-  const { lang } = useI18n();
   const [query,   setQuery]   = useState('data');
   const [results, setResults] = useState<BOAMPResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -423,7 +422,6 @@ function BOAMPPanel({ token, onImported }: { token: string|null; onImported: (id
   const [msg, setMsg] = useState('');
 
   async function scoreWithAI(tenderId: number) {
-  const { lang } = useI18n();
     setScoringId(tenderId);
     try {
       const result = await apiRequest<any>(`/tenders/${tenderId}/score-ai`, { method: 'POST' }, token);
@@ -437,7 +435,6 @@ function BOAMPPanel({ token, onImported }: { token: string|null; onImported: (id
   }
 
   async function search() {
-  const { lang } = useI18n();
     setLoading(true); setMsg(''); setResults([]);
     try {
       const r = await apiRequest<BOAMPResult[]>(`/tender-watch/search?q=${encodeURIComponent(query)}&limit=20`, {}, token);

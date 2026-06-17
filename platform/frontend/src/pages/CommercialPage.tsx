@@ -65,7 +65,6 @@ function KpiCard({ icon, label, value, sub, color = '#facc15', delta }: {
   icon: React.ReactNode; label: string; value: string | number;
   sub?: string; color?: string; delta?: string;
 }) {
-  const { lang } = useI18n();
   return (
     <div style={{
       background: 'rgba(255,255,255,.03)', border: '1px solid rgba(148,163,184,.1)',
@@ -91,7 +90,6 @@ function KpiCard({ icon, label, value, sub, color = '#facc15', delta }: {
 }
 
 function RecentOpps({ token }: { token: string }) {
-  const { lang } = useI18n();
   const [opps, setOpps] = useState<Opportunity[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -148,7 +146,7 @@ function RecentOpps({ token }: { token: string }) {
 }
 
 function ConversionFunnel({ data }: { data: DashboardData }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const steps = [
     { label: t('crm.organizations'), value: data.crm.organizations, color: '#3b82f6' },
     { label: t('crm.opportunities'), value: data.crm.opportunities_total, color: '#8b5cf6' },
