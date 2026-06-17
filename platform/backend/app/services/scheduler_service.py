@@ -656,7 +656,7 @@ def trigger_job(job_id: str) -> bool:
     job.modify(next_run_time=datetime.now())
     return True
 
-def run_deadline_alerts(db_session_factory) -> dict:
+def run_deadline_alerts() -> dict:
     """
     Job scheduler — alertes deadline AOs.
     Envoie un email J-7, J-3, J-1 aux utilisateurs concernés.
@@ -673,7 +673,8 @@ def run_deadline_alerts(db_session_factory) -> dict:
     errors = 0
 
     try:
-        db = db_session_factory()
+        from app.db.session import SessionLocal
+        db = SessionLocal()
         now = datetime.utcnow()
         alerts_days = [1, 3, 7]
 
