@@ -136,13 +136,21 @@ export async function apiRequest<T>(
     if (newToken) {
       response = await _fetch(path, options, newToken);
     } else {
-      // Refresh failed → session terminée
+      // Refresh failed → session terminée → déconnexion auto
+      tokenStorage.clear();
       authEvents.emit();
+      throw new Error('Session expirée — reconnectez-vous');
     }
   }
 
-  if (!response.ok) {
-    if (response.status === 401) authEvents.emit();
+  // 401 sans refresh token → déconnexion immédiate
+  if (response.status === 401) {
+    tokenStorage.clear();
+    authEvents.emit();
+    throw new Error('Session expirée — reconnectez-vous');
+  }
+
+  if (!response || !response.ok) {
     let message = `API error ${response.status}`;
     try {
       const data = (await response.json()) as ApiError;
