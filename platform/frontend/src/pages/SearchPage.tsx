@@ -309,7 +309,7 @@ export default function SearchPage() {
           <Search size={32} color="#1e293b" style={{ margin: '0 auto 12px' }} />
           <p style={{ fontWeight: 700, color: '#475569', marginBottom: 6, fontSize: '.9rem' }}><EmptyState
               icon="🔍"
-              title="Aucun résultat"
+              title={lang === "en" ? "No results" : "Aucun résultat"}
               description="Essayez avec des mots-clés différents : nom d'acheteur, référence AO, type de livrable…"
               compact
             /> pour « {query} »</p>

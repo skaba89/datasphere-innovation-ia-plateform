@@ -179,7 +179,7 @@ function OverviewTab({ timeline, pipeline }: { timeline: any; pipeline: Pipeline
     <div style={{ display: 'grid', gap: 16 }}>
       {/* KPI row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 10 }}>
-        <StatChip label="AOs 12 mois"  value={timeline.totals?.ao_detectes ?? 0}  color={C.blue} />
+        <StatChip label={lang === "en" ? "Tenders 12 months" : "AOs 12 mois"}  value={timeline.totals?.ao_detectes ?? 0}  color={C.blue} />
         <StatChip label="Workflows"    value={timeline.totals?.wf_completes ?? 0} color={C.purple} />
         <StatChip label="Livrables"    value={timeline.totals?.livrables ?? 0}    color={C.gold} />
         <StatChip label="Gagnés"       value={timeline.totals?.gagnes ?? 0}       color={C.green} />
@@ -188,7 +188,7 @@ function OverviewTab({ timeline, pipeline }: { timeline: any; pipeline: Pipeline
 
       {/* Main timeline */}
       <div style={CHART_BG}>
-        <ChartTitle label="Activité 12 mois" sub="AOs détectés · Workflows · Livrables · Gagnés" />
+        <ChartTitle label={lang === "en" ? "Activity 12 months" : "Activité 12 mois"} sub="AOs détectés · Workflows · Livrables · Gagnés" />
         <ResponsiveContainer width="100%" height={220}>
           <AreaChart data={months} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
             <defs>
@@ -273,14 +273,14 @@ function PipelineTab({ pipeline }: { pipeline: PipelineAnalytics | null }) {
     <div style={{ display: 'grid', gap: 16 }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 10 }}>
         <StatChip label="Total AOs"     value={tenders.total ?? 0}        color={C.blue} />
-        <StatChip label="Score moyen"   value={`${(tenders.avg_go_score ?? 0).toFixed(0)}/100`} color={C.gold} />
+        <StatChip label={lang === "en" ? "Average score" : "Score moyen"}   value={`${(tenders.avg_go_score ?? 0).toFixed(0)}/100`} color={C.gold} />
         <StatChip label="Taux approbation livrables" value={`${(deliverables.approval_rate ?? 0).toFixed(0)}%`} color={C.green} />
         <StatChip label="Pipeline €"    value={new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(opportunities.pipeline_value ?? 0)} color={C.purple} />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
         <div style={CHART_BG}>
-          <ChartTitle label="Décisions Go/No-Go" />
+          <ChartTitle label={lang === "en" ? "Go/No-Go decisions" : "Décisions Go/No-Go"} />
           <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0' }}>
             <SvgPieChart data={decisionData.map(d => ({ ...d, color: d.fill }))} width={200} height={200} outerRadius={70} />
           </div>
@@ -350,7 +350,7 @@ function PerformanceTab({ perf }: { perf: any }) {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 16 }}>
         <div style={CHART_BG}>
-          <ChartTitle label="Distribution des scores Go/No-Go" sub="Nombre d'AOs par tranche de score" />
+          <ChartTitle label={lang === "en" ? "Go/No-Go score distribution" : "Distribution des scores Go/No-Go"} sub="Nombre d'AOs par tranche de score" />
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={scoreDistrib} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,.06)" />
@@ -363,7 +363,7 @@ function PerformanceTab({ perf }: { perf: any }) {
         </div>
 
         <div style={CHART_BG}>
-          <ChartTitle label="AOs gagnés par mois" />
+          <ChartTitle label={lang === "en" ? "Won tenders per month" : "AOs gagnés par mois"} />
           <ResponsiveContainer width="100%" height={180}>
             <AreaChart data={winByMonth} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
               <defs>
@@ -404,7 +404,7 @@ function ActiviteTab({ timeline, pipeline }: { timeline: any; pipeline: Pipeline
   return (
     <div style={{ display: 'grid', gap: 16 }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 10 }}>
-        <StatChip label="Actions totales" value={agents.total_actions ?? 0} color={C.blue} />
+        <StatChip label={lang === "en" ? "Total actions" : "Actions totales"} value={agents.total_actions ?? 0} color={C.blue} />
         <StatChip label="Taux complétion" value={`${completionRate.toFixed(0)}%`} color={C.green} />
         <StatChip label="En attente approbation" value={agents.actions_pending_approval ?? 0} color={C.amber} />
         <StatChip label="Scheduler jobs" value={scheduler.jobs_count ?? 0} color={C.cyan} />
@@ -429,7 +429,7 @@ function ActiviteTab({ timeline, pipeline }: { timeline: any; pipeline: Pipeline
         </div>
 
         <div style={CHART_BG}>
-          <ChartTitle label="Agents IA — état des actions" />
+          <ChartTitle label={lang === "en" ? "AI Agents — action status" : "Agents IA — état des actions"} />
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
             <SvgPieChart data={agentData.filter(d=>d.value>0).map(d => ({ ...d, color: d.fill }))} width={200} height={150} innerRadius={30} outerRadius={55} />
           </div>
@@ -557,7 +557,7 @@ function ForecastTab({ token }: { token: string | null }) {
     }).then(r => r.json()).then(setData).catch(() => {}).finally(() => setLoading(false));
   }, [horizon, token]);
 
-  if (loading) return <div style={{ padding: 40, textAlign: 'center', color: '#475569' }}>Calcul prévision…</div>;
+  if (loading) return <div style={{ padding: 40, textAlign: 'center', color: '#475569' }}>{lang === 'en' ? 'Computing forecast…' : 'Calcul prévision…'}</div>;
   if (!data) return null;
 
   const maxVal = Math.max(...(data.weekly_timeline || []).map((w: any) => w.weighted_value), 1);
@@ -609,7 +609,7 @@ function ForecastTab({ token }: { token: string | null }) {
       {/* Répartition statuts */}
       {data.status_breakdown && Object.keys(data.status_breakdown).length > 0 && (
         <div style={CHART_BG}>
-          <ChartTitle label="Répartition pipeline par statut" />
+          <ChartTitle label={lang === "en" ? "Pipeline breakdown by status" : "Répartition pipeline par statut"} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '8px 0' }}>
             {Object.entries(data.status_breakdown as Record<string, {count:number;value:number}>).map(([status, info]) => {
               const totalVal = Object.values(data.status_breakdown as Record<string, {value:number}>).reduce((s, v) => s + v.value, 0);

@@ -213,7 +213,7 @@ export default function UserProfilePage() {
               ? <img src={avatarUrl || profile?.avatar_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               : initials}
           </div>
-          <label title="Changer l'avatar" style={{ position: 'absolute', bottom: -4, right: -4, width: 22, height: 22, borderRadius: '50%', background: '#facc15', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,.4)' }}>
+          <label title={lang === "en" ? "Change avatar" : "Changer l'avatar"} style={{ position: 'absolute', bottom: -4, right: -4, width: 22, height: 22, borderRadius: '50%', background: '#facc15', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,.4)' }}>
             {avatarUploading
               ? <span style={{ fontSize: 9, animation: 'avSpin .7s linear infinite', display: 'block' }}>⟳</span>
               : <span style={{ fontSize: 11 }}>✏️</span>}
@@ -283,12 +283,12 @@ export default function UserProfilePage() {
               </div>
             </div>
             <div>
-              <label style={lbl}>Biographie</label>
+              <label style={lbl}>{lang === 'en' ? 'Biography' : 'Biographie'}</label>
               <textarea style={{ ...inp, resize: 'vertical' as const }} rows={3} value={bio} onChange={e => setBio(e.target.value)} placeholder="Data Engineer senior, spécialisé Snowflake & dbt…" />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
               <div>
-                <label style={lbl}><MapPin size={11} style={{ marginRight: 4 }} />Localisation</label>
+                <label style={lbl}><MapPin size={11} style={{ marginRight: 4 }} />{lang === 'en' ? 'Location' : 'Localisation'}</label>
                 <input style={inp} value={location} onChange={e => setLocation(e.target.value)} placeholder="Paris, France" />
               </div>
               <div>
@@ -305,14 +305,14 @@ export default function UserProfilePage() {
               </div>
             </div>
             <div>
-              <label style={lbl}>Disponibilité</label>
+              <label style={lbl}>{lang === 'en' ? 'Availability' : 'Disponibilité'}</label>
               <select style={{ ...inp }} value={availability} onChange={e => setAvailability(e.target.value)}>
                 <option value="">— Sélectionner —</option>
                 {AVAILABILITY_OPTIONS.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
               </select>
             </div>
             <div>
-              <label style={lbl}><Tag size={11} style={{ marginRight: 4 }} />Compétences (séparées par des virgules)</label>
+              <label style={lbl}><Tag size={11} style={{ marginRight: 4 }} />{lang === 'en' ? 'Skills (comma-separated)' : 'Compétences (séparées par des virgules)'}</label>
               <input style={inp} value={skillsRaw} onChange={e => setSkillsRaw(e.target.value)} placeholder="Snowflake, dbt Core, Apache Airflow, Python, PySpark…" />
             </div>
 
@@ -339,11 +339,11 @@ export default function UserProfilePage() {
       <div style={card}>
         <div style={sectionHead}>
           <Lock size={15} color="#facc15" />
-          <span style={{ fontWeight: 800, fontSize: '.9rem' }}>Changer mon mot de passe</span>
+          <span style={{ fontWeight: 800, fontSize: '.9rem' }}>{lang === 'en' ? 'Change my password' : 'Changer mon mot de passe'}</span>
         </div>
         <form onSubmit={changePwd} style={{ padding: '22px 24px', display: 'grid', gap: 16 }}>
           <div>
-            <label style={lbl}>Mot de passe actuel</label>
+            <label style={lbl}>{lang === 'en' ? 'Current password' : 'Mot de passe actuel'}</label>
             <div style={{ position: 'relative' }}>
               <input type={showPwd ? 'text' : 'password'} style={{ ...inp, paddingRight: 42 }}
                 value={currentPwd} onChange={e => setCurrentPwd(e.target.value)}
@@ -356,9 +356,9 @@ export default function UserProfilePage() {
           </div>
 
           <div>
-            <label style={lbl}>Nouveau mot de passe</label>
+            <label style={lbl}>{lang === 'en' ? 'New password' : 'Nouveau mot de passe'}</label>
             <input type="password" style={inp} value={newPwd} onChange={e => setNewPwd(e.target.value)}
-              placeholder="Nouveau mot de passe" required autoComplete="new-password" />
+              placeholder={lang === "en" ? "New password" : "Nouveau mot de passe"} required autoComplete="new-password" />
             {newPwd.length > 0 && (
               <div style={{ marginTop: 8 }}>
                 {/* Barre de force */}
@@ -380,7 +380,7 @@ export default function UserProfilePage() {
           </div>
 
           <div>
-            <label style={lbl}>Confirmer le nouveau mot de passe</label>
+            <label style={lbl}>{lang === 'en' ? 'Confirm new password' : 'Confirmer le nouveau mot de passe'}</label>
             <input type="password" style={{ ...inp, borderColor: confirmPwd && confirmPwd !== newPwd ? 'rgba(239,68,68,.4)' : 'rgba(148,163,184,.15)' }}
               value={confirmPwd} onChange={e => setConfirmPwd(e.target.value)}
               placeholder="Répéter le nouveau mot de passe" required autoComplete="new-password" />

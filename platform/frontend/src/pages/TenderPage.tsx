@@ -41,7 +41,7 @@ function TenderWorkflowTimeline({ tenderId, token }: { tenderId: number; token: 
       .finally(() => setLoading(false));
   }, [tenderId, token]);
 
-  if (loading) return <div style={{color:'#475569',fontSize:'.82rem',padding:16}}>Chargement du workflow…</div>;
+  if (loading) return <div style={{color:'#475569',fontSize:'.82rem',padding:16}}>{lang === 'en' ? 'Loading workflow…' : 'Chargement du workflow…'}</div>;
   if (!workflow) return <div style={{color:'#475569',fontSize:'.82rem',padding:16}}>Aucun workflow trouvé pour cet AO.<br/>Lancez-le via le panneau {t('tenders.workflow_btn')}.</div>;
 
   return <WorkflowTimeline workflow={workflow} token={token} onUpdate={() => {
@@ -234,11 +234,11 @@ export default function TenderPage() {
       {showWorkflow && (
         <section className="panel" style={{padding:0,overflow:'hidden'}}>
           <div style={{padding:'14px 20px',borderBottom:'1px solid rgba(148,163,184,.08)',display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
-            <span style={{fontSize:'.78rem',color:'#64748b',fontWeight:700}}>AO cible :</span>
+            <span style={{fontSize:'.78rem',color:'#64748b',fontWeight:700}}>{lang === 'en' ? 'Target tender:' : 'AO cible :'}</span>
             {tenders.length === 0 ? (
               <span style={{fontSize:'.78rem',color:'#475569'}}><EmptyState
               icon="📋"
-              title="Aucun appel d'offres"
+              title={lang === "en" ? "No tenders" : "Aucun appel d'offres"}
               description="Importez des AOs depuis BOAMP, TED, Maximilien ou vos sources PDF. L'agent CRM enrichira automatiquement votre pipeline."
               action={{ label: '🔍 Chercher des AOs', onClick: () => {} }}
               secondaryAction={{ label: '+ Saisir manuellement', onClick: () => {} }}
@@ -265,7 +265,7 @@ export default function TenderPage() {
           <div style={{padding:'14px 20px',borderBottom:'1px solid rgba(148,163,184,.08)',display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
             <BookOpen size={15} color="#facc15"/>
             <span style={{fontWeight:700,fontSize:'.88rem'}}>Mémoire Technique IA</span>
-            <span style={{fontSize:'.72rem',color:'#475569',marginLeft:4}}>Génération complète 8 sections • ~60s</span>
+            <span style={{fontSize:'.72rem',color:'#475569',marginLeft:4}}>{lang === 'en' ? 'Full generation 8 sections • ~60s' : 'Génération complète 8 sections • ~60s'}</span>
             <div style={{marginLeft:'auto',display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
               {tenders.length > 0 && (
                 <select value={activeTenderId??''} onChange={e=>setActiveTenderId(Number(e.target.value))}
@@ -297,7 +297,7 @@ export default function TenderPage() {
           {memoireLoading && (
             <div style={{padding:'40px 24px',textAlign:'center'}}>
               <Loader2 size={32} color="#facc15" style={{animation:'ds-spin .8s linear infinite',marginBottom:12}}/>
-              <p style={{color:'#64748b',fontSize:'.84rem'}}>Génération de la mémoire technique en cours…</p>
+              <p style={{color:'#64748b',fontSize:'.84rem'}}>{lang === 'en' ? 'Generating technical memo…' : 'Génération de la mémoire technique en cours…'}</p>
               <p style={{color:'#334155',fontSize:'.74rem',marginTop:4}}>Analyse du besoin · Méthodologie · Équipe · Planning · Références · Risques</p>
             </div>
           )}
@@ -337,7 +337,7 @@ export default function TenderPage() {
         <section className="panel" style={{padding:0,overflow:'hidden'}}>
           <div style={{padding:'14px 20px',borderBottom:'1px solid rgba(148,163,184,.08)',display:'flex',alignItems:'center',gap:10}}>
             <CheckCircle2 size={15} color="#22c55e"/>
-            <span style={{fontWeight:700,fontSize:'.88rem'}}>Go/No-Go Advisor IA</span>
+            <span style={{fontWeight:700,fontSize:'.88rem'}}>{lang === 'en' ? 'AI Go/No-Go Advisor' : 'Go/No-Go Advisor IA'}</span>
             <div style={{marginLeft:'auto',display:'flex',gap:8,alignItems:'center'}}>
               <select value={activeTenderId??''} onChange={e=>setActiveTenderId(Number(e.target.value))}
                 style={{padding:'6px 12px',borderRadius:8,background:'rgba(255,255,255,.05)',border:'1px solid rgba(148,163,184,.15)',color:'#e2e8f0',fontSize:'.82rem',minWidth:200}}>

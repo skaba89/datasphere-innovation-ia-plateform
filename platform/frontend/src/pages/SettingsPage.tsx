@@ -87,7 +87,7 @@ function ServiceCard({ icon: Icon, label, ok, detail, color = '#64748b', extra }
 
           {/* Guide de mise en production */}
           <div>
-            <h2 style={{ fontSize: '.8rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 12 }}>Guide de configuration Render</h2>
+            <h2 style={{ fontSize: '.8rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 12 }}>{lang === 'en' ? 'Render configuration guide' : 'Guide de configuration Render'}</h2>
             <div style={{ padding: '18px 20px', background: 'rgba(10,18,38,.8)', border: '1px solid rgba(148,163,184,.08)', borderRadius: 14 }}>
               <div style={{ display: 'grid', gap: 10 }}>
                 {[
@@ -188,7 +188,7 @@ export default function SettingsPage() {
 
       {/* Header */}
       <div>
-        <div style={{ fontSize: '.68rem', fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase', color: '#facc15', marginBottom: 8 }}>Configuration</div>
+        <div style={{ fontSize: '.68rem', fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase', color: '#facc15', marginBottom: 8 }}>{lang === 'en' ? 'Configuration' : 'Configuration'}</div>
         <h1 style={{ fontSize: 'clamp(1.5rem,3vw,2rem)', fontWeight: 900, letterSpacing: '-.04em', margin: 0, marginBottom: 6 }}>
           Paramètres & Intégrations
         </h1>
@@ -242,14 +242,14 @@ export default function SettingsPage() {
           <div>
             <h2 style={{ fontSize: '.8rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 12 }}>Services</h2>
             <div style={{ display: 'grid', gap: 8 }}>
-              <ServiceCard icon={Database} label="Base de données PostgreSQL" ok={c.db.ok} color="#3b82f6"
+              <ServiceCard icon={Database} label={lang === "en" ? "PostgreSQL database" : "Base de données PostgreSQL"} ok={c.db.ok} color="#3b82f6"
                 detail={c.db.latency_ms ? `Latence : ${c.db.latency_ms}ms · Render Frankfurt` : 'Render Frankfurt'} />
               <ServiceCard icon={Sparkles} label={`LLM — ${c.llm.provider}`} ok={c.llm.ok} color="#8b5cf6"
                 detail={`Provider actif : ${c.llm.provider} · Fallback simulation disponible`} />
               <ServiceCard icon={Cpu} label={`RAG — ${c.rag?.mode === 'vector' ? 'pgvector + Embeddings' : 'TF-IDF fallback'}`}
                 ok={c.rag?.ok ?? true} color="#22c55e"
                 detail={`Provider embeddings : ${c.rag?.active_provider ?? 'tfidf'} · ${c.rag?.mode === 'vector' ? 'Recherche vectorielle active' : 'Activez GEMINI_API_KEY pour embeddings réels'}`} />
-              <ServiceCard icon={Mail} label="Email / SMTP" ok={c.email?.ok ?? false} color="#f59e0b"
+              <ServiceCard icon={Mail} label={lang === "en" ? "Email / SMTP" : "Email / SMTP"} ok={c.email?.ok ?? false} color="#f59e0b"
                 detail={c.email?.ok ? 'SMTP configuré et opérationnel' : 'SMTP non configuré — définissez SMTP_HOST dans Render'}
                 extra={
                   <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
@@ -269,7 +269,7 @@ export default function SettingsPage() {
                 } />
               <ServiceCard icon={Bot} label="Scheduler APScheduler" ok={c.scheduler.ok} color="#facc15"
                 detail="Jobs : scan BOAMP toutes les 6h · rapport hebdo lundi 8h" />
-              <ServiceCard icon={HardDrive} label="Cache in-memory" ok={c.cache.ok} color="#06b6d4"
+              <ServiceCard icon={HardDrive} label={lang === "en" ? "In-memory cache" : "Cache in-memory"} ok={c.cache.ok} color="#06b6d4"
                 detail={`${c.cache.size ?? 0} entrées en cache · TTL automatique`} />
             </div>
           </div>
@@ -277,7 +277,7 @@ export default function SettingsPage() {
           {/* Métriques */}
           {diag?.checks && (
             <div>
-              <h2 style={{ fontSize: '.8rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 12 }}>Diagnostic auth</h2>
+              <h2 style={{ fontSize: '.8rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 12 }}>{lang === 'en' ? 'Auth diagnostic' : 'Diagnostic auth'}</h2>
               <div style={{ padding: '18px 20px', background: 'rgba(10,18,38,.8)', border: '1px solid rgba(148,163,184,.08)', borderRadius: 14, display: 'grid', gap: 10 }}>
                 {Object.entries(diag.checks).map(([key, val]) => (
                   <div key={key} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center', padding: '6px 0', borderBottom: '1px solid rgba(148,163,184,.04)' }}>
@@ -317,8 +317,8 @@ export default function SettingsPage() {
                 }}>
                   <Key size={11} color={req ? '#fca5a5' : '#334155'} style={{ flexShrink: 0 }} />
                   <code style={{ fontSize: '.72rem', color: req ? '#fde68a' : '#64748b', fontFamily: "'JetBrains Mono', monospace", flex: 1, minWidth: 140, wordBreak: 'break-all' }}>{key}</code>
-                  {recommend && <span style={{ fontSize: '.65rem', padding: '2px 6px', borderRadius: 99, background: 'rgba(250,204,21,.1)', color: '#facc15', border: '1px solid rgba(250,204,21,.2)', fontWeight: 700, flexShrink: 0 }}>RECOMMANDÉ</span>}
-                  {req && <span style={{ fontSize: '.65rem', padding: '2px 6px', borderRadius: 99, background: 'rgba(239,68,68,.1)', color: '#fca5a5', border: '1px solid rgba(239,68,68,.2)', fontWeight: 700, flexShrink: 0 }}>REQUIS</span>}
+                  {recommend && <span style={{ fontSize: '.65rem', padding: '2px 6px', borderRadius: 99, background: 'rgba(250,204,21,.1)', color: '#facc15', border: '1px solid rgba(250,204,21,.2)', fontWeight: 700, flexShrink: 0 }}>{lang === 'en' ? 'RECOMMENDED' : 'RECOMMANDÉ'}</span>}
+                  {req && <span style={{ fontSize: '.65rem', padding: '2px 6px', borderRadius: 99, background: 'rgba(239,68,68,.1)', color: '#fca5a5', border: '1px solid rgba(239,68,68,.2)', fontWeight: 700, flexShrink: 0 }}>{lang === 'en' ? 'REQUIRED' : 'REQUIS'}</span>}
                   <span style={{ fontSize: '.71rem', color: '#334155', textAlign: 'right', maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{desc}</span>
                 </div>
               ))}

@@ -126,12 +126,12 @@ function QuoteForm({ token, onSaved }: { token: string|null; onSaved: () => void
           <input style={inp} type="date" value={form.valid_until} onChange={e => setForm(f=>({...f,valid_until:e.target.value}))} />
         </div>
         <div style={{ gridColumn: '1/-1' }}>
-          <label style={lbl}>Adresse client</label>
+          <label style={lbl}>{lang === 'en' ? 'Client address' : 'Adresse client'}</label>
           <textarea style={{ ...inp, minHeight: 72, resize: 'vertical' as const }} value={form.client_address} onChange={e => setForm(f=>({...f,client_address:e.target.value}))} placeholder="10 rue de la Paix, 75001 Paris" />
         </div>
         <div style={{ gridColumn: '1/-1' }}>
           <label style={lbl}>Notes & conditions</label>
-          <textarea style={{ ...inp, minHeight: 72, resize: 'vertical' as const }} value={form.notes} onChange={e => setForm(f=>({...f,notes:e.target.value}))} placeholder="Conditions de paiement, modalités, etc." />
+          <textarea style={{ ...inp, minHeight: 72, resize: 'vertical' as const }} value={form.notes} onChange={e => setForm(f=>({...f,notes:e.target.value}))} placeholder={lang === "en" ? "Payment terms, conditions, etc." : "Conditions de paiement, modalités, etc."} />
         </div>
       </div>
 
@@ -209,7 +209,7 @@ function DocRow({ doc, type, token, onRefresh }: { doc: Quote|Invoice; type: 'qu
       </div>
       <div style={{ display: 'flex', gap: 6, flexShrink: 0, flexWrap: 'wrap' }}>
         {type === 'quote' && d.status === 'accepted' && (
-          <button onClick={convertToInvoice} disabled={converting} title="Convertir en facture"
+          <button onClick={convertToInvoice} disabled={converting} title={lang === "en" ? "Convert to invoice" : "Convertir en facture"}
             style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 7, border: '1px solid rgba(139,92,246,.25)', background: 'rgba(139,92,246,.08)', color: '#c4b5fd', cursor: 'pointer', fontSize: '.74rem', fontWeight: 600 }}>
             <ArrowRight size={11} /> Facturer
           </button>
@@ -296,7 +296,7 @@ export default function InvoicingPage() {
             <div style={{ background: 'rgba(10,18,38,.85)', border: '1px solid rgba(148,163,184,.08)', borderRadius: 16, overflow: 'hidden' }}>
               <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(148,163,184,.06)', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <FileText size={14} color="#3b82f6" />
-                <span style={{ fontWeight: 700, fontSize: '.86rem' }}>Derniers devis</span>
+                <span style={{ fontWeight: 700, fontSize: '.86rem' }}>{lang === 'en' ? 'Latest quotes' : 'Derniers devis'}</span>
                 <button onClick={() => setTab('quotes')} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#facc15', cursor: 'pointer', fontSize: '.74rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}>Voir tout <ChevronRight size={11} /></button>
               </div>
               <div style={{ padding: '8px 12px', display: 'grid', gap: 4 }}>
@@ -314,7 +314,7 @@ export default function InvoicingPage() {
                 ))}
                 {quotes.length === 0 && <p style={{ padding: '12px 6px', color: '#334155', fontSize: '.82rem' }}><EmptyState
               icon="💶"
-              title="Aucun document de facturation"
+              title={lang === "en" ? "No billing documents" : "Aucun document de facturation"}
               description="Créez votre premier devis depuis une mission ou un AO remporté. Il sera converti en facture une fois validé."
               action={{ label: '+ Nouveau devis', onClick: () => {} }}
               compact
@@ -325,7 +325,7 @@ export default function InvoicingPage() {
             <div style={{ background: 'rgba(10,18,38,.85)', border: '1px solid rgba(148,163,184,.08)', borderRadius: 16, overflow: 'hidden' }}>
               <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(148,163,184,.06)', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Receipt size={14} color="#22c55e" />
-                <span style={{ fontWeight: 700, fontSize: '.86rem' }}>Dernières factures</span>
+                <span style={{ fontWeight: 700, fontSize: '.86rem' }}>{lang === 'en' ? 'Latest invoices' : 'Dernières factures'}</span>
                 <button onClick={() => setTab('invoices')} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#facc15', cursor: 'pointer', fontSize: '.74rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}>Voir tout <ChevronRight size={11} /></button>
               </div>
               <div style={{ padding: '8px 12px', display: 'grid', gap: 4 }}>
@@ -343,7 +343,7 @@ export default function InvoicingPage() {
                 ))}
                 {invoices.length === 0 && <p style={{ padding: '12px 6px', color: '#334155', fontSize: '.82rem' }}><EmptyState
               icon="💶"
-              title="Aucun document de facturation"
+              title={lang === "en" ? "No billing documents" : "Aucun document de facturation"}
               description="Créez votre premier devis depuis une mission ou un AO remporté. Il sera converti en facture une fois validé."
               action={{ label: '+ Nouveau devis', onClick: () => {} }}
               compact
@@ -359,7 +359,7 @@ export default function InvoicingPage() {
           {quotes.length === 0 ? (
             <div style={{ padding: '48px', textAlign: 'center', color: '#334155' }}>
               <Sparkles size={32} style={{ margin: '0 auto 12px', opacity: .2 }} />
-              <p style={{ margin: 0, fontSize: '.88rem' }}>Aucun devis — créez-en un pour commencer.</p>
+              <p style={{ margin: 0, fontSize: '.88rem' }}>{lang === 'en' ? 'No quotes yet — create one to get started.' : 'Aucun devis — créez-en un pour commencer.'}</p>
             </div>
           ) : quotes.map(q => <DocRow key={q.id} doc={q} type="quote" token={token} onRefresh={load} />)}
         </div>

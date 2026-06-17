@@ -57,7 +57,7 @@ function fmtMs(ms: number | null | undefined): string {
 // ────────────────────────────────────────────────────────────────────────────
 
 export default function SchedulerPanel() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [status, setStatus] = useState<SchedulerStatus | null>(null);
   const [logs, setLogs] = useState<SchedulerLog[]>([]);
   const [logsOpen, setLogsOpen] = useState(false);

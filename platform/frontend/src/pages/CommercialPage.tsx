@@ -104,7 +104,7 @@ function RecentOpps({ token }: { token: string }) {
   if (!opps.length) return (
     <div style={{ textAlign: 'center', padding: '32px 16px', color: '#334155' }}>
       <Target size={32} style={{ opacity: .3, marginBottom: 8 }} />
-      <p style={{ fontSize: '.82rem' }}>Aucune opportunité encore.<br />Ajoutez-en depuis la page Organisations.</p>
+      <p style={{ fontSize: '.82rem' }}>Aucune opportunité encore.<br />{lang === 'en' ? 'Add from the Organizations page.' : 'Ajoutez-en depuis la page Organisations.'}</p>
     </div>
   );
 
@@ -243,7 +243,7 @@ function NewOpportunityForm({ token, onSaved, onCancel }: { token: string | null
           </select>
         </div>
         <div>
-          <label style={{ display: 'block', fontSize: '.72rem', color: '#64748b', marginBottom: 5, textTransform: 'uppercase' as const, letterSpacing: '.05em', fontWeight: 700 }}>Valeur estimée (€)</label>
+          <label style={{ display: 'block', fontSize: '.72rem', color: '#64748b', marginBottom: 5, textTransform: 'uppercase' as const, letterSpacing: '.05em', fontWeight: 700 }}>{lang === 'en' ? 'Estimated value (€)' : 'Valeur estimée (€)'}</label>
           <input style={inp} type="number" value={value} onChange={e => setValue(e.target.value)} placeholder="50000" />
         </div>
       </div>
@@ -343,11 +343,11 @@ export default function CommercialPage() {
               {/* KPI Cards */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(170px,1fr))', gap: 12 }}>
                 <KpiCard icon={<Building2 size={18}/>} label="Organisations" value={data.crm.organizations} color="#3b82f6" delta={`+${data.activity_7d.new_opportunities} /7j`} />
-                <KpiCard icon={<Users size={18}/>} label="Contacts CRM" value={data.crm.contacts} color="#8b5cf6" />
+                <KpiCard icon={<Users size={18}/>} label={lang === "en" ? "CRM Contacts" : "Contacts CRM"} value={data.crm.contacts} color="#8b5cf6" />
                 <KpiCard icon={<Target size={18}/>} label="Opportunités actives" value={data.crm.opportunities_active} sub={`${data.crm.opportunities_total} total`} color="#f59e0b" />
                 <KpiCard icon={<CheckCircle size={18}/>} label="Missions gagnées" value={data.crm.opportunities_won} sub={`Taux : ${winRate}%`} color="#22c55e" />
                 <KpiCard icon={<DollarSign size={18}/>} label="Pipeline pondéré" value={`${pipelineK}k€`} sub="Probabilité × valeur" color="#facc15" />
-                <KpiCard icon={<Activity size={18}/>} label="AOs actifs GO" value={data.tenders.go_decisions} sub={`${data.tenders.upcoming_deadlines_14d} deadline <14j`} color="#f43f5e" />
+                <KpiCard icon={<Activity size={18}/>} label={lang === "en" ? "Active GO tenders" : "AOs actifs GO"} value={data.tenders.go_decisions} sub={`${data.tenders.upcoming_deadlines_14d} deadline <14j`} color="#f43f5e" />
               </div>
 
               {/* 2-col layout */}
@@ -357,7 +357,7 @@ export default function CommercialPage() {
                 <div style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(148,163,184,.08)', borderRadius: 14, padding: '20px 20px 16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                     <BarChart2 size={16} color="#facc15" />
-                    <span style={{ fontWeight: 700, fontSize: '.88rem' }}>Entonnoir de conversion</span>
+                    <span style={{ fontWeight: 700, fontSize: '.88rem' }}>{lang === 'en' ? 'Conversion funnel' : 'Entonnoir de conversion'}</span>
                     <span style={{ marginLeft: 'auto', fontSize: '.72rem', color: winRate >= 30 ? '#22c55e' : '#f59e0b', background: winRate >= 30 ? 'rgba(34,197,94,.08)' : 'rgba(245,158,11,.08)', padding: '2px 8px', borderRadius: 99 }}>
                       Taux global : {winRate}%
                     </span>
@@ -411,7 +411,7 @@ export default function CommercialPage() {
               </div>
             </>
           ) : (
-            <div style={{ color: '#ef4444', fontSize: '.82rem' }}>Erreur de chargement des données analytics.</div>
+            <div style={{ color: '#ef4444', fontSize: '.82rem' }}>{lang === 'en' ? 'Analytics data loading error.' : 'Erreur de chargement des données analytics.'}</div>
           )}
         </div>
       )}
@@ -422,7 +422,7 @@ export default function CommercialPage() {
       {tab === 'kanban-opps' && <OpportunityKanban token={token} />}
       {tab === 'new-opp'     && (
         <section className="panel">
-          <h2 style={{ margin: '0 0 16px', fontSize: '1rem', fontWeight: 700 }}>Créer une opportunité</h2>
+          <h2 style={{ margin: '0 0 16px', fontSize: '1rem', fontWeight: 700 }}>{lang === 'en' ? 'Create opportunity' : 'Créer une opportunité'}</h2>
           <NewOpportunityForm token={token} onSaved={() => setTab('kanban-opps')} onCancel={() => setTab('overview')} />
         </section>
       )}

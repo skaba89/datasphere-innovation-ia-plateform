@@ -103,7 +103,7 @@ function OAuthPanel({ token, onStatusChange }: { token: string; onStatusChange: 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderRadius: 12, background: 'rgba(34,197,94,.06)', border: '1px solid rgba(34,197,94,.2)' }}>
         <CheckCircle size={16} color="#22c55e" />
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: '.82rem', fontWeight: 700, color: '#86efac' }}>Compte LinkedIn connecté</div>
+          <div style={{ fontSize: '.82rem', fontWeight: 700, color: '#86efac' }}>{lang === 'en' ? 'LinkedIn account connected' : 'Compte LinkedIn connecté'}</div>
           <div style={{ fontSize: '.72rem', color: '#64748b', marginTop: 1 }}>Token OAuth2 actif — publication directe activée</div>
         </div>
         <button onClick={revoke} disabled={revoking} style={S.danger}>
@@ -225,7 +225,7 @@ export default function LinkedInAgentPage() {
   const charColor = charCount > charLimit ? '#fca5a5' : charCount > charLimit * 0.9 ? '#fde68a' : '#86efac';
   const canPublish = oauthStatus?.has_token && !oauthStatus.is_expired;
 
-  if (!token) return <main className="app-shell"><section className="panel"><h1>Agent LinkedIn</h1><p>Connectez-vous d'abord.</p></section></main>;
+  if (!token) return <main className="app-shell"><section className="panel"><h1>{lang === 'en' ? 'LinkedIn Agent' : 'Agent LinkedIn'}</h1><p>Connectez-vous d'abord.</p></section></main>;
 
   return (
     <main className="app-shell">
@@ -247,7 +247,7 @@ export default function LinkedInAgentPage() {
       <section className="panel">
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <p className="eyebrow">IA Contenu</p>
+            <p className="eyebrow">{lang === 'en' ? 'AI Content' : 'IA Contenu'}</p>
             <h1 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <ExternalLink size={24} color="#0077b5" /> Agent LinkedIn
             </h1>
@@ -284,7 +284,7 @@ export default function LinkedInAgentPage() {
 
           {topicType === 'ao_insight' && (
             <section className="panel">
-              <h3 style={{ margin: '0 0 10px', fontSize: '.86rem', fontWeight: 700 }}>AO source</h3>
+              <h3 style={{ margin: '0 0 10px', fontSize: '.86rem', fontWeight: 700 }}>{lang === 'en' ? 'Source tender' : 'AO source'}</h3>
               <select value={selectedAO ?? ''} onChange={e => setSelectedAO(Number(e.target.value) || null)}
                 style={{ width: '100%', padding: '8px 12px', background: 'rgba(255,255,255,.05)', border: '1px solid rgba(148,163,184,.15)', borderRadius: 8, color: '#e2e8f0', fontSize: '.82rem' }}>
                 <option value="">— Choisir un AO —</option>
@@ -378,7 +378,7 @@ export default function LinkedInAgentPage() {
             <section className="panel" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 360, gap: 12, textAlign: 'center' }}>
               <ExternalLink size={48} color="#0077b5" style={{ opacity: .3 }}/>
               <p style={{ color: '#475569', fontSize: '.88rem', maxWidth: 280, lineHeight: 1.6 }}>
-                Choisissez un type de contenu et cliquez <strong style={{ color: '#facc15' }}>Générer le post</strong>
+                Choisissez un type de contenu et cliquez <strong style={{ color: '#facc15' }}>{lang === 'en' ? 'Generate post' : 'Générer le post'}</strong>
               </p>
             </section>
           )}
@@ -524,7 +524,7 @@ function LinkedInCalendar({ token }: { token: string }) {
                       {p.content}
                     </p>
                   ) : (
-                    <p style={{ margin: 0, fontSize: '.74rem', color: '#334155', fontStyle: 'italic' }}>Contenu généré à la publication</p>
+                    <p style={{ margin: 0, fontSize: '.74rem', color: '#334155', fontStyle: 'italic' }}>{lang === 'en' ? 'Content generated on publish' : 'Contenu généré à la publication'}</p>
                   )}
                 </div>
                 <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>

@@ -253,7 +253,7 @@ export default function TeamPage() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
               <UserPlus size={16} color="#facc15" />
-              <span style={{ fontWeight: 800, fontSize: '.95rem' }}>Créer un nouveau compte</span>
+              <span style={{ fontWeight: 800, fontSize: '.95rem' }}>{lang === 'en' ? 'Create new account' : 'Créer un nouveau compte'}</span>
             </div>
             <button onClick={() => setShowInvite(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
               <X size={15} />
@@ -270,7 +270,7 @@ export default function TeamPage() {
               <input style={inp} value={form.last_name} onChange={e => setForm(f => ({...f, last_name: e.target.value}))} placeholder="Diallo" />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '.72rem', color: '#64748b', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.05em', fontWeight: 700 }}>Email *</label>
+              <label style={{ display: 'block', fontSize: '.72rem', color: '#64748b', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.05em', fontWeight: 700 }}>{lang === 'en' ? 'Email *' : 'Email *'}</label>
               <input style={inp} type="email" value={form.email} onChange={e => setForm(f => ({...f, email: e.target.value}))} placeholder="consultant@datasphere.fr" required />
             </div>
             <div>
@@ -340,7 +340,7 @@ export default function TeamPage() {
         </div>
         <select value={filterRole} onChange={e => setFilterRole(e.target.value)}
           style={{ padding: '9px 12px', borderRadius: 9, border: '1px solid rgba(148,163,184,.15)', background: '#0c1425', color: '#94a3b8', fontSize: '.84rem', cursor: 'pointer' }}>
-          <option value="all">Tous les rôles</option>
+          <option value="all">{lang === 'en' ? 'All roles' : 'Tous les rôles'}</option>
           {ROLES.map(r => <option key={r.key} value={r.key}>{r.label}</option>)}
         </select>
         <div style={{ display: 'flex', gap: 4 }}>
@@ -366,7 +366,7 @@ export default function TeamPage() {
       ) : filtered.length === 0 ? (
         <div style={{ padding: '36px', textAlign: 'center', color: '#475569', background: 'rgba(255,255,255,.02)', border: '1px dashed rgba(148,163,184,.12)', borderRadius: 14 }}>
           <Users size={32} style={{ opacity: .2, marginBottom: 10 }} />
-          <p style={{ margin: 0, fontSize: '.86rem' }}>Aucun membre ne correspond aux filtres.</p>
+          <p style={{ margin: 0, fontSize: '.86rem' }}>{lang === 'en' ? 'No members match the filters.' : 'Aucun membre ne correspond aux filtres.'}</p>
         </div>
       ) : (
         <div style={{ display: 'grid', gap: 8 }}>
@@ -427,7 +427,7 @@ export default function TeamPage() {
                     {/* Forcer changement MDP */}
                     {m.is_active && (
                       <button onClick={() => { setPwdModal(m); setNewPwd(''); setPwdMsg(null); }}
-                        title="Forcer le changement de mot de passe"
+                        title={lang === "en" ? "Force password change" : "Forcer le changement de mot de passe"}
                         style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid rgba(250,204,21,.2)', background: 'rgba(250,204,21,.06)', color: '#fde68a', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: '.72rem' }}>
                         <Key size={11} /> MDP
                       </button>
@@ -457,7 +457,7 @@ export default function TeamPage() {
       {/* Note non-admin */}
       {!isAdmin && (
         <div style={{ padding: '14px 18px', borderRadius: 12, background: 'rgba(59,130,246,.05)', border: '1px solid rgba(59,130,246,.15)', fontSize: '.8rem', color: '#64748b', lineHeight: 1.5 }}>
-          <strong style={{ color: '#93c5fd' }}>Droits limités :</strong> seul un administrateur peut créer des comptes, changer les rôles ou désactiver des membres.
+          <strong style={{ color: '#93c5fd' }}>{lang === 'en' ? 'Limited rights:' : 'Droits limités :'}</strong> seul un administrateur peut créer des comptes, changer les rôles ou désactiver des membres.
           Vous pouvez modifier votre propre mot de passe depuis <strong style={{ color: '#94a3b8' }}>Mon profil</strong>.
         </div>
       )}
@@ -469,7 +469,7 @@ export default function TeamPage() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <Key size={16} color="#facc15" />
-                <span style={{ fontWeight: 800, fontSize: '.95rem' }}>Forcer le mot de passe</span>
+                <span style={{ fontWeight: 800, fontSize: '.95rem' }}>{lang === 'en' ? 'Force password' : 'Forcer le mot de passe'}</span>
               </div>
               <button onClick={() => setPwdModal(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}><X size={15} /></button>
             </div>

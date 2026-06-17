@@ -179,7 +179,7 @@ export default function DeliverablePage() {
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
           <div>
             <p className="eyebrow">Livrables gouvernés</p>
-            <h1>Bibliothèque de livrables</h1>
+            <h1>{lang === 'en' ? 'Deliverables library' : 'Bibliothèque de livrables'}</h1>
             <p className="subtitle">Mémoires techniques, propositions commerciales, notes de cadrage. Générés par IA, validés par vous.</p>
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -212,7 +212,7 @@ export default function DeliverablePage() {
 
       {showNewForm && (
         <section className="panel" style={{ background: 'rgba(250,204,21,.03)', border: '1px solid rgba(250,204,21,.12)' }}>
-          <h3 style={{ margin: '0 0 14px', fontSize: '.88rem', fontWeight: 800 }}>Nouveau livrable</h3>
+          <h3 style={{ margin: '0 0 14px', fontSize: '.88rem', fontWeight: 800 }}>{lang === 'en' ? 'New deliverable' : 'Nouveau livrable'}</h3>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
             <div style={{ flex: 1, minWidth: 200 }}>
               <label style={{ fontSize: '.74rem', color: '#64748b', display: 'block', marginBottom: 4 }}>Titre</label>
@@ -245,7 +245,7 @@ export default function DeliverablePage() {
           <FileText size={36} color="#334155" style={{ marginBottom: 12 }} />
           <p style={{ color: '#475569', fontSize: '.88rem', marginBottom: 8 }}><EmptyState
               icon="📄"
-              title="Bibliothèque vide"
+              title={lang === "en" ? "Empty library" : "Bibliothèque vide"}
               description="Créez votre premier livrable ou lancez la génération IA depuis un AO qualifié. Les mémoires techniques, propositions et notes de cadrage apparaîtront ici."
               action={{ label: '+ Nouveau livrable', onClick: () => setShowNewForm(true) }}
             /> pour l'instant.</p>
@@ -282,7 +282,7 @@ export default function DeliverablePage() {
                   {/* Actions */}
                   <div style={{ display: 'flex', gap: 4, flexShrink: 0, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }} onClick={e => e.stopPropagation()}>
                     {/* Export buttons */}
-                    <button onClick={() => downloadExport(d.id, 'pdf')} title="Exporter PDF"
+                    <button onClick={() => downloadExport(d.id, 'pdf')} title={lang === "en" ? "Export PDF" : "Exporter PDF"}
                        style={{ padding: '5px 8px', borderRadius: 7, border: '1px solid rgba(239,68,68,.25)', background: 'rgba(239,68,68,.06)', color: '#fca5a5', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3, fontSize: '.7rem', fontWeight: 700 }}>
                       <Download size={10} /> PDF
                     </button>
@@ -376,7 +376,7 @@ export default function DeliverablePage() {
                             {d.content_markdown.slice(0, 3000)}{d.content_markdown.length > 3000 ? '\n\n[... Cliquez Éditer pour voir la suite ...]' : ''}
                           </pre>
                         ) : (
-                          <p style={{ color: '#334155', fontSize: '.82rem', padding: '14px 0' }}>Aucun contenu — cliquez Éditer pour rédiger.</p>
+                          <p style={{ color: '#334155', fontSize: '.82rem', padding: '14px 0' }}>{lang === 'en' ? 'No content — click Edit to write.' : 'Aucun contenu — cliquez Éditer pour rédiger.'}</p>
                         )}
                       </div>
                     )}
@@ -386,7 +386,7 @@ export default function DeliverablePage() {
                       <div style={{ marginTop: 16, borderTop: '1px solid rgba(148,163,184,.08)', paddingTop: 14 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
                           <History size={13} color="#c4b5fd" />
-                          <span style={{ fontSize: '.8rem', fontWeight: 700, color: '#c4b5fd' }}>Historique des versions</span>
+                          <span style={{ fontSize: '.8rem', fontWeight: 700, color: '#c4b5fd' }}>{lang === 'en' ? 'Version history' : 'Historique des versions'}</span>
                         </div>
                         <DeliverableVersionsPanel
                           deliverableId={d.id}

@@ -134,13 +134,13 @@ export default function ExecDashboardPage() {
       </div>
 
       {loading && !data && (
-        <div style={{ textAlign: 'center', padding: 60, color: '#475569' }}>Chargement des indicateurs…</div>
+        <div style={{ textAlign: 'center', padding: 60, color: '#475569' }}>{lang === 'en' ? 'Loading indicators…' : 'Chargement des indicateurs…'}</div>
       )}
 
       {!loading && !data && (
         <EmptyState
           icon="📊"
-          title="Données insuffisantes"
+          title={lang === "en" ? "Insufficient data" : "Données insuffisantes"}
           description="Importez des AOs et créez des livrables pour alimenter ce tableau de bord."
           size="lg"
         />
@@ -150,12 +150,12 @@ export default function ExecDashboardPage() {
         <>
           {/* KPIs */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 12, marginBottom: 24 }}>
-            <KpiCard label="Pipeline 90j" value={fmt(data.pipeline_value)} sub={`Forecast pondéré : ${fmt(data.weighted_forecast)}`} color="#3b82f6" icon={<DollarSign size={18} />} />
-            <KpiCard label="Win rate" value={`${data.win_rate}%`} sub="Taux de succès AOs" color="#22c55e" icon={<Award size={18} />} />
-            <KpiCard label="Score Go/No-Go" value={`${data.avg_score}/100`} sub="Moyenne IA" color="#facc15" icon={<Target size={18} />} />
-            <KpiCard label="AOs actifs" value={data.tenders_active} sub={data.tenders_deadline_week > 0 ? `⚠️ ${data.tenders_deadline_week} deadline cette semaine` : 'Aucune deadline urgente'} color={data.tenders_deadline_week > 0 ? '#ef4444' : '#8b5cf6'} icon={<Clock size={18} />} />
-            <KpiCard label="Livrables approuvés" value={data.deliverables_approved} sub="Bibliothèque de référence" color="#06b6d4" icon={<FileText size={18} />} />
-            <KpiCard label="Opportunités CRM" value={data.opportunities_total} sub="Pipeline commercial" color="#f59e0b" icon={<TrendingUp size={18} />} />
+            <KpiCard label={lang === "en" ? "90-day pipeline" : "Pipeline 90j"} value={fmt(data.pipeline_value)} sub={`Forecast pondéré : ${fmt(data.weighted_forecast)}`} color="#3b82f6" icon={<DollarSign size={18} />} />
+            <KpiCard label={lang === "en" ? "Win rate" : "Win rate"} value={`${data.win_rate}%`} sub="Taux de succès AOs" color="#22c55e" icon={<Award size={18} />} />
+            <KpiCard label={lang === "en" ? "Go/No-Go score" : "Score Go/No-Go"} value={`${data.avg_score}/100`} sub="Moyenne IA" color="#facc15" icon={<Target size={18} />} />
+            <KpiCard label={lang === "en" ? "Active tenders" : "AOs actifs"} value={data.tenders_active} sub={data.tenders_deadline_week > 0 ? `⚠️ ${data.tenders_deadline_week} deadline cette semaine` : 'Aucune deadline urgente'} color={data.tenders_deadline_week > 0 ? '#ef4444' : '#8b5cf6'} icon={<Clock size={18} />} />
+            <KpiCard label={lang === "en" ? "Approved deliverables" : "Livrables approuvés"} value={data.deliverables_approved} sub="Bibliothèque de référence" color="#06b6d4" icon={<FileText size={18} />} />
+            <KpiCard label={lang === "en" ? "CRM opportunities" : "Opportunités CRM"} value={data.opportunities_total} sub="Pipeline commercial" color="#f59e0b" icon={<TrendingUp size={18} />} />
           </div>
 
           {/* Top AOs */}
@@ -192,9 +192,9 @@ export default function ExecDashboardPage() {
                   <div key={i} style={{ textAlign: 'center', padding: '12px 8px', background: 'rgba(255,255,255,.02)', borderRadius: 10 }}>
                     <div style={{ fontSize: '.7rem', color: '#475569', marginBottom: 8 }}>{m.month}</div>
                     <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#3b82f6' }}>{m.tenders}</div>
-                    <div style={{ fontSize: '.68rem', color: '#475569' }}>AOs traités</div>
+                    <div style={{ fontSize: '.68rem', color: '#475569' }}>{lang === 'en' ? 'Processed tenders' : 'AOs traités'}</div>
                     <div style={{ fontSize: '1rem', fontWeight: 800, color: '#22c55e', marginTop: 6 }}>{m.won}</div>
-                    <div style={{ fontSize: '.68rem', color: '#475569' }}>gagnés</div>
+                    <div style={{ fontSize: '.68rem', color: '#475569' }}>{lang === 'en' ? 'won' : 'gagnés'}</div>
                   </div>
                 ))}
               </div>

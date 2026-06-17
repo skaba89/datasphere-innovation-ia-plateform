@@ -124,7 +124,7 @@ export default function WorkspacesPage() {
         <Building2 size={20} color="#facc15" />
         <div style={{ flex: 1 }}>
           <h1 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: '1.2rem', letterSpacing: '-.02em' }}>Workspaces</h1>
-          <p style={{ fontSize: '.77rem', color: '#64748b', marginTop: 2 }}>Isolez vos données par client, projet ou équipe</p>
+          <p style={{ fontSize: '.77rem', color: '#64748b', marginTop: 2 }}>{lang === 'en' ? 'Isolate your data by client, project or team' : 'Isolez vos données par client, projet ou équipe'}</p>
         </div>
         <button onClick={() => setShowCreate(s => !s)} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 16px', borderRadius: 9, border: 'none', background: '#facc15', color: '#060e18', cursor: 'pointer', fontWeight: 800, fontSize: '.82rem', fontFamily: 'Syne, sans-serif' }}>
           <Plus size={13} /> Nouveau workspace
@@ -144,7 +144,7 @@ export default function WorkspacesPage() {
       {/* Create form */}
       {showCreate && (
         <div style={{ ...s.card, padding: 24, marginBottom: 20 }}>
-          <h3 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, marginBottom: 18, fontSize: '.95rem' }}>Créer un workspace</h3>
+          <h3 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, marginBottom: 18, fontSize: '.95rem' }}>{lang === 'en' ? 'Create workspace' : 'Créer un workspace'}</h3>
           <form onSubmit={handleCreate} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px,100%), 1fr))', gap: 14 }}>
             <div><label style={s.lbl}>Nom *</label><input style={s.inp} value={form.name} onChange={e => { setForm(f => ({ ...f, name: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') })); }} placeholder="Acme Corp" required /></div>
             <div><label style={s.lbl}>Slug * (URL-safe)</label><input style={s.inp} value={form.slug} onChange={e => setForm(f => ({ ...f, slug: e.target.value }))} placeholder="acme-corp" pattern="[a-z0-9-]+" required /></div>
@@ -165,7 +165,7 @@ export default function WorkspacesPage() {
           {workspaces.length === 0 && !loading && (
             <div style={{ ...s.card, padding: 32, textAlign: 'center', color: '#475569' }}>
               <Building2 size={32} color="#1e293b" style={{ margin: '0 auto 12px' }} />
-              <p style={{ fontSize: '.85rem' }}>Aucun workspace. Créez-en un pour commencer.</p>
+              <p style={{ fontSize: '.85rem' }}>{lang === 'en' ? 'No workspaces yet. Create one to get started.' : 'Aucun workspace. Créez-en un pour commencer.'}</p>
             </div>
           )}
           {workspaces.map(ws => (
@@ -280,7 +280,7 @@ export default function WorkspacesPage() {
               {/* Invite */}
               <div style={{ padding: '14px 20px', borderTop: '1px solid rgba(148,163,184,.06)', background: 'rgba(255,255,255,.01)' }}>
                 <form onSubmit={handleInvite} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <input style={{ ...s.inp, flex: 1 }} value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="Email du membre (ex: jean@company.com)" type="email" />
+                  <input style={{ ...s.inp, flex: 1 }} value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder={lang === "en" ? "Member email (e.g. john@company.com)" : "Email du membre (ex: jean@company.com)"} type="email" />
                   <select value={inviteRole} onChange={e => setInviteRole(e.target.value)} style={{ ...s.inp, width: 'auto', background: '#0c1425' }}>
                     {['admin', 'member', 'viewer'].map(r => <option key={r} value={r}>{r}</option>)}
                   </select>

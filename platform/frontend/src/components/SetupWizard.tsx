@@ -77,7 +77,7 @@ export function SetupWizard({ token, onDismiss }: { token: string | null; onDism
 
   async function configureProvider() {
     if (!groqKey.trim()) return
-  const { t } = useI18n();;
+  const { t, lang } = useI18n();;
     setStep('provider', { loading: true, error: '' });
     try {
       await apiRequest('/providers/config', {

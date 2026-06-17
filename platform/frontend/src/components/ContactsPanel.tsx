@@ -70,11 +70,11 @@ function ContactForm({
         </div>
       </div>
       <div>
-        <label style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginBottom: 4 }}>Fonction</label>
+        <label style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginBottom: 4 }}>{lang === 'en' ? 'Job title' : 'Fonction'}</label>
         <input style={inp} value={form.job_title} onChange={e => setForm(f => ({ ...f, job_title: e.target.value }))} placeholder="Directeur IT" />
       </div>
       <div>
-        <label style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginBottom: 4 }}>Email professionnel</label>
+        <label style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginBottom: 4 }}>{lang === 'en' ? 'Professional email' : 'Email professionnel'}</label>
         <input style={inp} type="email" value={form.professional_email} onChange={e => setForm(f => ({ ...f, professional_email: e.target.value }))} placeholder="contact@client.com" />
       </div>
       <div>
@@ -164,7 +164,7 @@ export default function ContactsPanel() {
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 20, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Users size={18} color="#3b82f6" />
-          <span style={{ fontWeight: 700, fontSize: '1rem' }}>Contacts</span>
+          <span style={{ fontWeight: 700, fontSize: '1rem' }}>{lang === 'en' ? 'Contacts' : 'Contacts'}</span>
           <span style={{ padding: '2px 8px', borderRadius: 99, background: 'rgba(59,130,246,0.15)', color: '#93c5fd', fontSize: '0.75rem', fontWeight: 700 }}>
             {contacts.length}
           </span>
@@ -231,8 +231,8 @@ export default function ContactsPanel() {
       {contacts.length === 0 && !loading && (
         <div style={{ textAlign: 'center', padding: '32px', color: '#64748b' }}>
           <Users size={36} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
-          <div style={{ fontWeight: 600, marginBottom: 6 }}>Aucun contact trouvé</div>
-          <div style={{ fontSize: '0.84rem' }}>Ajoutez vos premiers contacts CRM.</div>
+          <div style={{ fontWeight: 600, marginBottom: 6 }}>{lang === 'en' ? 'No contacts found' : 'Aucun contact trouvé'}</div>
+          <div style={{ fontSize: '0.84rem' }}>{lang === 'en' ? 'Add your first CRM contacts.' : 'Ajoutez vos premiers contacts CRM.'}</div>
         </div>
       )}
 

@@ -176,8 +176,8 @@ export function DeliverablePanel({ token }: Props) {
     <div className="panel">
       <div className="dashboard-header">
         <div>
-          <p className="eyebrow">Livrables</p>
-          <h2>Bibliothèque de livrables</h2>
+          <p className="eyebrow">{lang === 'en' ? 'Deliverables' : 'Livrables'}</p>
+          <h2>{lang === 'en' ? 'Deliverables library' : 'Bibliothèque de livrables'}</h2>
           <p className="compact-subtitle">Génération, review, approbation et export documentaire.</p>
         </div>
         <button className="team-primary-button" onClick={() => setShowGenerateForm((v) => !v)} disabled={loading} type="button">
@@ -197,20 +197,20 @@ export function DeliverablePanel({ token }: Props) {
           </label>
           <label>Périmètre
             <select value={genScopeKind} onChange={(e) => setGenScopeKind(e.target.value as 'opportunity' | 'tender')}>
-              <option value="opportunity">Opportunité</option>
-              <option value="tender">Appel d'offres</option>
+              <option value="opportunity">{lang === 'en' ? 'Opportunity' : 'Opportunité'}</option>
+              <option value="tender">{lang === 'en' ? 'Tender' : 'Appel d'offres'}</option>
             </select>
           </label>
           <label>{genScopeKind === 'opportunity' ? 'Opportunité' : 'Appel d offres'}
             <select value={genScopeId} onChange={(e) => setGenScopeId(e.target.value)}>
-              <option value="">Sélectionner…</option>
+              <option value="">{lang === 'en' ? 'Select…' : 'Sélectionner…'}</option>
               {(genScopeKind === 'opportunity' ? opportunities : tenders).map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
             </select>
           </label>
           <label>Audience
             <input value={genAudience} onChange={(e) => setGenAudience(e.target.value)} />
           </label>
-          <button type="submit" disabled={loading}>Générer</button>
+          <button type="submit" disabled={loading}>{lang === 'en' ? 'Generate' : 'Générer'}</button>
         </form>
       )}
 
@@ -245,10 +245,10 @@ export function DeliverablePanel({ token }: Props) {
               <div className="workspace-stack">
                 <div className="compact-form">
                   <label>Reviewer
-                    <input value={reviewName} onChange={(e) => setReviewName(e.target.value)} placeholder="Nom reviewer" />
+                    <input value={reviewName} onChange={(e) => setReviewName(e.target.value)} placeholder={lang === "en" ? "Reviewer name" : "Nom reviewer"} />
                   </label>
                   <label>Approver
-                    <input value={approveName} onChange={(e) => setApproveName(e.target.value)} placeholder="Nom approbateur" />
+                    <input value={approveName} onChange={(e) => setApproveName(e.target.value)} placeholder={lang === "en" ? "Approver name" : "Nom approbateur"} />
                   </label>
                 </div>
                 <pre>{deliverable.content_markdown}</pre>
