@@ -13,7 +13,6 @@ def _set_cached(key: str, data):
     _CACHE[key] = {"data": data, "ts": _time.time()}
 
 from fastapi import APIRouter, Depends
-from app.services.cache_service import cache_get, cache_set, invalidate_dashboard
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user

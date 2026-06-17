@@ -47,7 +47,7 @@ interface Opportunity {
 }
 
 const STATUS_COLOR: Record<string, string> = {
-  t('crm.stage_prospect'):       '#64748b',
+  'Prospect identifie':          '#64748b',
   'Analyse en cours':         '#3b82f6',
   'GO — En cours de réponse': '#f59e0b',
   'Réponse soumise':          '#8b5cf6',
