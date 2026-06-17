@@ -27,6 +27,7 @@ router = APIRouter(
 def read_opportunities(
     skip: int = 0,
     limit: int = 100,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     ws: Optional[WorkspaceContext] = Depends(get_workspace_scope),
 ):
@@ -37,7 +38,7 @@ def read_opportunities(
 
 
 @router.post("", response_model=OpportunityRead, status_code=status.HTTP_201_CREATED)
-def create_new_opportunity(payload: OpportunityCreate, db: Session = Depends(get_db)):
+def create_new_opportunity(payload: OpportunityCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     organization = get_organization(db, payload.organization_id)
     if organization is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Organization does not exist")

@@ -112,3 +112,30 @@ def remove_requirement(requirement_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Requirement not found")
     delete_tender_requirement(db, requirement)
     return None
+
+@router.post("/{tender_id}/score-ai")
+def score_tender_with_rag(
+    tender_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Score Go/No-Go enrichi par RAG — analyse CCTP + historique livrables.
+    Différenciateur clé : recommandation argumentée avec facteurs positifs/risques.
+    """
+    from app.models.tender import Tender
+    from app.services.win_probability import compute_rag_enhanced_score
+
+    tender = db.query(Tender).filter(Tender.id == tender_id).first()
+    if not tender:
+        raise HTTPException(status_code=404, detail="AO non trouvé")
+
+    result = compute_rag_enhanced_score(db, tender)
+
+    # Sauvegarder le score en base
+    tender.go_no_go_score    = result["score"]
+    tender.go_no_go_decision = result["decision"]
+    tender.ai_notes          = result["recommendation"]
+    db.commit()
+
+    return result

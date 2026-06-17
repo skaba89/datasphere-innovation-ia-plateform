@@ -1,3 +1,4 @@
+from app.models.user import User
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy.orm import Session
@@ -45,6 +46,7 @@ def read_audit_logs(
 
 @router.get("/count")
 def count_logs(
+    current_user: User = Depends(get_current_user),
     resource_type: str | None = None,
     action: str | None = None,
     user: str | None = None,
@@ -66,6 +68,7 @@ def count_logs(
 
 @router.get("/export/csv")
 def export_audit_logs_csv(
+    current_user: User = Depends(get_current_user),
     resource_type: str | None = None,
     action: str | None = None,
     user: str | None = None,

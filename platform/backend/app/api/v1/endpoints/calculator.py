@@ -1,3 +1,5 @@
+from __future__ import annotations
+from app.models.user import User
 """
 Calculateur de rentabilité — endpoint REST.
 
@@ -6,7 +8,6 @@ POST /calculator/simulate      — simulation financière complète
 POST /calculator/scenarios     — comparer 2-3 scenarios (missions différentes)
 """
 
-from __future__ import annotations
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field

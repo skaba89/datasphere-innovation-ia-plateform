@@ -15,7 +15,7 @@ router = APIRouter(
 
 
 @router.get("/pipeline", response_model=PipelineAnalytics)
-def pipeline_analytics(db: Session = Depends(get_db)):
+def pipeline_analytics(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """
     Return comprehensive pipeline KPIs in a single call:
     opportunities, tenders, agents, deliverables, scheduler stats + notifications.
@@ -403,7 +403,7 @@ def performance_metrics(db: Session = Depends(get_db)):
 
 
 @router.get("/timeline")
-def timeline_analytics(db: Session = Depends(get_db)):
+def timeline_analytics(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """
     Return monthly stats for the last 12 months — AOs, workflow completions,
     deliverables, taux de succès estimé.
@@ -629,3 +629,120 @@ def get_win_stats(
         "low_probability": len(low),
         "top_opportunities": sorted(results, key=lambda x: x["probability"], reverse=True)[:5],
     }
+
+@router.get("/pipeline-forecast")
+def pipeline_forecast(
+    horizon: int = 90,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Prévision pipeline commercial sur horizon jours (30/60/90).
+    Calcule le revenu prévisionnel pondéré par probabilité de succès.
+    """
+    from datetime import datetime, timedelta
+    from app.models.opportunity import Opportunity
+    from app.models.tender import Tender
+
+    now = datetime.utcnow()
+    cutoff = now + timedelta(days=horizon)
+
+    # AOs avec deadline dans la fenêtre
+    tenders = (
+        db.query(Tender)
+        .filter(
+            Tender.submission_deadline >= now,
+            Tender.submission_deadline <= cutoff,
+        )
+        .all()
+    )
+
+    # Opportunités actives
+    opps = (
+        db.query(Opportunity)
+        .filter(
+            Opportunity.status.notin_(["Perdu", "Annulé"]),
+            Opportunity.next_action_date >= now,
+            Opportunity.next_action_date <= cutoff,
+        )
+        .all()
+    )
+
+    # Construire la timeline par semaine
+    weeks = []
+    for w in range(int(horizon / 7) + 1):
+        week_start = now + timedelta(weeks=w)
+        week_end   = week_start + timedelta(weeks=1)
+
+        week_tenders = [t for t in tenders
+                        if t.submission_deadline and week_start <= t.submission_deadline < week_end]
+        week_opps    = [o for o in opps
+                        if o.next_action_date and week_start <= o.next_action_date < week_end]
+
+        weighted_value = sum(
+            float(o.potential_value or 0) * (o.probability or 20) / 100
+            for o in week_opps
+        )
+
+        weeks.append({
+            "week": w + 1,
+            "start": week_start.isoformat(),
+            "end":   week_end.isoformat(),
+            "tenders_deadline": len(week_tenders),
+            "opportunities":    len(week_opps),
+            "weighted_value":   round(weighted_value, 2),
+            "tender_titles":    [t.title[:60] for t in week_tenders[:3]],
+        })
+
+    # Totaux
+    total_weighted = sum(w["weighted_value"] for w in weeks)
+    total_pipeline = sum(float(o.potential_value or 0) for o in opps)
+    avg_probability = (
+        sum(o.probability or 20 for o in opps) / len(opps) if opps else 0
+    )
+
+    # Répartition par statut
+    status_breakdown = {}
+    for o in opps:
+        s = o.status or "Inconnu"
+        if s not in status_breakdown:
+            status_breakdown[s] = {"count": 0, "value": 0}
+        status_breakdown[s]["count"] += 1
+        status_breakdown[s]["value"] += float(o.potential_value or 0)
+
+    return {
+        "horizon_days":      horizon,
+        "total_opportunities": len(opps),
+        "total_tenders_due": len(tenders),
+        "total_pipeline":    round(total_pipeline, 2),
+        "weighted_forecast": round(total_weighted, 2),
+        "avg_probability":   round(avg_probability, 1),
+        "status_breakdown":  status_breakdown,
+        "weekly_timeline":   weeks,
+    }
+
+
+@router.get("/win-rate-by-sector")
+def win_rate_by_sector(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Win rate par secteur — benchmark interne."""
+    from app.models.tender import Tender
+    from sqlalchemy import func
+
+    rows = (
+        db.query(
+            Tender.status,
+            func.count(Tender.id).label("count"),
+            func.avg(Tender.go_no_go_score).label("avg_score"),
+        )
+        .filter(Tender.go_no_go_score.isnot(None))
+        .group_by(Tender.status)
+        .all()
+    )
+
+    return [
+        {"status": r.status, "count": r.count, "avg_score": round(float(r.avg_score or 0), 1)}
+        for r in rows
+    ]

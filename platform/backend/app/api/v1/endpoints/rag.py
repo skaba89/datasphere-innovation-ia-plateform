@@ -1,3 +1,4 @@
+from pydantic import BaseModel
 """
 RAG Endpoints — Recherche sémantique unifiée (livrables + AOs)
 
@@ -82,3 +83,100 @@ def rag_info(
     except Exception:
         info["indexed_documents"] = -1
     return info
+
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
+class ChatRequest(BaseModel):
+    message: str
+    history: list[ChatMessage] = []
+
+
+@router.post("/chat")
+def ai_chat(
+    payload: ChatRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Assistant IA contextuel — questions en langage naturel sur les données."""
+    import os
+    from datetime import datetime, timedelta
+
+    question = payload.message.lower()
+    now = datetime.utcnow()
+
+    try:
+        # AOs avec deadline proche
+        if any(w in question for w in ["deadline", "semaine", "urgent", "echeance"]):
+            from app.models.tender import Tender
+            week_end = now + timedelta(days=7)
+            tenders = db.query(Tender).filter(
+                Tender.submission_deadline >= now,
+                Tender.submission_deadline <= week_end,
+            ).order_by(Tender.submission_deadline).limit(5).all()
+            if tenders:
+                lines = ["AOs avec deadline dans 7 jours:"]
+                for t in tenders:
+                    days = (t.submission_deadline - now).days
+                    lines.append(f"- {t.title[:60]} — dans {days}j")
+                return {"response": chr(10).join(lines)}
+            return {"response": "Aucun AO avec deadline dans les 7 prochains jours."}
+
+        # Win rate
+        if any(w in question for w in ["win rate", "taux", "succes", "gagnes"]):
+            from app.models.tender import Tender
+            from sqlalchemy import func
+            total = db.query(func.count(Tender.id)).scalar() or 0
+            won   = db.query(func.count(Tender.id)).filter(Tender.status == "won").scalar() or 0
+            rate  = round(won / total * 100, 1) if total > 0 else 0
+            avg_score = db.query(func.avg(Tender.go_no_go_score)).filter(
+                Tender.go_no_go_score.isnot(None)).scalar() or 0
+            return {"response": f"Win rate: {rate}% ({won}/{total} AOs). Score moyen: {round(float(avg_score),1)}/100."}
+
+        # Pipeline
+        if any(w in question for w in ["pipeline", "prevision", "forecast", "chiffre"]):
+            from app.models.opportunity import Opportunity
+            opps = db.query(Opportunity).filter(
+                Opportunity.status.notin_(["Perdu", "Annule"])).all()
+            total = sum(float(o.potential_value or 0) for o in opps)
+            weighted = sum(float(o.potential_value or 0) * (o.probability or 20) / 100 for o in opps)
+            return {"response": f"Pipeline: {len(opps)} opportunites actives. Brut: {total:,.0f}euro. Forecast pondere: {weighted:,.0f}euro."}
+
+        # Livrables
+        if any(w in question for w in ["livrable", "approbation", "attente", "revision"]):
+            from app.models.deliverable import Deliverable
+            pending = db.query(Deliverable).filter(
+                Deliverable.status.in_(["review", "draft"])).limit(5).all()
+            if pending:
+                lines = [f"{len(pending)} livrable(s) en attente:"]
+                for d in pending:
+                    lines.append(f"- {d.title[:60]} ({d.status})")
+                return {"response": chr(10).join(lines)}
+            return {"response": "Aucun livrable en attente."}
+
+        # Activite recente
+        if any(w in question for w in ["recent", "activite", "bilan", "resume", "derniers"]):
+            from app.models.tender import Tender
+            from app.models.deliverable import Deliverable
+            from app.models.opportunity import Opportunity
+            week_ago = now - timedelta(days=7)
+            nt = db.query(Tender).filter(Tender.created_at >= week_ago).count()
+            nd = db.query(Deliverable).filter(Deliverable.created_at >= week_ago).count()
+            no = db.query(Opportunity).filter(Opportunity.created_at >= week_ago).count()
+            return {"response": f"Activite 7 derniers jours: {nt} AO(s), {nd} livrable(s), {no} opportunite(s) CRM."}
+
+    except Exception:
+        pass
+
+    # Fallback RAG
+    try:
+        from app.services.rag_service import unified_search
+        results = unified_search(db, query=payload.message, limit=3)
+        if results:
+            context = " | ".join(r.get("title", "") + ": " + r.get("content", "")[:100] for r in results[:2])
+            return {"response": f"D apres vos donnees: {context}"}
+    except Exception:
+        pass
+
+    return {"response": "Je n ai pas trouve de donnees pour cette question. Essayez: 'pipeline', 'deadline', 'win rate', 'livrables en attente'."}

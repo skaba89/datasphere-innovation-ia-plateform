@@ -534,3 +534,119 @@ export default function AnalyticsPage() {
     </div>
   );
 }
+
+
+// ── ForecastTab — Prévision pipeline 90 jours ─────────────────────────────
+function ForecastTab({ token }: { token: string | null }) {
+  const { t } = useI18n();
+  const [data, setData]     = React.useState<any>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [horizon, setHorizon] = React.useState(90);
+  const { apiRequest: _req } = { apiRequest: (path: string, opts: any, tok: any) =>
+    fetch(`${import.meta.env.VITE_API_BASE_URL || '/api/v1'}${path}`, {
+      ...opts, headers: { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' }
+    }).then(r => r.json())
+  };
+
+  React.useEffect(() => {
+    setLoading(true);
+    fetch(`${import.meta.env.VITE_API_BASE_URL || '/api/v1'}/analytics/pipeline-forecast?horizon=${horizon}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    }).then(r => r.json()).then(setData).catch(() => {}).finally(() => setLoading(false));
+  }, [horizon, token]);
+
+  if (loading) return <div style={{ padding: 40, textAlign: 'center', color: '#475569' }}>Calcul prévision…</div>;
+  if (!data) return null;
+
+  const maxVal = Math.max(...(data.weekly_timeline || []).map((w: any) => w.weighted_value), 1);
+
+  return (
+    <div style={{ display: 'grid', gap: 20 }}>
+      {/* KPIs */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 12 }}>
+        {[
+          { label: 'Pipeline total', value: `${(data.total_pipeline / 1000).toFixed(0)}k€`, color: C.blue },
+          { label: 'Forecast pondéré', value: `${(data.weighted_forecast / 1000).toFixed(0)}k€`, color: C.green },
+          { label: 'Probabilité moy.', value: `${data.avg_probability}%`, color: C.amber },
+          { label: 'AOs à traiter', value: data.total_tenders_due, color: C.purple },
+          { label: 'Opportunités', value: data.total_opportunities, color: C.gold },
+        ].map(({ label, value, color }) => (
+          <div key={label} style={{ ...CHART_BG, padding: '14px 18px' }}>
+            <div style={{ fontSize: '.72rem', color: '#475569', marginBottom: 4 }}>{label}</div>
+            <div style={{ fontSize: '1.4rem', fontWeight: 900, color }}>{value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Horizon selector */}
+      <div style={{ display: 'flex', gap: 8 }}>
+        {[30, 60, 90].map(h => (
+          <button key={h} onClick={() => setHorizon(h)} style={{
+            padding: '6px 14px', borderRadius: 8, border: `1px solid ${horizon===h ? C.gold + '50' : 'rgba(148,163,184,.12)'}`,
+            background: horizon===h ? C.gold + '12' : 'none', color: horizon===h ? C.gold : '#64748b',
+            cursor: 'pointer', fontWeight: horizon===h ? 800 : 500, fontSize: '.8rem',
+          }}>{h}j</button>
+        ))}
+      </div>
+
+      {/* Timeline bar chart */}
+      <div style={CHART_BG}>
+        <ChartTitle label={`Prévision revenu pondéré — ${horizon} jours`} />
+        <ResponsiveContainer width="100%" height={220}>
+          <BarChart data={data.weekly_timeline || []} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,.06)" />
+            <XAxis dataKey="week" tick={{ fontSize: 10, fill: '#475569' }} label={{ value: 'Semaine', position: 'insideBottom', fontSize: 9, fill: '#334155' }} />
+            <YAxis tick={{ fontSize: 10, fill: '#475569' }} tickFormatter={(v: number) => `${(v/1000).toFixed(0)}k€`} />
+            <Tooltip formatter={(v: any) => [`${Number(v).toLocaleString('fr-FR')}€`, 'Forecast pondéré']}
+                     contentStyle={{ background: '#0a1226', border: '1px solid rgba(148,163,184,.15)', borderRadius: 8, fontSize: '.78rem' }} />
+            <Bar dataKey="weighted_value" fill={C.green} radius={[4,4,0,0]} opacity={0.85} name="Forecast" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Répartition statuts */}
+      {data.status_breakdown && Object.keys(data.status_breakdown).length > 0 && (
+        <div style={CHART_BG}>
+          <ChartTitle label="Répartition pipeline par statut" />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '8px 0' }}>
+            {Object.entries(data.status_breakdown as Record<string, {count:number;value:number}>).map(([status, info]) => {
+              const totalVal = Object.values(data.status_breakdown as Record<string, {value:number}>).reduce((s, v) => s + v.value, 0);
+              const pct = totalVal > 0 ? Math.round(info.value / totalVal * 100) : 0;
+              const colors: Record<string, string> = {
+                'Prospect identifie': C.blue, 'Proposition envoyée': C.amber,
+                'Négociation': C.purple, 'Gagné': C.green, 'Perdu': '#ef4444',
+              };
+              const color = colors[status] || '#64748b';
+              return (
+                <div key={status} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 100, fontSize: '.72rem', color: '#94a3b8', flexShrink: 0 }}>{status}</div>
+                  <div style={{ flex: 1, height: 8, background: 'rgba(148,163,184,.08)', borderRadius: 4, overflow: 'hidden' }}>
+                    <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 4, transition: 'width .6s ease' }} />
+                  </div>
+                  <div style={{ fontSize: '.72rem', color, fontWeight: 700, minWidth: 40, textAlign: 'right' }}>{pct}%</div>
+                  <div style={{ fontSize: '.7rem', color: '#475569', minWidth: 80, textAlign: 'right' }}>
+                    {info.value >= 1000 ? `${(info.value/1000).toFixed(0)}k€` : `${info.value}€`}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* AOs imminents */}
+      {(data.weekly_timeline || []).slice(0,2).map((week: any) =>
+        week.tender_titles?.length > 0 && (
+          <div key={week.week} style={{ ...CHART_BG, padding: '12px 16px' }}>
+            <div style={{ fontSize: '.72rem', color: '#64748b', marginBottom: 6 }}>
+              Semaine {week.week} — {week.tenders_deadline} AO(s) à deadline
+            </div>
+            {week.tender_titles.map((t: string, i: number) => (
+              <div key={i} style={{ fontSize: '.8rem', color: '#94a3b8', marginBottom: 3 }}>• {t}</div>
+            ))}
+          </div>
+        )
+      )}
+    </div>
+  );
+}

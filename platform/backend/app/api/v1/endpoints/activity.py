@@ -1,10 +1,11 @@
+from __future__ import annotations
+from app.models.user import User
 """
 Activity feed — recent actions across the entire platform.
 Aggregates audit logs + scheduler logs + deliverable approvals
 into a unified timeline for the dashboard.
 """
 
-from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends
@@ -45,6 +46,7 @@ _TYPE_COLORS = {
 
 @router.get("/feed")
 def activity_feed(
+    current_user: User = Depends(get_current_user),
     limit: int = 30,
     days: int = 7,
     db: Session = Depends(get_db),

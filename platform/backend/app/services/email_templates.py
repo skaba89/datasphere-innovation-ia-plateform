@@ -240,3 +240,36 @@ def deadline_alert_email(first_name: str, tenders_near: list[dict]) -> dict:
 </div>
 """
     return _base(f"⚠️ {len(tenders_near)} deadline(s) AO imminente(s)", body)
+
+# ── Resend fallback (alternative à SMTP) ─────────────────────────────────────
+# Si RESEND_API_KEY est défini, utiliser l'API Resend (gratuit 3000 emails/mois)
+# https://resend.com → créer un compte → copier l'API key dans Render env vars
+#
+# Pour activer: ajouter RESEND_API_KEY=re_xxxx dans Render environment variables
+# Pas besoin de configurer SMTP_HOST/USER/PASSWORD
+
+def _send_via_resend(to: str, subject: str, html: str) -> bool:
+    """Envoie un email via l'API Resend si RESEND_API_KEY est configuré."""
+    import os, urllib.request, json
+    api_key = os.getenv("RESEND_API_KEY")
+    if not api_key:
+        return False
+    try:
+        payload = json.dumps({
+            "from": "DataSphere Innovation <noreply@datasphere-innovation.fr>",
+            "to": [to],
+            "subject": subject,
+            "html": html,
+        }).encode()
+        req = urllib.request.Request(
+            "https://api.resend.com/emails",
+            data=payload,
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            method="POST"
+        )
+        urllib.request.urlopen(req, timeout=10)
+        return True
+    except Exception as e:
+        import logging
+        logging.getLogger("datasphere.email").warning("Resend failed: %s", e)
+        return False

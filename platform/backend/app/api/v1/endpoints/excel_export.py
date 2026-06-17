@@ -34,7 +34,7 @@ def _xlsx_response(data: bytes, filename: str) -> StreamingResponse:
 
 
 @router.get("/pipeline")
-def download_pipeline(db: Session = Depends(get_db)):
+def download_pipeline(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Download pipeline commercial as .xlsx"""
     from datetime import datetime, timezone
     fn = f"pipeline_{datetime.now(timezone.utc).strftime('%Y%m%d')}.xlsx"
@@ -42,7 +42,7 @@ def download_pipeline(db: Session = Depends(get_db)):
 
 
 @router.get("/tenders")
-def download_tenders(db: Session = Depends(get_db)):
+def download_tenders(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Download all tenders + Go/No-Go scores as .xlsx"""
     from datetime import datetime, timezone
     fn = f"appels_offres_{datetime.now(timezone.utc).strftime('%Y%m%d')}.xlsx"
@@ -58,7 +58,7 @@ def download_actions(db: Session = Depends(get_db)):
 
 
 @router.get("/deliverables")
-def download_deliverables(db: Session = Depends(get_db)):
+def download_deliverables(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Download deliverables status report as .xlsx"""
     from datetime import datetime, timezone
     fn = f"livrables_{datetime.now(timezone.utc).strftime('%Y%m%d')}.xlsx"

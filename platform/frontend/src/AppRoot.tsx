@@ -57,6 +57,7 @@ import LinkedInAgentPage from './pages/LinkedInAgentPage';
 import OnboardingWizard, { shouldShowOnboarding, markOnboardingDone } from './components/OnboardingWizard';
 import ToastContainer from './components/ToastContainer';
 import { LangToggle, useI18n } from './i18n';
+import AIAssistant from './components/AIAssistant';
 import { useRealtimeToasts } from './hooks/useRealtimeToasts';
 import { useWorkflowSSE } from './hooks/useWorkflowSSE';
 import type { ToastEvent } from './hooks/useRealtimeToasts';

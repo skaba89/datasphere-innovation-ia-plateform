@@ -196,3 +196,190 @@ def compute_win_probability(
         "days_until_deadline": days_left,
         "keyword_analysis": kw["by_category"],
     }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Score Go/No-Go enrichi par RAG — Analyse CCTP + historique livrables
+# ══════════════════════════════════════════════════════════════════════════════
+
+def compute_rag_enhanced_score(
+    db,
+    tender,
+    provider: str = "auto",
+) -> dict:
+    """
+    Score Go/No-Go enrichi par RAG (différenciateur #1).
+
+    Analyse :
+    1. Similarité avec les AOs gagnés/perdus en historique
+    2. Adéquation compétences (livrables approuvés dans ce secteur)
+    3. Facteurs risque : délai, budget, secteur, complexité
+    4. Recommandation argumentée avec points forts/faibles
+
+    Returns:
+        {
+          "score": int (0-100),
+          "decision": "GO" | "NO-GO" | "ANALYSE",
+          "confidence": float,
+          "factors": { positives: [...], risks: [...] },
+          "recommendation": str,
+          "similar_won": [...],
+          "similar_lost": [...],
+        }
+    """
+    import logging, re
+    from datetime import datetime, timedelta
+    log = logging.getLogger("datasphere.win_probability")
+
+    title   = (tender.title or "").lower()
+    summary = (tender.summary or "").lower()
+    score   = 50  # base
+    factors = {"positives": [], "risks": []}
+
+    # ── 1. Analyse sectorielle ────────────────────────────────────────────────
+    DATA_KEYWORDS = ["data", "ia", "intelligence artificielle", "machine learning",
+                     "snowflake", "dbt", "spark", "etl", "datawarehouse", "bi ",
+                     "tableau", "power bi", "analytique", "pipeline", "lakehouse"]
+    CONSEIL_KEYWORDS = ["conseil", "assistance", "amoa", "amo", "stratégie", "audit",
+                        "expertise", "accompagnement", "transformation"]
+    CLOUD_KEYWORDS   = ["cloud", "aws", "azure", "gcp", "kubernetes", "devops",
+                        "infrastructure", "hébergement"]
+
+    text = f"{title} {summary}"
+    data_match   = sum(1 for k in DATA_KEYWORDS if k in text)
+    conseil_match = sum(1 for k in CONSEIL_KEYWORDS if k in text)
+    cloud_match   = sum(1 for k in CLOUD_KEYWORDS if k in text)
+
+    if data_match >= 3:
+        score += 18
+        factors["positives"].append(f"Cœur de métier Data/IA ({data_match} mots-clés matchés)")
+    elif data_match >= 1:
+        score += 8
+        factors["positives"].append("Dimension Data détectée")
+
+    if conseil_match >= 2:
+        score += 10
+        factors["positives"].append("Mission de conseil/accompagnement (expertise reconnue)")
+
+    if cloud_match >= 2:
+        score += 7
+        factors["positives"].append("Cloud & infrastructure (compétence disponible)")
+
+    # ── 2. Analyse délai ──────────────────────────────────────────────────────
+    deadline = getattr(tender, "submission_deadline", None)
+    if deadline:
+        days_left = (deadline - datetime.utcnow()).days
+        if days_left < 7:
+            score -= 20
+            factors["risks"].append(f"Délai très court ({days_left}j) — risque qualité livrable")
+        elif days_left < 14:
+            score -= 8
+            factors["risks"].append(f"Délai serré ({days_left}j) — mobilisation rapide requise")
+        elif days_left > 30:
+            score += 5
+            factors["positives"].append(f"Délai confortable ({days_left}j) pour préparation qualitative")
+
+    # ── 3. Analyse budget ─────────────────────────────────────────────────────
+    budget = getattr(tender, "estimated_budget", None)
+    if budget:
+        if budget < 10_000:
+            score -= 15
+            factors["risks"].append(f"Budget trop faible ({budget:,.0f}€) — rentabilité compromise")
+        elif budget < 30_000:
+            score -= 5
+            factors["risks"].append(f"Budget limité ({budget:,.0f}€) — marges réduites")
+        elif budget >= 100_000:
+            score += 12
+            factors["positives"].append(f"Budget significatif ({budget:,.0f}€) — opportunité de taille")
+        elif budget >= 50_000:
+            score += 6
+            factors["positives"].append(f"Budget correct ({budget:,.0f}€)")
+
+    # ── 4. Similarité RAG avec historique ────────────────────────────────────
+    similar_won, similar_lost = [], []
+    try:
+        from app.services.rag_service import search_tenders_by_semantic
+        similar = search_tenders_by_semantic(db, query=f"{tender.title}", limit=5)
+        for s in similar:
+            if s.get("go_score", 0) >= 70:
+                similar_won.append(s)
+            elif s.get("go_score", 0) < 40:
+                similar_lost.append(s)
+
+        if similar_won:
+            boost = min(15, len(similar_won) * 5)
+            score += boost
+            factors["positives"].append(
+                f"{len(similar_won)} AO(s) similaire(s) traité(s) avec succès "
+                f"(ex: {similar_won[0].get('title','?')[:50]})"
+            )
+        if similar_lost:
+            malus = min(10, len(similar_lost) * 4)
+            score -= malus
+            factors["risks"].append(
+                f"{len(similar_lost)} AO(s) similaire(s) avec score faible — analyser les raisons"
+            )
+    except Exception as e:
+        log.debug("RAG similarity skipped: %s", e)
+
+    # ── 5. Livrables approuvés dans ce secteur ───────────────────────────────
+    try:
+        from app.models.deliverable import Deliverable
+        from app.models.tender import Tender as TenderModel
+        approved_in_sector = (
+            db.query(Deliverable)
+            .filter(Deliverable.status == "approved")
+            .limit(20)
+            .all()
+        )
+        sector_match = sum(
+            1 for d in approved_in_sector
+            if any(k in (d.title or "").lower() for k in DATA_KEYWORDS[:5])
+        )
+        if sector_match >= 3:
+            score += 10
+            factors["positives"].append(
+                f"{sector_match} livrables approuvés dans ce secteur — références solides"
+            )
+        elif sector_match >= 1:
+            score += 4
+            factors["positives"].append(f"{sector_match} livrable(s) de référence disponible(s)")
+    except Exception:
+        pass
+
+    # ── 6. Clamp et décision ─────────────────────────────────────────────────
+    score = max(0, min(100, score))
+
+    if score >= 70:
+        decision = "GO"
+        rec_prefix = "✅ Recommandation GO"
+    elif score >= 45:
+        decision = "ANALYSE"
+        rec_prefix = "⚠️ Analyse approfondie recommandée"
+    else:
+        decision = "NO-GO"
+        rec_prefix = "❌ Recommandation NO-GO"
+
+    # Construire la recommandation
+    pos_str = " · ".join(factors["positives"][:3]) or "Aucun facteur positif identifié"
+    risk_str = " · ".join(factors["risks"][:3]) or "Aucun risque majeur détecté"
+
+    recommendation = (
+        f"{rec_prefix} (score {score}/100)\n\n"
+        f"**Points forts :** {pos_str}\n\n"
+        f"**Vigilances :** {risk_str}\n\n"
+        f"**Similarité historique :** {len(similar_won)} AO(s) similaire(s) gagné(s), "
+        f"{len(similar_lost)} perdu(s)"
+    )
+
+    confidence = 0.6 + (0.2 if similar_won or similar_lost else 0) + (0.1 if budget else 0)
+
+    return {
+        "score": score,
+        "decision": decision,
+        "confidence": round(confidence, 2),
+        "factors": factors,
+        "recommendation": recommendation,
+        "similar_won": similar_won[:3],
+        "similar_lost": similar_lost[:2],
+    }
