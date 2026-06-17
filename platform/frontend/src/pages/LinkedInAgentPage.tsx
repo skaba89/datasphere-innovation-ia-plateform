@@ -52,6 +52,7 @@ const S = {
 };
 
 function OAuthPanel({ token, onStatusChange }: { token: string; onStatusChange: (s: OAuthStatus) => void }) {
+  const { lang } = useI18n();
   const [status, setStatus] = useState<OAuthStatus | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [revoking, setRevoking] = useState(false);

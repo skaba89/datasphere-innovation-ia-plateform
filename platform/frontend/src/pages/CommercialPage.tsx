@@ -62,6 +62,7 @@ const STATUS_ICON: Record<string, React.ReactNode> = {
 };
 
 function KpiCard({ icon, label, value, sub, color = '#facc15', delta }: {
+  const { lang } = useI18n();
   icon: React.ReactNode; label: string; value: string | number;
   sub?: string; color?: string; delta?: string;
 }) {
@@ -90,6 +91,7 @@ function KpiCard({ icon, label, value, sub, color = '#facc15', delta }: {
 }
 
 function RecentOpps({ token }: { token: string }) {
+  const { lang } = useI18n();
   const [opps, setOpps] = useState<Opportunity[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -181,6 +183,7 @@ function ConversionFunnel({ data }: { data: DashboardData }) {
 
 // Formulaire création opportunité autonome (ne dépend pas des props complexes de OpportunityForm)
 function NewOpportunityForm({ token, onSaved, onCancel }: { token: string | null; onSaved: () => void; onCancel: () => void }) {
+  const { lang } = useI18n();
   const [title, setTitle]   = useState('');
   const [orgId, setOrgId]   = useState('');
   const [type, setType]     = useState('mission_data');

@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { ExternalLink, Mail, Plus, RefreshCw, Search, Trash2, UserCheck, Users, X } from 'lucide-react';
+import { useI18n } from '../i18n';
 import { apiRequest, tokenStorage } from '../api/client';
 import type { Contact, Organization } from '../api/domainTypes';
 import ConfirmModal from './ConfirmModal';
 // ── Form component ────────────────────────────────────────────────────────────
 
 function ContactForm({
+  const { lang } = useI18n();
   orgId,
   orgName,
   initial,

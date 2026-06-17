@@ -17,6 +17,7 @@ import {
   WandSparkles,
 } from 'lucide-react';
 
+import { useI18n } from '../i18n';
 import { apiRequest, tokenStorage } from '../api/client';
 import type { Deliverable, Opportunity, Tender } from '../api/domainTypes';
 import DeliverableVersionsPanel from './DeliverableVersionsPanel';

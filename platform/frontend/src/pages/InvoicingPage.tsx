@@ -41,11 +41,13 @@ function fmtEur(n: number) { return new Intl.NumberFormat('fr-FR', { style: 'cur
 function fmtDate(s?: string) { return s ? new Date(s).toLocaleDateString('fr-FR', { day:'2-digit', month:'short', year:'2-digit' }) : '—'; }
 
 function StatusBadge({ status, map }: { status: string; map: Record<string, {label:string;color:string;bg:string}> }) {
+  const { lang } = useI18n();
   const cfg = map[status] ?? { label: status, color: '#64748b', bg: 'rgba(100,116,139,.08)' };
   return <span style={{ fontSize: '.7rem', fontWeight: 700, padding: '3px 9px', borderRadius: 99, background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.color}25`, whiteSpace: 'nowrap' }}>{cfg.label}</span>;
 }
 
 function KpiCard({ icon: Icon, label, value, sub, color }: { icon: React.ElementType; label:string; value:string; sub?:string; color:string }) {
+  const { lang } = useI18n();
   return (
     <div style={{ background: 'rgba(12,22,45,.85)', border: `1px solid ${color}15`, borderRadius: 16, padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 12, backdropFilter: 'blur(24px)' }}>
       <div style={{ width: 36, height: 36, borderRadius: 9, background: `${color}12`, border: `1px solid ${color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -62,6 +64,7 @@ function KpiCard({ icon: Icon, label, value, sub, color }: { icon: React.Element
 
 // ── Formulaire devis ──────────────────────────────────────────────────────────
 function QuoteForm({ token, onSaved }: { token: string|null; onSaved: () => void }) {
+  const { lang } = useI18n();
   const [form, setForm] = useState({ title: '', client_name: '', client_email: '', client_address: '', daily_rate: '', days_count: '', tva_rate: '20', notes: '', valid_until: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string|null>(null);
@@ -161,6 +164,7 @@ function QuoteForm({ token, onSaved }: { token: string|null; onSaved: () => void
 
 // ── Liste documents ───────────────────────────────────────────────────────────
 function DocRow({ doc, type, token, onRefresh }: { doc: Quote|Invoice; type: 'quote'|'invoice'; token: string|null; onRefresh: () => void }) {
+  const { lang } = useI18n();
   const [exporting, setExporting] = useState(false);
   const [converting, setConverting] = useState(false);
 

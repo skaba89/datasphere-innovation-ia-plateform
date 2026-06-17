@@ -412,6 +412,7 @@ export default function TenderPage() {
 // ── BOAMP Search Panel ────────────────────────────────────────────────────────
 
 function BOAMPPanel({ token, onImported }: { token: string|null; onImported: (id:number)=>void }) {
+  const { lang } = useI18n();
   const [query,   setQuery]   = useState('data');
   const [results, setResults] = useState<BOAMPResult[]>([]);
   const [loading, setLoading] = useState(false);
