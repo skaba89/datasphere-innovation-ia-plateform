@@ -198,10 +198,10 @@ export function DeliverablePanel({ token }: Props) {
           <label>Périmètre
             <select value={genScopeKind} onChange={(e) => setGenScopeKind(e.target.value as 'opportunity' | 'tender')}>
               <option value="opportunity">{lang === 'en' ? 'Opportunity' : 'Opportunité'}</option>
-              <option value="tender">{lang === 'en' ? 'Tender' : 'Appel d'offres'}</option>
+              <option value="tender">{lang === 'en' ? 'Tender' : "Appel d'offres"}</option>
             </select>
           </label>
-          <label>{genScopeKind === 'opportunity' ? 'Opportunité' : 'Appel d offres'}
+          <label>{genScopeKind === 'opportunity' ? 'Opportunité' : "Appel d'offres"}
             <select value={genScopeId} onChange={(e) => setGenScopeId(e.target.value)}>
               <option value="">{lang === 'en' ? 'Select…' : 'Sélectionner…'}</option>
               {(genScopeKind === 'opportunity' ? opportunities : tenders).map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
