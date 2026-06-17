@@ -151,11 +151,11 @@ export default function DashboardPage() {
     .map(t => ({ title: t.title, deadline: t.deadline!, daysLeft: t.days_left! }))
     .slice(0, 4);
 
-  const statusLabel: Record<string, string> = { draft:'Brouillon', review:'Révision', approved:'Approuvé', submitted:'Soumis' };
+  const statusLabel: Record<string, string> = { draft:lang === 'en' ? 'Draft' : 'Brouillon', review:lang === 'en' ? 'In review' : 'Révision', approved:lang === 'en' ? 'Approved' : 'Approuvé', submitted:lang === 'en' ? 'Submitted' : 'Soumis' };
   const statusColor: Record<string, string> = { draft:'#64748b', review:'#f59e0b', approved:'#22c55e', submitted:'#3b82f6' };
 
   const hour = new Date().getHours();
-  const greeting = hour < 5 ? 'Bonne nuit' : hour < 12 ? 'Bonjour' : hour < 18 ? 'Bon après-midi' : 'Bonsoir';
+  const greeting = hour < 5 ? lang === 'en' ? 'Good night' : 'Bonne nuit' : hour < 12 ? lang === 'en' ? 'Good morning' : 'Bonjour' : hour < 18 ? lang === 'en' ? 'Good afternoon' : 'Bon après-midi' : lang === 'en' ? 'Good evening' : 'Bonsoir';
   const dayName = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
 
   if (loading) return (
@@ -179,7 +179,7 @@ export default function DashboardPage() {
         <div style={{ position: 'absolute', bottom: -80, left: -40, width: 250, height: 250, background: 'radial-gradient(circle,rgba(37,99,235,.08) 0%,transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, position: 'relative' }}>
           <div>
-            <div style={{ fontSize: '.68rem', fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase', color: 'rgba(250,204,21,.7)', marginBottom: 8 }}>Tableau de bord</div>
+            <div style={{ fontSize: '.68rem', fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase', color: 'rgba(250,204,21,.7)', marginBottom: 8 }}>{lang === 'en' ? 'Dashboard' : 'Tableau de bord'}</div>
             <h1 style={{ fontSize: 'clamp(1.6rem,4vw,2.4rem)', fontWeight: 900, letterSpacing: '-.05em', margin: 0, lineHeight: 1.1 }}>{greeting} 👋</h1>
             <p style={{ color: '#475569', fontSize: '.88rem', marginTop: 8 }}>{dayName.charAt(0).toUpperCase() + dayName.slice(1)}</p>
           </div>
@@ -196,7 +196,7 @@ export default function DashboardPage() {
         {data && (
           <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(148,163,184,.06)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-              <span style={{ fontSize: '.74rem', color: '#475569', fontWeight: 600 }}>Taux de conversion</span>
+              <span style={{ fontSize: '.74rem', color: '#475569', fontWeight: 600 }}>{lang === 'en' ? 'Conversion rate' : 'Taux de conversion'}</span>
               <span style={{ fontSize: '.8rem', fontWeight: 800, color: winRate >= 30 ? '#22c55e' : '#f59e0b' }}>{winRate}%</span>
             </div>
             <div style={{ height: 5, background: 'rgba(255,255,255,.05)', borderRadius: 99, overflow: 'hidden' }}>
@@ -204,10 +204,10 @@ export default function DashboardPage() {
             </div>
             <div style={{ display: 'flex', gap: 24, marginTop: 10, flexWrap: 'wrap' }}>
               {[
-                { label: 'Total AOs',   val: tenders?.total ?? 0,      color: '#64748b' },
-                { label: 'Go décidés',  val: tenders?.go_count ?? 0,   color: '#facc15' },
+                { label: lang === 'en' ? 'Total tenders' : 'Total AOs',   val: tenders?.total ?? 0,      color: '#64748b' },
+                { label: lang === 'en' ? 'Go decisions' : 'Go décidés',  val: tenders?.go_count ?? 0,   color: '#facc15' },
                 { label: t('nav.deliverables'),   val: deliverables?.total ?? 0, color: '#3b82f6' },
-                { label: 'Opportunités gagnées', val: opps?.won ?? 0,  color: '#22c55e' },
+                { label: lang === 'en' ? 'Won opportunities' : 'Opportunités gagnées', val: opps?.won ?? 0,  color: '#22c55e' },
               ].map(s => (
                 <div key={s.label} style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                   <span style={{ fontSize: '.78rem', fontWeight: 800, color: s.color }}>{s.val}</span>
@@ -221,11 +221,11 @@ export default function DashboardPage() {
 
       {/* ── KPI Grid ────────────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(170px,1fr))', gap: 12 }}>
-        <KpiCard icon={Target}     label="AOs actifs"          value={tenders?.total ?? 0}              numeric={tenders?.total}          color="#facc15" />
-        <KpiCard icon={TrendingUp} label="Pipeline opportunités" value={fmtCurrency(pipelineVal)}        color="#3b82f6" />
-        <KpiCard icon={Building2}  label="Opportunités"         value={opps?.total ?? 0}                 numeric={opps?.total}             color="#8b5cf6" />
-        <KpiCard icon={FileText}   label="Livrables"            value={deliverables?.total ?? 0}         numeric={deliverables?.total}     color="#22c55e" sub={`${deliverables?.approved ?? 0} approuvés`} />
-        <KpiCard icon={Bot}        label="Agents — en attente"  value={agents?.actions_pending_approval ?? 0} numeric={agents?.actions_pending_approval} color="#f59e0b" />
+        <KpiCard icon={Target}     label={lang === "en" ? "Active tenders" : "AOs actifs"}          value={tenders?.total ?? 0}              numeric={tenders?.total}          color="#facc15" />
+        <KpiCard icon={TrendingUp} label={lang === "en" ? "Opportunity pipeline" : "Pipeline opportunités"} value={fmtCurrency(pipelineVal)}        color="#3b82f6" />
+        <KpiCard icon={Building2}  label={lang === "en" ? "Opportunities" : "Opportunités"}         value={opps?.total ?? 0}                 numeric={opps?.total}             color="#8b5cf6" />
+        <KpiCard icon={FileText}   label={lang === "en" ? "Deliverables" : "Livrables"}            value={deliverables?.total ?? 0}         numeric={deliverables?.total}     color="#22c55e" sub={`${deliverables?.approved ?? 0} approuvés`} />
+        <KpiCard icon={Bot}        label={lang === "en" ? "Agents — pending" : "Agents — en attente"}  value={agents?.actions_pending_approval ?? 0} numeric={agents?.actions_pending_approval} color="#f59e0b" />
         <KpiCard icon={Trophy}     label="Opportunités gagnées" value={opps?.won ?? 0}                   numeric={opps?.won}               color="#4ade80" trend={`${winRate}%`} />
       </div>
 
@@ -236,7 +236,7 @@ export default function DashboardPage() {
         <div style={{ background: 'rgba(12,22,45,.8)', border: '1px solid rgba(148,163,184,.08)', borderRadius: 20, overflow: 'hidden', backdropFilter: 'blur(24px)' }}>
           <div style={{ padding: '18px 22px', borderBottom: '1px solid rgba(148,163,184,.06)', display: 'flex', alignItems: 'center', gap: 8 }}>
             <Activity size={15} color="#facc15" />
-            <span style={{ fontWeight: 700, fontSize: '.88rem' }}>Analyse du pipeline</span>
+            <span style={{ fontWeight: 700, fontSize: '.88rem' }}>{lang === 'en' ? 'Pipeline analysis' : 'Analyse du pipeline'}</span>
           </div>
           <div style={{ padding: '16px 22px 22px' }}>
             <DashboardCharts token={token} />
@@ -250,7 +250,7 @@ export default function DashboardPage() {
           <div style={{ background: 'rgba(12,22,45,.8)', border: '1px solid rgba(148,163,184,.08)', borderRadius: 20, overflow: 'hidden', backdropFilter: 'blur(24px)' }}>
             <div style={{ padding: '16px 18px', borderBottom: '1px solid rgba(148,163,184,.06)', display: 'flex', alignItems: 'center', gap: 8 }}>
               <Calendar size={14} color="#ef4444" />
-              <span style={{ fontWeight: 700, fontSize: '.85rem' }}>Échéances proches</span>
+              <span style={{ fontWeight: 700, fontSize: '.85rem' }}>{lang === 'en' ? 'Upcoming deadlines' : 'Échéances proches'}</span>
               {tenders && tenders.deadlines_this_week > 0 && (
                 <span style={{ marginLeft: 'auto', fontSize: '.68rem', background: 'rgba(239,68,68,.1)', color: '#fca5a5', border: '1px solid rgba(239,68,68,.2)', padding: '2px 7px', borderRadius: 99, fontWeight: 700 }}>
                   {tenders.deadlines_this_week} cette semaine
@@ -271,7 +271,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Livrables récents */}
+          {/* Livrables récents / Recent deliverables */}
           {recentDelivs.length > 0 && (
             <div style={{ background: 'rgba(12,22,45,.8)', border: '1px solid rgba(148,163,184,.08)', borderRadius: 20, overflow: 'hidden', backdropFilter: 'blur(24px)' }}>
               <div style={{ padding: '16px 18px', borderBottom: '1px solid rgba(148,163,184,.06)', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -316,7 +316,7 @@ export default function DashboardPage() {
       <div style={{ background: 'rgba(12,22,45,.8)', border: '1px solid rgba(148,163,184,.08)', borderRadius: 20, overflow: 'hidden', backdropFilter: 'blur(24px)' }}>
         <div style={{ padding: '16px 22px', borderBottom: '1px solid rgba(148,163,184,.06)', display: 'flex', alignItems: 'center', gap: 8 }}>
           <Zap size={14} color="#22c55e" />
-          <span style={{ fontWeight: 700, fontSize: '.88rem' }}>Activité récente</span>
+          <span style={{ fontWeight: 700, fontSize: '.88rem' }}>{lang === 'en' ? 'Recent activity' : 'Activité récente'}</span>
         </div>
         <div style={{ padding: '12px 22px 22px' }}>
           <ActivityFeed compact days={7} limit={6} />

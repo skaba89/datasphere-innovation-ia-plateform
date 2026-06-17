@@ -123,9 +123,9 @@ function ForcePasswordChange({
 
   const checks = [
     { label: '8+ caractères',      ok: newPwd.length >= 8 },
-    { label: lang === 'en' ? 'Uppercase' : 'Majuscule',          ok: /[A-Z]/.test(newPwd) },
+    { label: lang === 'en' ? 'Uppercase letter' : 'Majuscule',          ok: /[A-Z]/.test(newPwd) },
     { label: lang === 'en' ? 'Number' : 'Chiffre',            ok: /\d/.test(newPwd) },
-    { label: lang === 'en' ? 'Special char' : 'Caractère spécial',  ok: /[^A-Za-z0-9]/.test(newPwd) },
+    { label: lang === 'en' ? 'Special character' : 'Caractère spécial',  ok: /[^A-Za-z0-9]/.test(newPwd) },
   ];
   const strength = checks.filter(c => c.ok).length;
   const strengthColor = strength <= 1 ? '#ef4444' : strength <= 2 ? '#f59e0b' : strength <= 3 ? '#22c55e' : '#4ade80';
@@ -755,10 +755,10 @@ export default function AppRoot() {
 
   // ── Navigation groups ────────────────────────────────────────
   const NAV_GROUPS = [
-    { label: t('common.view') || 'Principal', keys: ['dashboard', 'tenders', 'deliverables'] },
+    { label: lang === 'en' ? 'View' : 'Principal', keys: ['dashboard', 'tenders', 'deliverables'] },
     { label: 'CRM',       keys: ['organizations', 'opportunities', 'commercial'] },
     { label: 'IA',        keys: ['intelligence', 'ai-providers', 'consultant-profiles', 'linkedin'] },
-    { label: t('ops.title') || 'Opérations',keys: ['operations', 'data-export', 'calculator', 'pricing', 'invoicing'] },
+    { label: lang === 'en' ? 'Operations' : 'Opérations',keys: ['operations', 'data-export', 'calculator', 'pricing', 'invoicing'] },
     { label: lang === 'en' ? 'Admin' : 'Admin',     keys: ['team', 'audit', 'workspaces'] },
     { label: lang === 'en' ? 'Personal' : 'Personnel', keys: ['notifications', 'search', 'profile', 'settings'] },
   ];
@@ -769,27 +769,27 @@ export default function AppRoot() {
 
 
   const tabs: NavTab[] = [
-    { key: 'dashboard',     label: t('nav.dashboard'),            permission: 'dashboard:read' },
-    { key: 'tenders',       label: t('nav.tenders'),     permission: 'tenders:read' },
-    { key: 'profiles',      label: t('nav.profiles'),  permission: 'profiles:read' },
-    { key: 'deliverables',  label: t('nav.deliverables'),            permission: 'deliverables:read' },
-    { key: 'commercial',    label: t('nav.commercial'),           permission: 'commercial:read' },
-    { key: 'organizations', label: t('nav.organizations'),        permission: 'crm:read' },
-    { key: 'opportunities', label: t('nav.opportunities'),         permission: 'crm:read' },
+    { key: 'dashboard',     label: lang === 'en' ? 'Dashboard' : t('nav.dashboard'),            permission: 'dashboard:read' },
+    { key: 'tenders',       label: lang === 'en' ? 'Tenders' : t('nav.tenders'),     permission: 'tenders:read' },
+    { key: 'profiles',      label: lang === 'en' ? 'CV Agent' : t('nav.profiles'),  permission: 'profiles:read' },
+    { key: 'deliverables',  label: lang === 'en' ? 'Deliverables' : t('nav.deliverables'),            permission: 'deliverables:read' },
+    { key: 'commercial',    label: lang === 'en' ? 'CRM Commercial' : t('nav.commercial'),           permission: 'commercial:read' },
+    { key: 'organizations', label: lang === 'en' ? 'Organizations' : t('nav.organizations'),        permission: 'crm:read' },
+    { key: 'opportunities', label: lang === 'en' ? 'Opportunities' : t('nav.opportunities'),         permission: 'crm:read' },
     { key: 'operations',    label: t('nav.operations'),           permission: 'operations:read' },
     { key: 'data-export',   label: t('nav.data_export'),       permission: 'audit:read' },
-    { key: 'linkedin',      label: t('nav.linkedin'),        permission: 'deliverables:write' },
+    { key: 'linkedin',      label: lang === 'en' ? 'LinkedIn Agent' : t('nav.linkedin'),        permission: 'deliverables:write' },
     { key: 'consultant-profiles', label: t('nav.cv_consultant'),  permission: 'deliverables:write' },
     { key: 'notifications',       label: t('nav.notifications'),    permission: 'deliverables:read'  },
-    { key: 'search',              label: t('nav.search'),           permission: 'deliverables:read'  },
+    { key: 'search',              label: lang === 'en' ? 'Search' : t('nav.search'),           permission: 'deliverables:read'  },
     { key: 'ai-providers',        label: t('nav.ai_providers'),     permission: 'operations:read'              },
-    { key: 'team',          label: t('nav.team'),               permission: 'team:read' },
-    { key: 'audit',         label: t('nav.audit'),                permission: 'audit:read' },
-    { key: 'workspaces',    label: t('nav.workspaces'),           permission: 'workspaces:read' },
+    { key: 'team',          label: lang === 'en' ? 'Team' : t('nav.team'),               permission: 'team:read' },
+    { key: 'audit',         label: lang === 'en' ? 'Audit log' : t('nav.audit'),                permission: 'audit:read' },
+    { key: 'workspaces',    label: lang === 'en' ? 'Workspaces' : t('nav.workspaces'),           permission: 'workspaces:read' },
     { key: 'profile',       label: t('nav.profile'),           permission: 'profile:read' },
-    { key: 'settings',      label: t('nav.settings'),          permission: 'profile:read' },
-    { key: 'calculator',    label: t('nav.calculator'),    permission: 'operations:read' },
-    { key: 'pricing',       label: t('nav.pricing'),            permission: 'profile:read' },
+    { key: 'settings',      label: lang === 'en' ? 'Settings' : t('nav.settings'),          permission: 'profile:read' },
+    { key: 'calculator',    label: lang === 'en' ? 'Calculator' : t('nav.calculator'),    permission: 'operations:read' },
+    { key: 'pricing',       label: lang === 'en' ? 'Pricing' : t('nav.pricing'),            permission: 'profile:read' },
   ];
 
   const userRole = user?.role;
