@@ -609,12 +609,36 @@ def start() -> None:
         replace_existing=True,
     )
 
+    _scheduler.add_job(
+        _monthly_report_job,
+        trigger="cron",
+        day=1,
+        hour=8,
+        minute=0,
+        id="monthly_report",
+        name="Rapport mensuel DataSphere",
+        replace_existing=True,
+    )
+
     _scheduler.start()
     logger.info(
         "Scheduler started — %d jobs registered (provider: %s)",
         len(_scheduler.get_jobs()),
         __import__("app.services.llm_service", fromlist=["provider_label"]).provider_label(),
     )
+
+
+def _monthly_report_job() -> None:
+    """Job mensuel — envoie le rapport synthèse le 1er du mois."""
+    from app.db.session import SessionLocal
+    db = SessionLocal()
+    try:
+        sent = send_monthly_report_to_all(db)
+        logger.info("Monthly report sent to %d admin(s)", sent)
+    except Exception as e:
+        logger.error("monthly_report_job failed: %s", e)
+    finally:
+        db.close()
 
 
 def stop() -> None:
