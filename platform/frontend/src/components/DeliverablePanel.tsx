@@ -64,6 +64,7 @@ type Props = {
 // ---------------------------------------------------------------------------
 
 export function DeliverablePanel({ token }: Props) {
+  const { lang } = useI18n();
   const [deliverables, setDeliverables] = useState<Deliverable[]>([]);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [tenders, setTenders] = useState<Tender[]>([]);
@@ -156,8 +157,7 @@ export function DeliverablePanel({ token }: Props) {
     setConfirmDelId(id);
   }
 
-  async function doDeleteDeliverable(id: number) {
-  const { lang } = useI18n();    setLoading(true);
+  async function doDeleteDeliverable(id: number) {    setLoading(true);
     setError(null);
     try {
       await apiRequest(`/deliverables/${id}`, { method: 'DELETE' }, token);

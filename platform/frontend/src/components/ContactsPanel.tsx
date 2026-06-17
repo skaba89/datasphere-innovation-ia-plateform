@@ -19,6 +19,7 @@ function ContactForm({
   onSave: (c: Contact) => void;
   onCancel: () => void;
 }) {
+  const { lang } = useI18n();
   const [form, setForm] = useState({
     first_name: initial?.first_name ?? '',
     last_name: initial?.last_name ?? '',

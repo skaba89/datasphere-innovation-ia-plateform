@@ -247,6 +247,7 @@ function OverviewTab({ timeline, pipeline }: { timeline: any; pipeline: Pipeline
 
 // ── Tab: Pipeline ─────────────────────────────────────────────────────────────
 function PipelineTab({ pipeline }: { pipeline: PipelineAnalytics | null }) {
+  const { lang } = useI18n();
   if (!pipeline) return null;
   const { tenders, opportunities, deliverables } = pipeline;
 
