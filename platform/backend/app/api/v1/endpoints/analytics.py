@@ -16,6 +16,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user
+from app.models.user import User
 from app.db.session import get_db
 from app.schemas.analytics import PipelineAnalytics
 from app.services.analytics_service import get_pipeline_analytics
