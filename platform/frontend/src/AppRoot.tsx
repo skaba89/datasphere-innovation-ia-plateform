@@ -46,6 +46,7 @@ import TenderPage from './pages/TenderPage';
 import UserProfilePage from './pages/UserProfilePage';
 import WorkspacesPage from './pages/WorkspacesPage';
 import TenderSourcesPage from './pages/TenderSourcesPage';
+import ExecDashboardPage from './pages/ExecDashboardPage';
 import WorkspaceSwitcher from './components/WorkspaceSwitcher';
 import SettingsPage from './pages/SettingsPage';
 import CalculatorPage from './pages/CalculatorPage';
@@ -94,7 +95,8 @@ type RootView =
   | 'pricing'
   | 'invoicing'
   | 'analytics'
-  | 'tender-sources';
+  | 'tender-sources'
+  | 'exec-dashboard';
 
 type NavTab = {
   key: RootView;
@@ -704,12 +706,36 @@ export default function AppRoot() {
   }
 
   const { t, lang } = useI18n(); // lang déclenche le re-render global
+  // ── Raccourcis clavier globaux ─────────────────────────────────────────
+  React.useEffect(() => {
+    function handleKeyboard(e: KeyboardEvent) {
+      const meta = e.metaKey || e.ctrlKey;
+      // Cmd/Ctrl+K → Recherche globale
+      if (meta && e.key === 'k') {
+        e.preventDefault();
+        setActiveView('search');
+      }
+      // Cmd/Ctrl+N → Nouveau (selon la page active)
+      if (meta && e.key === 'n') {
+        e.preventDefault();
+        if (activeView === 'tenders')     setActiveView('tenders');
+        if (activeView === 'deliverables') setActiveView('deliverables');
+      }
+      // Escape → Fermer la sidebar mobile
+      if (e.key === 'Escape') setNavOpen(false);
+    }
+    window.addEventListener('keydown', handleKeyboard);
+    return () => window.removeEventListener('keydown', handleKeyboard);
+  }, [activeView]);
+
+  useKeyboardShortcuts(setActiveView);
 
   // ── Navigation icon mapping ──────────────────────────────────
   const NAV_ICONS: Record<string, React.ReactElement> = {
     dashboard:            <LayoutDashboard size={16} />,
     tenders:              <Target size={16} />,
     'tender-sources':     <Globe size={16} />,
+    'exec-dashboard':     <TrendingUp size={16} />,
     deliverables:         <FileText size={16} />,
     commercial:           <Briefcase size={16} />,
     organizations:        <Building2 size={16} />,
@@ -992,6 +1018,7 @@ export default function AppRoot() {
             {activeView === 'invoicing'          && <InvoicingPage />}
             {activeView === 'analytics'          && <AnalyticsPage />}
             {activeView === 'tender-sources'    && <TenderSourcesPage />}
+            {activeView === 'exec-dashboard'    && <ExecDashboardPage />}
           </ErrorBoundary>
         </main>
 

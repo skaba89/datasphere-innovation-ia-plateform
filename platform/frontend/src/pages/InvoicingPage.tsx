@@ -1,3 +1,4 @@
+import EmptyState from '../components/EmptyState';
 import { useI18n } from '../i18n/index';
 /**
  * InvoicingPage — Devis & Facturation premium
@@ -311,7 +312,13 @@ export default function InvoicingPage() {
                     </div>
                   </div>
                 ))}
-                {quotes.length === 0 && <p style={{ padding: '12px 6px', color: '#334155', fontSize: '.82rem' }}>Aucun devis encore.</p>}
+                {quotes.length === 0 && <p style={{ padding: '12px 6px', color: '#334155', fontSize: '.82rem' }}><EmptyState
+              icon="💶"
+              title="Aucun document de facturation"
+              description="Créez votre premier devis depuis une mission ou un AO remporté. Il sera converti en facture une fois validé."
+              action={{ label: '+ Nouveau devis', onClick: () => {} }}
+              compact
+            /> encore.</p>}
               </div>
             </div>
             {/* Dernières factures */}
@@ -334,7 +341,13 @@ export default function InvoicingPage() {
                     </div>
                   </div>
                 ))}
-                {invoices.length === 0 && <p style={{ padding: '12px 6px', color: '#334155', fontSize: '.82rem' }}>Aucune facture encore.</p>}
+                {invoices.length === 0 && <p style={{ padding: '12px 6px', color: '#334155', fontSize: '.82rem' }}><EmptyState
+              icon="💶"
+              title="Aucun document de facturation"
+              description="Créez votre premier devis depuis une mission ou un AO remporté. Il sera converti en facture une fois validé."
+              action={{ label: '+ Nouveau devis', onClick: () => {} }}
+              compact
+            /> encore.</p>}
               </div>
             </div>
           </div>

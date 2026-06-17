@@ -1,3 +1,4 @@
+import EmptyState from '../components/EmptyState';
 import { useI18n } from '../i18n/index';
 /**
  * NotificationsPage — Centre de notifications premium
@@ -174,7 +175,17 @@ export default function NotificationsPage() {
         <div style={{ padding: '64px 24px', textAlign: 'center' }}>
           <BellOff size={40} style={{ color: '#1e293b', margin: '0 auto 16px' }} />
           <p style={{ color: '#334155', fontSize: '.88rem', margin: 0 }}>
-            {filter === 'unread' ? 'Aucune notification non lue' : t('notif.empty')}
+            {filter === 'unread' ? '<EmptyState
+              icon="🔔"
+              title="Aucune notification"
+              description="Vous recevrez des alertes pour les deadlines AOs, les approbations de livrables et les mises à jour de workflow."
+              compact
+            /> non lue' : <EmptyState
+              icon="🔔"
+              title="Aucune notification"
+              description="Vous recevrez des alertes pour les deadlines AOs, les approbations de livrables et les mises à jour de workflow."
+              compact
+            />}
           </p>
         </div>
       ) : (

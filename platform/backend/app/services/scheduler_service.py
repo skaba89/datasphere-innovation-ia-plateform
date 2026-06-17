@@ -514,6 +514,17 @@ def start() -> None:
 
     tz = settings.scheduler_timezone
 
+    # Alertes deadline AOs — tous les jours à 9h
+    _scheduler.add_job(
+        run_deadline_alerts,
+        trigger="cron",
+        hour=9,
+        minute=0,
+        id="deadline_alerts",
+        name="Alertes deadline AOs J-1/J-3/J-7",
+        replace_existing=True,
+    )
+
     _scheduler.add_job(
         _execute_pending_actions_job,
         trigger="interval",
@@ -620,3 +631,124 @@ def trigger_job(job_id: str) -> bool:
         return False
     job.modify(next_run_time=datetime.now())
     return True
+
+def run_deadline_alerts(db_session_factory) -> dict:
+    """
+    Job scheduler — alertes deadline AOs.
+    Envoie un email J-7, J-3, J-1 aux utilisateurs concernés.
+    Tourne tous les jours à 9h.
+    """
+    from datetime import datetime, timedelta
+    from app.models.tender import Tender
+    from app.models.user import User
+    from app.services.email_templates import deadline_alert_email, send_email
+    import logging
+
+    log = logging.getLogger("datasphere.scheduler")
+    sent = 0
+    errors = 0
+
+    try:
+        db = db_session_factory()
+        now = datetime.utcnow()
+        alerts_days = [1, 3, 7]
+
+        for days in alerts_days:
+            target_start = now + timedelta(days=days, hours=-12)
+            target_end   = now + timedelta(days=days, hours=12)
+
+            tenders = (
+                db.query(Tender)
+                .filter(
+                    Tender.submission_deadline >= target_start,
+                    Tender.submission_deadline <= target_end,
+                    Tender.status.notin_(["won", "lost", "cancelled"]),
+                )
+                .all()
+            )
+
+            if not tenders:
+                continue
+
+            # Notifier tous les admins et managers
+            users = db.query(User).filter(
+                User.is_active == True,
+                User.role.in_(["admin", "manager"]),
+            ).all()
+
+            for user in users:
+                if not user.email:
+                    continue
+                tender_data = [
+                    {
+                        "title": t.title or "AO sans titre",
+                        "buyer_name": t.buyer_name or "—",
+                        "days_left": days,
+                        "deadline": t.submission_deadline.strftime("%d/%m/%Y") if t.submission_deadline else "—",
+                        "go_score": t.go_no_go_score,
+                        "score_label": f"{t.go_no_go_score}/100" if t.go_no_go_score else "Non scoré",
+                        "url": f"https://datasphere-frontend-n1mb.onrender.com/tenders/{t.id}",
+                    }
+                    for t in tenders
+                ]
+                email_data = deadline_alert_email(
+                    first_name=user.first_name or user.email.split("@")[0],
+                    tenders_near=tender_data,
+                )
+                ok = send_email(user.email, email_data["subject"], email_data["html"])
+                if ok:
+                    sent += 1
+                else:
+                    errors += 1
+
+        db.close()
+        log.info("Deadline alerts: %d emails envoyés, %d erreurs", sent, errors)
+        return {"sent": sent, "errors": errors}
+
+    except Exception as e:
+        log.error("run_deadline_alerts failed: %s", e)
+        return {"sent": 0, "errors": 1, "detail": str(e)}
+
+
+def send_monthly_report_to_all(db) -> int:
+    """
+    Envoie le rapport mensuel à tous les admins le 1er du mois.
+    """
+    from datetime import datetime, timedelta
+    from app.models.tender import Tender
+    from app.models.deliverable import Deliverable
+    from app.models.opportunity import Opportunity
+    from app.models.user import User
+    from app.services.email_templates import send_monthly_report
+    from sqlalchemy import func
+
+    log = __import__("logging").getLogger("datasphere.scheduler.monthly")
+    now = datetime.utcnow()
+    month_start = now.replace(day=1, hour=0, minute=0, second=0)
+    month_label = now.strftime("%B %Y").capitalize()
+
+    # Stats du mois
+    new_tenders = db.query(func.count(Tender.id)).filter(Tender.created_at >= month_start).scalar() or 0
+    won = db.query(func.count(Tender.id)).filter(
+        Tender.created_at >= month_start, Tender.status == "won").scalar() or 0
+    approved = db.query(func.count(Deliverable.id)).filter(
+        Deliverable.created_at >= month_start, Deliverable.status == "approved").scalar() or 0
+    opps = db.query(Opportunity).filter(Opportunity.status.notin_(["Perdu", "Annulé"])).all()
+    pipeline_value = sum(float(o.potential_value or 0) for o in opps)
+
+    stats = {
+        "new_tenders": new_tenders,
+        "total_tenders": db.query(func.count(Tender.id)).scalar() or 0,
+        "won": won,
+        "deliverables_approved": approved,
+        "pipeline_value": pipeline_value,
+    }
+
+    sent = 0
+    admins = db.query(User).filter(User.is_active == True, User.role == "admin").all()
+    for admin in admins:
+        if admin.email and send_monthly_report(admin.email, month_label, stats):
+            sent += 1
+            log.info("Rapport mensuel %s envoyé à %s", month_label, admin.email)
+
+    return sent

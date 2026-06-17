@@ -1,3 +1,17 @@
+# ── Cache simple en mémoire (5 minutes TTL) ──────────────────────────────────
+import time as _time
+_CACHE: dict = {}
+_CACHE_TTL = 300  # 5 minutes
+
+def _get_cached(key: str):
+    entry = _CACHE.get(key)
+    if entry and _time.time() - entry["ts"] < _CACHE_TTL:
+        return entry["data"]
+    return None
+
+def _set_cached(key: str, data):
+    _CACHE[key] = {"data": data, "ts": _time.time()}
+
 from fastapi import APIRouter, Depends
 from app.services.cache_service import cache_get, cache_set, invalidate_dashboard
 from sqlalchemy.orm import Session
@@ -20,7 +34,11 @@ def pipeline_analytics(db: Session = Depends(get_db), current_user: User = Depen
     Return comprehensive pipeline KPIs in a single call:
     opportunities, tenders, agents, deliverables, scheduler stats + notifications.
     """
-    return get_pipeline_analytics(db)
+    cached = _get_cached("pipeline")
+    if cached: return cached
+    result = get_pipeline_analytics(db)
+    _set_cached("pipeline", result)
+    return result
 
 
 @router.get("/gantt")

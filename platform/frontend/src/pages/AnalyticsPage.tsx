@@ -3,6 +3,7 @@
  * Recharts · Graphes temporels · Win rate · Pipeline · Heatmap
  */
 import { useEffect, useState, useCallback } from 'react';
+import EmptyState, { EMPTY_STATES } from '../components/EmptyState';
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip,

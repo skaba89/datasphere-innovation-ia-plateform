@@ -1,3 +1,4 @@
+import EmptyState from '../components/EmptyState';
 import { useI18n } from '../i18n';
 import { useWorkflowSSE } from '../hooks/useWorkflowSSE';
 import React, { useEffect, useState, useCallback } from 'react';
@@ -248,7 +249,13 @@ export default function TenderPage() {
           <div style={{padding:'14px 20px',borderBottom:'1px solid rgba(148,163,184,.08)',display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
             <span style={{fontSize:'.78rem',color:'#64748b',fontWeight:700}}>AO cible :</span>
             {tenders.length === 0 ? (
-              <span style={{fontSize:'.78rem',color:'#475569'}}>Aucun AO — importez-en un d'abord via BOAMP ou PDF.</span>
+              <span style={{fontSize:'.78rem',color:'#475569'}}><EmptyState
+              icon="📋"
+              title="Aucun appel d'offres"
+              description="Importez des AOs depuis BOAMP, TED, Maximilien ou vos sources PDF. L'agent CRM enrichira automatiquement votre pipeline."
+              action={{ label: '🔍 Chercher des AOs', onClick: () => {} }}
+              secondaryAction={{ label: '+ Saisir manuellement', onClick: () => {} }}
+            /> — importez-en un d'abord via BOAMP ou PDF.</span>
             ) : (
               <select value={activeTenderId??''} onChange={e=>setActiveTenderId(Number(e.target.value))}
                 style={{padding:'6px 12px',borderRadius:8,background:'rgba(255,255,255,.05)',border:'1px solid rgba(148,163,184,.15)',color:'#e2e8f0',fontSize:'.82rem',minWidth:240}}>

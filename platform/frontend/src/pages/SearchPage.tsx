@@ -1,3 +1,4 @@
+import EmptyState from '../components/EmptyState';
 import { useI18n } from '../i18n/index';
 /**
  * SearchPage — Recherche globale enrichie
@@ -306,7 +307,12 @@ export default function SearchPage() {
       {searched && results.length === 0 && !loading && (
         <div style={{ padding: '48px 24px', textAlign: 'center', background: 'rgba(10,18,38,.8)', border: '1px solid rgba(148,163,184,.08)', borderRadius: 14 }}>
           <Search size={32} color="#1e293b" style={{ margin: '0 auto 12px' }} />
-          <p style={{ fontWeight: 700, color: '#475569', marginBottom: 6, fontSize: '.9rem' }}>Aucun résultat pour « {query} »</p>
+          <p style={{ fontWeight: 700, color: '#475569', marginBottom: 6, fontSize: '.9rem' }}><EmptyState
+              icon="🔍"
+              title="Aucun résultat"
+              description="Essayez avec des mots-clés différents : nom d'acheteur, référence AO, type de livrable…"
+              compact
+            /> pour « {query} »</p>
           <p style={{ color: '#334155', fontSize: '.8rem', margin: 0 }}>Essayez un autre mot-clé ou vérifiez l'orthographe.</p>
           {hasRagResults(ragResult) && (
             <button onClick={() => setShowRag(true)} style={{ marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid rgba(139,92,246,.2)', background: 'none', color: '#c4b5fd', cursor: 'pointer', fontSize: '.78rem', fontWeight: 700 }}>

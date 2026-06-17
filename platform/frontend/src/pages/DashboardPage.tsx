@@ -1,3 +1,4 @@
+import EmptyState from '../components/EmptyState';
 /**
  * DashboardPage — Vue d'ensemble ultra-premium
  * Glassmorphism · Micro-animations · KPIs temps réel · Activity feed

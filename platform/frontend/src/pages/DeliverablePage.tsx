@@ -1,3 +1,4 @@
+import EmptyState from '../components/EmptyState';
 /**
  * DeliverablePage — Bibliothèque complète des livrables
  * Liste, lecture, édition inline, export PDF/HTML/MD, versioning
@@ -105,6 +106,16 @@ export default function DeliverablePage() {
       }, token);
       setShowNewForm(false); setNewTitle(''); setNewType('technical_proposal');
       setMsg('✅ Livrable créé'); load(); setTimeout(() => setMsg(''), 3000);
+    } catch(e) { setMsg(`❌ ${String(e).slice(0,80)}`); }
+  }
+
+  async function createVersion(id: number) {
+    if (!token) return;
+    try {
+      const r = await apiRequest<any>(`/deliverables/${id}/version`, { method: 'POST' }, token);
+      setMsg(`✅ ${r.message}`);
+      load();
+      setTimeout(() => setMsg(''), 4000);
     } catch(e) { setMsg(`❌ ${String(e).slice(0,80)}`); }
   }
 
@@ -232,7 +243,12 @@ export default function DeliverablePage() {
       ) : deliverables.length === 0 ? (
         <section className="panel" style={{ textAlign: 'center', padding: 48 }}>
           <FileText size={36} color="#334155" style={{ marginBottom: 12 }} />
-          <p style={{ color: '#475569', fontSize: '.88rem', marginBottom: 8 }}>Aucun livrable pour l'instant.</p>
+          <p style={{ color: '#475569', fontSize: '.88rem', marginBottom: 8 }}><EmptyState
+              icon="📄"
+              title="Bibliothèque vide"
+              description="Créez votre premier livrable ou lancez la génération IA depuis un AO qualifié. Les mémoires techniques, propositions et notes de cadrage apparaîtront ici."
+              action={{ label: '+ Nouveau livrable', onClick: () => setShowNewForm(true) }}
+            /> pour l'instant.</p>
           <p style={{ color: '#334155', fontSize: '.78rem' }}>Lance un workflow AO → l'étape 7 génère automatiquement le mémoire technique.</p>
         </section>
       ) : (
@@ -296,6 +312,13 @@ export default function DeliverablePage() {
                       style={{ padding: '5px 9px', borderRadius: 7, border: `1px solid ${showVersions===d.id?'rgba(139,92,246,.3)':'rgba(148,163,184,.15)'}`, background: showVersions===d.id?'rgba(139,92,246,.08)':'none', color: showVersions===d.id?'#c4b5fd':'#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: '.72rem' }}>
                       <History size={11} /> v{d.version}
                     </button>
+                    {d.status === 'approved' && (
+                      <button onClick={() => createVersion(d.id)}
+                        title="Créer v{(d.version||1)+1} — archive la version actuelle"
+                        style={{ padding: '5px 9px', borderRadius: 7, border: '1px solid rgba(250,204,21,.25)', background: 'rgba(250,204,21,.06)', color: '#facc15', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: '.72rem' }}>
+                        ＋ v{(d.version||1)+1}
+                      </button>
+                    )}
                     {/* Pièces jointes */}
                     <button onClick={() => setShowAttachments(showAttachments === d.id ? null : d.id)}
                       style={{ padding: '5px 9px', borderRadius: 7, border: `1px solid ${showAttachments===d.id?'rgba(34,197,94,.3)':'rgba(148,163,184,.15)'}`, background: showAttachments===d.id?'rgba(34,197,94,.08)':'none', color: showAttachments===d.id?'#86efac':'#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: '.72rem' }}>

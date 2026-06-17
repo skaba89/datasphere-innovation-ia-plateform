@@ -697,3 +697,51 @@ def export_deliverable_markdown(
         media_type="text/markdown; charset=utf-8",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+@router.post("/{deliverable_id}/version")
+def create_deliverable_version(
+    deliverable_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Crée une nouvelle version d'un livrable approuvé.
+    v1 → v2 → v3 ...
+    L'ancienne version est archivée, la nouvelle repart en brouillon.
+    """
+    source = db.query(Deliverable).filter(Deliverable.id == deliverable_id).first()
+    if not source:
+        raise HTTPException(404, "Livrable non trouvé")
+
+    # Calculer le prochain numéro de version
+    current_version = getattr(source, "version", 1) or 1
+    next_version = current_version + 1
+
+    # Créer la nouvelle version (copie du livrable)
+    new_deliverable = Deliverable(
+        opportunity_id=source.opportunity_id,
+        tender_id=source.tender_id,
+        title=source.title,
+        deliverable_type=source.deliverable_type,
+        status="draft",
+        version=next_version,
+        content=source.content,
+        content_markdown=source.content_markdown,
+        generated_by=f"version:{current_user.email}",
+        workspace_id=getattr(source, "workspace_id", None),
+        created_by_email=current_user.email,
+    )
+    db.add(new_deliverable)
+
+    # Archiver l'ancienne version
+    source.status = "archived"
+    db.add(source)
+    db.commit()
+    db.refresh(new_deliverable)
+
+    return {
+        "new_version": next_version,
+        "deliverable_id": new_deliverable.id,
+        "previous_id": source.id,
+        "message": f"✅ Version v{next_version} créée — v{current_version} archivée",
+    }
