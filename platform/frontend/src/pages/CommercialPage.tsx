@@ -62,7 +62,6 @@ const STATUS_ICON: Record<string, React.ReactNode> = {
 };
 
 function KpiCard({ icon, label, value, sub, color = '#facc15', delta }: {
-  const { lang } = useI18n();
   icon: React.ReactNode; label: string; value: string | number;
   sub?: string; color?: string; delta?: string;
 }) {

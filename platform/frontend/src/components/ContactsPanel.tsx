@@ -7,7 +7,6 @@ import ConfirmModal from './ConfirmModal';
 // ── Form component ────────────────────────────────────────────────────────────
 
 function ContactForm({
-  const { lang } = useI18n();
   orgId,
   orgName,
   initial,

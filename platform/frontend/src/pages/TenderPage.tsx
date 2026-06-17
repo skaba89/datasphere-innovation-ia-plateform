@@ -28,7 +28,8 @@ const S = {
 
 
 // Wrapper local : charge le workflow d'un AO et le passe à WorkflowTimeline
-function TenderWorkflowTimeline({ tenderId, token }: { tenderId: number; token: string | null }) {
+function TenderWorkflowTimeline({
+  const { lang } = useI18n(); tenderId, token }: { tenderId: number; token: string | null }) {
   const { t, lang } = useI18n();
   const [workflow, setWorkflow] = React.useState<any>(null);
   const [loading, setLoading]   = React.useState(true);
