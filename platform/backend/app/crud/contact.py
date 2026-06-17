@@ -29,6 +29,11 @@ def get_contact(db: Session, contact_id: int) -> Contact | None:
     return db.query(Contact).filter(Contact.id == contact_id).first()
 
 
+def get_contact_by_email(db: Session, email: str) -> "Contact | None":
+    from app.models.contact import Contact
+    return db.query(Contact).filter(Contact.professional_email == email).first()
+
+
 def create_contact(db: Session, payload: ContactCreate) -> Contact:
     contact = Contact(**payload.model_dump())
     db.add(contact)

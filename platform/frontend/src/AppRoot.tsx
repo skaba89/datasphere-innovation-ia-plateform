@@ -45,6 +45,7 @@ import TeamPage from './pages/TeamPage';
 import TenderPage from './pages/TenderPage';
 import UserProfilePage from './pages/UserProfilePage';
 import WorkspacesPage from './pages/WorkspacesPage';
+import TenderSourcesPage from './pages/TenderSourcesPage';
 import WorkspaceSwitcher from './components/WorkspaceSwitcher';
 import SettingsPage from './pages/SettingsPage';
 import CalculatorPage from './pages/CalculatorPage';
@@ -91,7 +92,8 @@ type RootView =
   | 'calculator'
   | 'pricing'
   | 'invoicing'
-  | 'analytics';
+  | 'analytics'
+  | 'tender-sources';
 
 type NavTab = {
   key: RootView;
@@ -706,6 +708,7 @@ export default function AppRoot() {
   const NAV_ICONS: Record<string, React.ReactElement> = {
     dashboard:            <LayoutDashboard size={16} />,
     tenders:              <Target size={16} />,
+    'tender-sources':     <Globe size={16} />,
     deliverables:         <FileText size={16} />,
     commercial:           <Briefcase size={16} />,
     organizations:        <Building2 size={16} />,
@@ -987,6 +990,7 @@ export default function AppRoot() {
             {activeView === 'pricing'            && <PricingPage />}
             {activeView === 'invoicing'          && <InvoicingPage />}
             {activeView === 'analytics'          && <AnalyticsPage />}
+            {activeView === 'tender-sources'    && <TenderSourcesPage />}
           </ErrorBoundary>
         </main>
 
