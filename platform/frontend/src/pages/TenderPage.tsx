@@ -428,7 +428,6 @@ function BOAMPPanel({ token, onImported }: { token: string|null; onImported: (id
       const result = await apiRequest<any>(`/tenders/${tenderId}/score-ai`, { method: 'POST' }, token);
       setScoreResult(result);
       setMsg(`✅ Score IA: ${result.score}/100 — ${result.decision}`);
-      loadTenders();
     } catch(e) {
       setMsg(`❌ Erreur scoring: ${String(e).slice(0,60)}`);
     } finally {
