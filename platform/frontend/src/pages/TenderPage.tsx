@@ -219,7 +219,7 @@ export default function TenderPage() {
               setSelectedIds(new Set(tenders.map(t => t.id)));
             }
           }} style={{ marginLeft: 'auto', padding: '4px 10px', borderRadius: 6, border: '1px solid rgba(148,163,184,.12)', background: 'none', color: '#64748b', cursor: 'pointer', fontSize: '.72rem' }}>
-            {tenders.every(t => selectedIds.has(t.id)) ? 'Tout désélectionner' : 'Tout sélectionner'}
+            {tenders.every(t => selectedIds.has(t.id)) ? lang === 'en' ? 'Deselect all' : 'Tout désélectionner' : lang === 'en' ? 'Select all' : 'Tout sélectionner'}
           </button>
         </div>
       )}
@@ -417,7 +417,7 @@ function BOAMPPanel({ token, onImported }: { token: string|null; onImported: (id
       const r = await apiRequest<BOAMPResult[]>(`/tender-watch/search?q=${encodeURIComponent(query)}&limit=20`, {}, token);
       setResults(r??[]);
       if (!r?.length) setMsg('Aucun AO trouvé. Essayez avec d\'autres mots-clés.');
-    } catch(e) { setMsg('Erreur BOAMP — vérifiez la connexion.'); }
+    } catch(e) { setMsg(lang === 'en' ? 'BOAMP error — check connection.' : 'Erreur BOAMP — vérifiez la connexion.'); }
     finally { setLoading(false); }
   }
 

@@ -32,9 +32,9 @@ interface Member {
 
 const ROLES: { key: string; label: string; desc: string; color: string; Icon: React.ComponentType<{size:number}> }[] = [
   { key: 'admin',      label: 'Administrateur', desc: 'Accès complet, gestion équipe et paramètres', color: '#fca5a5', Icon: Crown     },
-  { key: 'manager',    label: 'Manager',         desc: 'Gestion missions, livrables et opportunités',  color: '#fde68a', Icon: Shield    },
-  { key: 'consultant', label: 'Consultant',      desc: 'Création et soumission de livrables',          color: '#93c5fd', Icon: UserCheck },
-  { key: 'viewer',     label: 'Observateur',     desc: 'Lecture seule — aucune modification',          color: '#94a3b8', Icon: Eye       },
+  { key: 'manager',    label: t('team.manager_role'),         desc: 'Gestion missions, livrables et opportunités',  color: '#fde68a', Icon: Shield    },
+  { key: 'consultant', label: t('team.consultant_role'),      desc: 'Création et soumission de livrables',          color: '#93c5fd', Icon: UserCheck },
+  { key: 'viewer',     label: t('team.viewer_role'),     desc: 'Lecture seule — aucune modification',          color: '#94a3b8', Icon: Eye       },
 ];
 
 const ROLE_MAP = Object.fromEntries(ROLES.map(r => [r.key, r]));

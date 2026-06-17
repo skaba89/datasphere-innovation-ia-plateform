@@ -24,8 +24,8 @@ interface Deliverable {
 }
 
 const TYPE_LABEL: Record<string, string> = {
-  technical_proposal: 'Mémoire technique', note_cadrage: 'Note de cadrage',
-  commercial_proposal: 'Proposition commerciale', report: 'Rapport',
+  technical_proposal: t('deliverables.type_memo'), note_cadrage: t('deliverables.type_note'),
+  commercial_proposal: t('deliverables.type_proposal'), report: 'Rapport',
 };
 const STATUS_COLOR: Record<string, string> = {
   draft: '#94a3b8', review: '#fde68a', approved: '#86efac', rejected: '#fca5a5',
@@ -172,7 +172,7 @@ export default function DeliverablePage() {
             <p className="subtitle">Mémoires techniques, propositions commerciales, notes de cadrage. Générés par IA, validés par vous.</p>
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-            {[['draft','Brouillons'],['review','En révision'],['approved','Approuvés']].map(([s,l]) => (
+            {[['draft',t('deliverables.drafts')],['review',t('deliverables.in_review')],['approved',t('deliverables.approved')]].map(([s,l]) => (
               <button key={s} onClick={() => setFilterStatus(filterStatus === s ? 'all' : s)}
                 style={{ padding: '4px 12px', borderRadius: 99, border: `1px solid ${STATUS_COLOR[s]}${filterStatus===s?'60':'30'}`, background: `${STATUS_COLOR[s]}${filterStatus===s?'18':'08'}`, color: STATUS_COLOR[s], fontSize: '.74rem', fontWeight: 700, cursor: 'pointer' }}>
                 {byStatus(s).length} {l}

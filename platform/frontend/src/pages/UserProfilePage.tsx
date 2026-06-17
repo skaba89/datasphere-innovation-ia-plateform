@@ -40,7 +40,7 @@ const ROLE_CONFIG: Record<string, { label: string; color: string }> = {
 };
 
 const AVAILABILITY_OPTIONS = [
-  { value: 'immediate',  label: 'Disponible immédiatement' },
+  { value: 'immediate',  label: lang === 'en' ? 'Available now' : 'Disponible immédiatement' },
   { value: '2weeks',     label: 'Disponible dans 2 semaines' },
   { value: '1month',     label: 'Disponible dans 1 mois' },
   { value: '3months',    label: 'Disponible dans 3 mois' },
@@ -89,7 +89,7 @@ export default function UserProfilePage() {
         setProfileMsg({ ok: false, text: err.detail || 'Erreur upload avatar' });
       }
     } catch {
-      setProfileMsg({ ok: false, text: 'Erreur réseau' });
+      setProfileMsg({ ok: false, text: t('common.error') });
     } finally { setAvatarUploading(false); }
   }
   const [profileMsg, setProfileMsg] = useState<{ok:boolean;text:string}|null>(null);
@@ -138,7 +138,7 @@ export default function UserProfilePage() {
           skills:       skillsRaw ? skillsRaw.split(',').map(s => s.trim()).filter(Boolean) : null,
         }),
       }, token);
-      setProfileMsg({ ok: true, text: 'Profil mis à jour ✓' });
+      setProfileMsg({ ok: true, text: lang === 'en' ? 'Profile updated ✓' : 'Profil mis à jour ✓' });
       setEditingProfile(false);
       // Refresh
       const updated = await apiRequest<Profile>('/team/me', {}, token);
@@ -234,7 +234,7 @@ export default function UserProfilePage() {
               </span>
             )}
             <span style={{ padding: '3px 11px', borderRadius: 99, fontSize: '.72rem', fontFamily: 'monospace', background: profile?.is_active ? 'rgba(34,197,94,.08)' : 'rgba(239,68,68,.08)', border: `1px solid ${profile?.is_active ? 'rgba(34,197,94,.2)' : 'rgba(239,68,68,.2)'}`, color: profile?.is_active ? '#86efac' : '#fca5a5' }}>
-              {profile?.is_active ? 'Compte actif' : 'Compte désactivé'}
+              {profile?.is_active ? 'Compte actif' : lang === 'en' ? 'Account deactivated' : 'Compte désactivé'}
             </span>
             {availLabel && (
               <span style={{ padding: '3px 11px', borderRadius: 99, fontSize: '.72rem', background: 'rgba(59,130,246,.08)', border: '1px solid rgba(59,130,246,.2)', color: '#93c5fd' }}>

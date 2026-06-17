@@ -46,7 +46,7 @@ interface Opportunity {
 }
 
 const STATUS_COLOR: Record<string, string> = {
-  'Prospect identifié':       '#64748b',
+  t('crm.stage_prospect'):       '#64748b',
   'Analyse en cours':         '#3b82f6',
   'GO — En cours de réponse': '#f59e0b',
   'Réponse soumise':          '#8b5cf6',
@@ -204,7 +204,7 @@ function NewOpportunityForm({ token, onSaved, onCancel }: { token: string | null
           organization_id: orgId ? parseInt(orgId) : null,
           opportunity_type: type,
           potential_value: value ? parseFloat(value) : null,
-          status: 'Prospect identifié',
+          status: t('crm.stage_prospect'),
         }),
       }, token);
       onSaved();
