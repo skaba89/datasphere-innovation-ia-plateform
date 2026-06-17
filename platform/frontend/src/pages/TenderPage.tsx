@@ -412,6 +412,7 @@ export default function TenderPage() {
 // ── BOAMP Search Panel ────────────────────────────────────────────────────────
 
 function BOAMPPanel({ token, onImported }: { token: string|null; onImported: (id:number)=>void }) {
+  const { lang } = useI18n();
   const [query,   setQuery]   = useState('data');
   const [results, setResults] = useState<BOAMPResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -419,20 +420,21 @@ function BOAMPPanel({ token, onImported }: { token: string|null; onImported: (id
   const [scoringId, setScoringId] = useState<number|null>(null);
   const [scoreResult, setScoreResult] = useState<any>(null);
 
+  const [msg, setMsg] = useState('');
+
   async function scoreWithAI(tenderId: number) {
     setScoringId(tenderId);
     try {
       const result = await apiRequest<any>(`/tenders/${tenderId}/score-ai`, { method: 'POST' }, token);
       setScoreResult(result);
       setMsg(`✅ Score IA: ${result.score}/100 — ${result.decision}`);
-      load();
+      loadTenders();
     } catch(e) {
       setMsg(`❌ Erreur scoring: ${String(e).slice(0,60)}`);
     } finally {
       setScoringId(null);
     }
   }
-  const [msg, setMsg] = useState('');
 
   async function search() {
     setLoading(true); setMsg(''); setResults([]);
