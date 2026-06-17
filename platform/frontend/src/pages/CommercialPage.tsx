@@ -205,7 +205,7 @@ function NewOpportunityForm({ token, onSaved, onCancel }: { token: string | null
           organization_id: orgId ? parseInt(orgId) : null,
           opportunity_type: type,
           potential_value: value ? parseFloat(value) : null,
-          status: t('crm.stage_prospect'),
+          status: 'Prospect identifie',
         }),
       }, token);
       onSaved();

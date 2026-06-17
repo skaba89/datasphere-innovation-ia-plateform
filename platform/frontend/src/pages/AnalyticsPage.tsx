@@ -1,3 +1,4 @@
+import React from 'react';
 /**
  * AnalyticsPage — Intelligence analytique avancée
  * Recharts · Graphes temporels · Win rate · Pipeline · Heatmap

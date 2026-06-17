@@ -707,34 +707,13 @@ export default function AppRoot() {
 
   const { t, lang } = useI18n(); // lang déclenche le re-render global
   // ── Raccourcis clavier globaux ─────────────────────────────────────────
-  React.useEffect(() => {
-    function handleKeyboard(e: KeyboardEvent) {
-      const meta = e.metaKey || e.ctrlKey;
-      // Cmd/Ctrl+K → Recherche globale
-      if (meta && e.key === 'k') {
-        e.preventDefault();
-        setActiveView('search');
-      }
-      // Cmd/Ctrl+N → Nouveau (selon la page active)
-      if (meta && e.key === 'n') {
-        e.preventDefault();
-        if (activeView === 'tenders')     setActiveView('tenders');
-        if (activeView === 'deliverables') setActiveView('deliverables');
-      }
-      // Escape → Fermer la sidebar mobile
-      if (e.key === 'Escape') setNavOpen(false);
-    }
-    window.addEventListener('keydown', handleKeyboard);
-    return () => window.removeEventListener('keydown', handleKeyboard);
-  }, [activeView]);
 
-  useKeyboardShortcuts(setActiveView);
 
   // ── Navigation icon mapping ──────────────────────────────────
   const NAV_ICONS: Record<string, React.ReactElement> = {
     dashboard:            <LayoutDashboard size={16} />,
     tenders:              <Target size={16} />,
-    'tender-sources':     <Globe size={16} />,
+    'tender-sources':     <Search size={16} />,
     'exec-dashboard':     <TrendingUp size={16} />,
     deliverables:         <FileText size={16} />,
     commercial:           <Briefcase size={16} />,

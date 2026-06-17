@@ -502,13 +502,9 @@ function LinkedInCalendar({ token }: { token: string }) {
       ) : posts.length === 0 ? (
         <div style={{ padding: '48px', textAlign: 'center', color: '#334155' }}>
           <div style={{ fontSize: '2rem', marginBottom: 12 }}>📅</div>
-          <p style={{ margin: 0, fontSize: '.88rem' }}><EmptyState
-              icon="💼"
-              title="Aucun post planifié"
-              description="Générez votre premier post LinkedIn sur la Data, les AOs ou votre expertise. L'IA produit un contenu optimisé pour l'engagement."
-              action={{ label: '✨ Générer un post', onClick: () => setTab('generate') }}
-              compact
-            /> planifié. Cliquez sur "Générer calendrier 30 jours".</p>
+          <p style={{ margin: 0, fontSize: '.88rem', color: '#475569' }}>
+            Aucun post planifié. Cliquez sur "Générer calendrier 30 jours".
+          </p>
         </div>
       ) : (
         <div style={{ display: 'grid', gap: 6 }}>

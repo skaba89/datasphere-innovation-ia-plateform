@@ -25,8 +25,8 @@ interface Deliverable {
 }
 
 const TYPE_LABEL: Record<string, string> = {
-  technical_proposal: t('deliverables.type_memo'), note_cadrage: t('deliverables.type_note'),
-  commercial_proposal: t('deliverables.type_proposal'), report: 'Rapport',
+  technical_proposal: 'Mémoire technique', note_cadrage: 'Note de cadrage',
+  commercial_proposal: 'Proposition commerciale', report: 'Rapport',
 };
 const STATUS_COLOR: Record<string, string> = {
   draft: '#94a3b8', review: '#fde68a', approved: '#86efac', rejected: '#fca5a5',

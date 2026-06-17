@@ -40,7 +40,7 @@ const ROLE_CONFIG: Record<string, { label: string; color: string }> = {
 };
 
 const AVAILABILITY_OPTIONS = [
-  { value: 'immediate',  label: lang === 'en' ? 'Available now' : 'Disponible immédiatement' },
+  { value: 'immediate',  label: 'Disponible immédiatement' },
   { value: '2weeks',     label: 'Disponible dans 2 semaines' },
   { value: '1month',     label: 'Disponible dans 1 mois' },
   { value: '3months',    label: 'Disponible dans 3 mois' },

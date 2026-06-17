@@ -18,10 +18,12 @@ interface EmptyStateProps {
     onClick: () => void;
   };
   size?: 'sm' | 'md' | 'lg';
+  compact?: boolean;
 }
 
 export default function EmptyState({
   icon, title, description, action, secondaryAction, size = 'md',
+  compact,
 }: EmptyStateProps) {
   const padding = size === 'sm' ? '32px 24px' : size === 'lg' ? '64px 40px' : '48px 32px';
   const iconSize = size === 'sm' ? '2rem' : size === 'lg' ? '3.5rem' : '2.8rem';
