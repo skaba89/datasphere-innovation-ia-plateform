@@ -159,14 +159,14 @@ export default function ExecDashboardPage() {
           </div>
 
           {/* Top AOs */}
-          {data.top_tenders.length > 0 && (
+          {data?.top_tenders ?? [].length > 0 && (
             <div style={{ background: 'rgba(10,18,38,.9)', border: '1px solid rgba(148,163,184,.08)', borderRadius: 14, padding: '18px 22px', marginBottom: 20 }}>
               <h3 style={{ margin: '0 0 16px', fontSize: '.84rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em' }}>
                 AOs prioritaires en cours
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                {data.top_tenders.map((t, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 4px', borderBottom: i < data.top_tenders.length - 1 ? '1px solid rgba(148,163,184,.05)' : 'none' }}>
+                {data?.top_tenders ?? [].map((t, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 4px', borderBottom: i < data?.top_tenders ?? [].length - 1 ? '1px solid rgba(148,163,184,.05)' : 'none' }}>
                     <div style={{ width: 36, height: 36, borderRadius: 10, background: (t.score || 0) >= 70 ? 'rgba(34,197,94,.1)' : (t.score || 0) >= 45 ? 'rgba(245,158,11,.1)' : 'rgba(239,68,68,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.78rem', fontWeight: 900, color: (t.score || 0) >= 70 ? '#22c55e' : (t.score || 0) >= 45 ? '#f59e0b' : '#ef4444', flexShrink: 0 }}>
                       {t.score || '–'}
                     </div>
@@ -182,13 +182,13 @@ export default function ExecDashboardPage() {
           )}
 
           {/* Tendance mensuelle */}
-          {data.monthly_trend.length > 0 && (
+          {data?.monthly_trend ?? [].length > 0 && (
             <div style={{ background: 'rgba(10,18,38,.9)', border: '1px solid rgba(148,163,184,.08)', borderRadius: 14, padding: '18px 22px' }}>
               <h3 style={{ margin: '0 0 16px', fontSize: '.84rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em' }}>
                 Tendance — 3 derniers mois
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${data.monthly_trend.length}, 1fr)`, gap: 12 }}>
-                {data.monthly_trend.map((m, i) => (
+              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${data?.monthly_trend ?? [].length}, 1fr)`, gap: 12 }}>
+                {data?.monthly_trend ?? [].map((m, i) => (
                   <div key={i} style={{ textAlign: 'center', padding: '12px 8px', background: 'rgba(255,255,255,.02)', borderRadius: 10 }}>
                     <div style={{ fontSize: '.7rem', color: '#475569', marginBottom: 8 }}>{m.month}</div>
                     <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#3b82f6' }}>{m.tenders}</div>

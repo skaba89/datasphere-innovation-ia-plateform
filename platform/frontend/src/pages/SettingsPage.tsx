@@ -243,10 +243,10 @@ export default function SettingsPage() {
           <div>
             <h2 style={{ fontSize: '.8rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 12 }}>Services</h2>
             <div style={{ display: 'grid', gap: 8 }}>
-              <ServiceCard icon={Database} label={lang === "en" ? "PostgreSQL database" : "Base de données PostgreSQL"} ok={c.db.ok} color="#3b82f6"
-                detail={c.db.latency_ms ? `Latence : ${c.db.latency_ms}ms · Render Frankfurt` : 'Render Frankfurt'} />
-              <ServiceCard icon={Sparkles} label={`LLM — ${c.llm.provider}`} ok={c.llm.ok} color="#8b5cf6"
-                detail={`Provider actif : ${c.llm.provider} · Fallback simulation disponible`} />
+              <ServiceCard icon={Database} label={lang === "en" ? "PostgreSQL database" : "Base de données PostgreSQL"} ok={c.db?.ok ?? false} color="#3b82f6"
+                detail={c.db?.latency_ms ? `Latence : ${c.db?.latency_ms}ms · Render Frankfurt` : 'Render Frankfurt'} />
+              <ServiceCard icon={Sparkles} label={`LLM — ${c.llm?.provider ?? "?"}`} ok={c.llm?.ok ?? false} color="#8b5cf6"
+                detail={`Provider actif : ${c.llm?.provider ?? "?"} · Fallback simulation disponible`} />
               <ServiceCard icon={Cpu} label={`RAG — ${c.rag?.mode === 'vector' ? 'pgvector + Embeddings' : 'TF-IDF fallback'}`}
                 ok={c.rag?.ok ?? true} color="#22c55e"
                 detail={`Provider embeddings : ${c.rag?.active_provider ?? 'tfidf'} · ${c.rag?.mode === 'vector' ? 'Recherche vectorielle active' : 'Activez GEMINI_API_KEY pour embeddings réels'}`} />
@@ -268,10 +268,10 @@ export default function SettingsPage() {
                     )}
                   </div>
                 } />
-              <ServiceCard icon={Bot} label="Scheduler APScheduler" ok={c.scheduler.ok} color="#facc15"
+              <ServiceCard icon={Bot} label="Scheduler APScheduler" ok={c.scheduler?.ok ?? false} color="#facc15"
                 detail="Jobs : scan BOAMP toutes les 6h · rapport hebdo lundi 8h" />
-              <ServiceCard icon={HardDrive} label={lang === "en" ? "In-memory cache" : "Cache in-memory"} ok={c.cache.ok} color="#06b6d4"
-                detail={`${c.cache.size ?? 0} entrées en cache · TTL automatique`} />
+              <ServiceCard icon={HardDrive} label={lang === "en" ? "In-memory cache" : "Cache in-memory"} ok={c.cache?.ok ?? false} color="#06b6d4"
+                detail={`${c.cache?.size ?? 0} entrées en cache · TTL automatique`} />
             </div>
           </div>
 

@@ -568,9 +568,9 @@ function ForecastTab({ token }: { token: string | null }) {
       {/* KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 12 }}>
         {[
-          { label: 'Pipeline total', value: `${(data.total_pipeline / 1000).toFixed(0)}k€`, color: C.blue },
-          { label: 'Forecast pondéré', value: `${(data.weighted_forecast / 1000).toFixed(0)}k€`, color: C.green },
-          { label: 'Probabilité moy.', value: `${data.avg_probability}%`, color: C.amber },
+          { label: 'Pipeline total', value: `${((data.total_pipeline ?? 0) / 1000).toFixed(0)}k€`, color: C.blue },
+          { label: 'Forecast pondéré', value: `${((data.weighted_forecast ?? 0) / 1000).toFixed(0)}k€`, color: C.green },
+          { label: 'Probabilité moy.', value: `${(data.avg_probability ?? 0)}%`, color: C.amber },
           { label: 'AOs à traiter', value: data.total_tenders_due, color: C.purple },
           { label: 'Opportunités', value: data.total_opportunities, color: C.gold },
         ].map(({ label, value, color }) => (
