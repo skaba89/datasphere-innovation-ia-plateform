@@ -356,6 +356,51 @@ export default function SettingsPage({ onOpenLegal }: { onOpenLegal?: (slug: Leg
               ))}
             </div>
           </div>
+
+          {/* ── Support ───────────────────────────────────────────── */}
+          <div>
+            <h2 style={{ fontSize: '.8rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 12 }}>
+              {lang === 'en' ? 'Support' : 'Assistance'}
+            </h2>
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12,
+              padding: '16px 18px', borderRadius: 12,
+              background: 'rgba(250,204,21,.04)', border: '1px solid rgba(250,204,21,.12)',
+            }}>
+              <div>
+                <p style={{ margin: 0, fontSize: '.84rem', fontWeight: 700, color: '#f1f5f9' }}>
+                  {lang === 'en' ? 'Need help?' : "Besoin d'aide ?"}
+                </p>
+                <p style={{ margin: '4px 0 0', fontSize: '.78rem', color: '#64748b' }}>
+                  {lang === 'en'
+                    ? 'Our team typically replies within 24h on business days.'
+                    : 'Notre équipe répond généralement sous 24h ouvrées.'}
+                </p>
+              </div>
+              <a
+                href="mailto:support@datasphere-innovation.fr?subject=Demande%20de%20support%20DataSphere"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '9px 16px', borderRadius: 9, border: 'none',
+                  background: 'linear-gradient(135deg,#facc15,#f59e0b)', color: '#0f172a',
+                  fontWeight: 800, fontSize: '.8rem', textDecoration: 'none', flexShrink: 0,
+                }}
+              >
+                <Mail size={13} /> support@datasphere-innovation.fr
+              </a>
+            </div>
+            <a
+              href="https://datasphere-website.onrender.com/status"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 10,
+                fontSize: '.76rem', color: '#475569', textDecoration: 'none',
+              }}
+            >
+              <Activity size={11} /> {lang === 'en' ? 'View system status' : "Voir le statut des services"}
+            </a>
+          </div>
         </div>
       )}
     </div>

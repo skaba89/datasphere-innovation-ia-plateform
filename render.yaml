@@ -7,9 +7,13 @@
 #   3. Régler les variables sensibles dans le dashboard (SECRET_KEY, STRIPE_*, SMTP_*, etc.)
 #
 # Services créés :
-#   - datasphere-db       : PostgreSQL 16 managé
-#   - datasphere-backend  : API FastAPI (Docker)
-#   - datasphere-frontend : Site statique React/Vite (CDN)
+#   - datasphere-db       : PostgreSQL 16 managé (plan starter — 7$/mois, backups quotidiens)
+#   - datasphere-backend  : API FastAPI Docker (plan starter — 7$/mois, pas de cold start)
+#   - datasphere-frontend : Site statique React/Vite (gratuit — CDN, pas de cold start)
+#   - datasphere-website  : Landing page statique (gratuit — CDN, pas de cold start)
+#
+# Coût mensuel infra de base : ~14$/mois (DB + backend starter)
+# Coûts variables : Stripe (2.9%+0.25€/transaction), Render bande passante au-delà du quota gratuit
 #
 # Docs Render Blueprints : https://render.com/docs/blueprint-spec
 
@@ -17,7 +21,7 @@ databases:
   - name: datasphere-db
     databaseName: datasphere_platform
     user: datasphere
-    plan: free             # Passer à "starter" (7$/mois) pour la prod réelle
+    plan: starter          # Backups automatiques quotidiens + meilleures perfs (7$/mois)
     region: frankfurt      # Le plus proche de la France
 
 services:
@@ -29,7 +33,7 @@ services:
     dockerfilePath: ./platform/backend/Dockerfile.render
     dockerContext: ./platform/backend
     region: frankfurt
-    plan: free             # Starter recommandé en prod (pas de sleep)
+    plan: starter           # Pas de cold start (sleep après 15min sur free) — critique en prod
     healthCheckPath: /api/v1/health
 
     envVars:
@@ -59,7 +63,9 @@ services:
       - key: STRIPE_WEBHOOK_SECRET
         value: ""           # whsec_xxx
 
-      # Email (optionnel)
+      # Email — Resend (recommandé, gratuit 3000/mois) ou SMTP
+      - key: RESEND_API_KEY
+        value: ""           # re_xxx — https://resend.com (prioritaire sur SMTP si défini)
       - key: SMTP_HOST
         value: ""
       - key: SMTP_PORT
@@ -101,7 +107,11 @@ services:
       - key: BOAMP_DAILY_LIMIT
         value: "50"   # Scan BOAMP quotidien 6h du matin
 
-      # LLM (optionnel — au moins un recommandé)
+      # LLM — au moins un recommandé (GROQ et GEMINI sont gratuits, à prioriser)
+      - key: GROQ_API_KEY
+        value: ""           # https://console.groq.com — 14 400 req/jour gratuit, latence <1s
+      - key: GEMINI_API_KEY
+        value: ""           # https://aistudio.google.com — 1500 req/jour gratuit, contexte 1M tokens
       - key: OPENAI_API_KEY
         value: ""
       - key: ANTHROPIC_API_KEY
@@ -153,7 +163,7 @@ services:
     staticPublishPath: ./website
     buildCommand: ""   # Site statique — aucun build requis
     region: frankfurt
-    plan: free
+    plan: free              # OK en free — site statique servi par CDN, aucun cold start
     pullRequestPreviewsEnabled: false
     headers:
       - path: "/*"
@@ -163,6 +173,11 @@ services:
         name: X-Frame-Options
         value: DENY
     routes:
+      # Sert /status.html directement (page de statut public)
+      - type: rewrite
+        source: "/status"
+        destination: /status.html
+      # Fallback SPA pour tout le reste
       - type: rewrite
         source: "/*"
         destination: /index.html
