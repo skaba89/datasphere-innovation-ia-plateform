@@ -66,10 +66,12 @@ import { CrmWorkspace } from './components/CrmWorkspace';
 import GlobalSearchBar from './components/GlobalSearchBar';
 import NotificationBell from './components/NotificationBell';
 import NotificationsPanel from './components/NotificationsPanel';
+import LegalPageRouter, { LEGAL_LINKS, type LegalSlug } from './pages/legal/LegalPages';
+import CookieConsent from './components/CookieConsent';
 
 import './root.css';
 
-type AuthView = 'login' | 'forgot' | 'reset';
+type AuthView = 'login' | 'forgot' | 'reset' | 'legal';
 type RootView =
   | 'dashboard'
   | 'organizations'
@@ -337,9 +339,11 @@ function ForcePasswordChange({
 function LoginPage({
   onLogin,
   onForgot,
+  onLegal,
 }: {
   onLogin: (email: string, password: string) => Promise<void>;
   onForgot: () => void;
+  onLegal?: (slug: LegalSlug) => void;
 }) {
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
@@ -542,6 +546,27 @@ function LoginPage({
         }
         @keyframes loginSpin { to { transform: rotate(360deg); } }
       `}</style>
+
+      {/* Footer liens légaux */}
+      <div style={{
+        position: 'absolute', bottom: 18, left: 0, right: 0, zIndex: 1,
+        display: 'flex', justifyContent: 'center', gap: 18, flexWrap: 'wrap', padding: '0 16px',
+      }}>
+        {LEGAL_LINKS.map(({ slug, label }) => (
+          <button
+            key={slug}
+            onClick={() => onLegal?.(slug)}
+            style={{
+              background: 'none', border: 'none', color: '#334155', cursor: 'pointer',
+              fontSize: '.72rem', padding: 0, textDecoration: 'none',
+            }}
+            onMouseOver={e => { (e.currentTarget as HTMLElement).style.color = '#64748b'; }}
+            onMouseOut={e => { (e.currentTarget as HTMLElement).style.color = '#334155'; }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
     </main>
   );
 }
@@ -570,9 +595,18 @@ export default function AppRoot() {
   const [token, setToken] = useState<string | null>(() => tokenStorage.get());
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [mustChangePwd, setMustChangePwd] = useState(false);
-  const [authView, setAuthView] = useState<AuthView>(() =>
-    new URLSearchParams(window.location.search).has('token') ? 'reset' : 'login',
-  );
+  const [authView, setAuthView] = useState<AuthView>(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('token')) return 'reset';
+    if (params.has('legal')) return 'legal';
+    return 'login';
+  });
+  const [legalSlug, setLegalSlug] = useState<LegalSlug>(() => {
+    const slug = new URLSearchParams(window.location.search).get('legal');
+    const valid: LegalSlug[] = ['cgu', 'cgv', 'confidentialite', 'mentions-legales'];
+    return (valid as string[]).includes(slug ?? '') ? (slug as LegalSlug) : 'mentions-legales';
+  });
+  const [showLegalModal, setShowLegalModal] = useState<LegalSlug | null>(null);
   const [view, setView] = useState<RootView>('dashboard');
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
@@ -686,6 +720,13 @@ export default function AppRoot() {
   }
 
   if (!token) {
+    if (authView === 'legal' && legalSlug)
+      return (
+        <>
+          <LegalPageRouter slug={legalSlug} onBack={() => setAuthView('login')} />
+          <CookieConsent onShowPrivacy={() => setLegalSlug('confidentialite')} />
+        </>
+      );
     if (authView === 'forgot')
       return <ForgotPasswordPage onBack={() => setAuthView('login')} />;
     if (authView === 'reset')
@@ -698,10 +739,14 @@ export default function AppRoot() {
         />
       );
     return (
-      <LoginPage
-        onLogin={handleLogin}
-        onForgot={() => setAuthView('forgot')}
-      />
+      <>
+        <LoginPage
+          onLogin={handleLogin}
+          onForgot={() => setAuthView('forgot')}
+          onLegal={(slug) => { setLegalSlug(slug); setAuthView('legal'); }}
+        />
+        <CookieConsent onShowPrivacy={() => { setLegalSlug('confidentialite'); setAuthView('legal'); }} />
+      </>
     );
   }
 
@@ -991,7 +1036,7 @@ export default function AppRoot() {
             {activeView === 'search'             && <SearchPage />}
             {activeView === 'ai-providers'       && <AIProvidersPage />}
             {activeView === 'intelligence'        && <IntelligencePage />}
-            {activeView === 'settings'           && <SettingsPage />}
+            {activeView === 'settings'           && <SettingsPage onOpenLegal={setShowLegalModal} />}
             {activeView === 'calculator'         && <CalculatorPage />}
             {activeView === 'pricing'            && <PricingPage />}
             {activeView === 'invoicing'          && <InvoicingPage />}
@@ -1037,6 +1082,19 @@ export default function AppRoot() {
       {showOnboarding && (
         <OnboardingWizard onComplete={() => { markOnboardingDone(); setShowOnboarding(false); }} />
       )}
+
+      {/* ── Cookies + pages légales (accessibles aussi connecté) ───── */}
+      <CookieConsent onShowPrivacy={() => setShowLegalModal('confidentialite')} />
+      {showLegalModal && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9500, background: 'rgba(6,13,26,.85)',
+          backdropFilter: 'blur(6px)', overflowY: 'auto',
+        }}>
+          <LegalPageRouter slug={showLegalModal} onBack={() => setShowLegalModal(null)} />
+        </div>
+      )}
+
+      <AIAssistant />
     </div>
   );
 }

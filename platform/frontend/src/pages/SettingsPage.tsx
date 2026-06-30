@@ -6,8 +6,9 @@ import { useEffect, useState } from 'react';
 import {
   Activity, Bot, CheckCircle2, Cloud, Database, Globe,
   Key, Mail, RefreshCw, Server, Shield, Sparkles,
-  AlertTriangle, Clock, Cpu, HardDrive, Wifi, X,
+  AlertTriangle, Clock, Cpu, HardDrive, Wifi, X, FileText,
 } from 'lucide-react';
+import { LEGAL_LINKS, type LegalSlug } from './legal/LegalPages';
 import { apiRequest, tokenStorage } from '../api/client';
 
 interface HealthData {
@@ -141,7 +142,7 @@ function MetricBar({ label, value, max, color }: { label: string; value: number;
   );
 }
 
-export default function SettingsPage() {
+export default function SettingsPage({ onOpenLegal }: { onOpenLegal?: (slug: LegalSlug) => void } = {}) {
   const { t, lang } = useI18n();
   const token = tokenStorage.get();
   const [health, setHealth]   = useState<HealthData | null>(null);
@@ -327,6 +328,33 @@ export default function SettingsPage() {
             <p style={{ fontSize: '.74rem', color: '#334155', marginTop: 12, lineHeight: 1.5 }}>
               Configurez ces variables dans <strong style={{ color: '#64748b' }}>Render Dashboard → datasphere-backend → Environment</strong>.
             </p>
+          </div>
+
+          {/* ── Légal ─────────────────────────────────────────────── */}
+          <div>
+            <h2 style={{ fontSize: '.8rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 12 }}>
+              {lang === 'en' ? 'Legal' : 'Informations légales'}
+            </h2>
+            <div style={{
+              display: 'flex', flexWrap: 'wrap', gap: 8,
+              padding: '14px 16px', borderRadius: 12,
+              background: 'rgba(255,255,255,.02)', border: '1px solid rgba(148,163,184,.08)',
+            }}>
+              {LEGAL_LINKS.map(({ slug, label }) => (
+                <button
+                  key={slug}
+                  onClick={() => onOpenLegal?.(slug)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    padding: '7px 12px', borderRadius: 8,
+                    border: '1px solid rgba(148,163,184,.12)', background: 'none',
+                    color: '#94a3b8', cursor: 'pointer', fontSize: '.78rem',
+                  }}
+                >
+                  <FileText size={12} /> {label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}
