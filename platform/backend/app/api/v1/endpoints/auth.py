@@ -207,11 +207,16 @@ def read_me(current_user: User = Depends(get_current_user)):
 
 
 @router.get("/diagnose-login")
-def diagnose_login(db: Session = Depends(get_db)):
+def diagnose_login(token: str = "", db: Session = Depends(get_db)):
     """
-    Public diagnostic endpoint — checks login prerequisites.
+    Diagnostic endpoint — checks login prerequisites.
     Use when POST /auth/login returns 500.
+    Requires ?token=<SETUP_SECRET_KEY> to avoid leaking internal info publicly.
     """
+    import os
+    setup_token = os.getenv("SETUP_SECRET_KEY", "")
+    if not setup_token or token != setup_token:
+        raise HTTPException(status_code=404, detail="Not found")
     checks = {}
 
     # 1. DB connection

@@ -198,8 +198,12 @@ def get_onboarding_status(
 
 
 @router.post("/fix-db")
-def emergency_fix_db(db: Session = Depends(get_db)):
-    """Emergency — ajoute les colonnes manquantes sans Alembic. Idempotent."""
+def emergency_fix_db(token: str, db: Session = Depends(get_db)):
+    """Emergency — ajoute les colonnes manquantes sans Alembic. Idempotent.
+    Requires SETUP_SECRET_KEY token (same protection as /run)."""
+    _check()
+    if token != SETUP_TOKEN:
+        raise HTTPException(status_code=403, detail="Invalid setup token")
     from sqlalchemy import text
     results = []
     for name, sql in [
