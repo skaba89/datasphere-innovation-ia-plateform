@@ -20,7 +20,7 @@ class DeliverableVersion(Base):
     version = Column(Integer, nullable=False, index=True)
     title = Column(String(255), nullable=False)
     content_markdown = Column(Text, nullable=False)
-    status = Column(String(80), nullable=False)
+    status = Column(String(80), nullable=False, index=True)
     summary = Column(Text, nullable=True)
     # Who created this version
     created_by = Column(String(255), nullable=True)

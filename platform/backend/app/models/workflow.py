@@ -44,7 +44,7 @@ class WorkflowInstance(Base):
     id             = Column(Integer, primary_key=True, index=True)
     tender_id      = Column(Integer, ForeignKey("tenders.id", ondelete="CASCADE"),
                             nullable=False, unique=True, index=True)
-    status         = Column(String(50), nullable=False, default="idle")
+    status         = Column(String(50), nullable=False, default="idle", index=True)
     # idle | running | awaiting_approval | paused | completed | failed
 
     current_step   = Column(String(80), nullable=True)   # step name en cours
@@ -76,7 +76,7 @@ class WorkflowStep(Base):
     order_index     = Column(Integer, nullable=False)
 
     # État
-    status          = Column(String(50), nullable=False, default="pending")
+    status          = Column(String(50), nullable=False, default="pending", index=True)
     requires_approval = Column(Boolean, nullable=False, default=False)
 
     # Exécution

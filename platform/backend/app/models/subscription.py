@@ -117,7 +117,7 @@ class Subscription(Base):
 
     # Plan info
     plan                   = Column(String(50), nullable=False, default="free")
-    status                 = Column(String(50), nullable=False, default="active")
+    status                 = Column(String(50), nullable=False, default="active", index=True)
     # active | trialing | past_due | canceled | unpaid
 
     billing_cycle          = Column(String(20), nullable=False, default="monthly")
